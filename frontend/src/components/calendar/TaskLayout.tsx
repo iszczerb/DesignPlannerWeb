@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProjectTaskCard from './ProjectTaskCard';
 import { AssignmentTaskDto } from '../../types/schedule';
 import { getTaskLayout } from '../../types/dragDrop';
+import { calculateTaskHours } from '../../utils/hoursCalculator';
 
 interface TaskLayoutProps {
   tasks: AssignmentTaskDto[];
   onTaskClick?: (task: AssignmentTaskDto) => void;
+  onTaskEdit?: (task: AssignmentTaskDto) => void;
+  onTaskDelete?: (assignmentId: number) => void;
+  onTaskView?: (task: AssignmentTaskDto) => void;
+  onTaskCopy?: (task: AssignmentTaskDto) => void;
   maxTasks?: number;
   isDraggable?: boolean;
   sourceDate?: Date;
@@ -17,20 +22,30 @@ interface TaskLayoutProps {
 const TaskLayout: React.FC<TaskLayoutProps> = ({
   tasks,
   onTaskClick,
+  onTaskEdit,
+  onTaskDelete,
+  onTaskView,
+  onTaskCopy,
   maxTasks = 4,
   isDraggable = false,
   sourceDate,
   sourceSlot,
   sourceEmployeeId
 }) => {
+  // Calculate hours for all tasks in this slot
+  const tasksWithCalculatedHours = useMemo(() => {
+    return calculateTaskHours(tasks);
+  }, [tasks]);
+
   const taskCount = Math.min(tasks.length, maxTasks);
-  const tasksToShow = tasks.slice(0, maxTasks);
+  const tasksToShow = tasksWithCalculatedHours.slice(0, maxTasks);
   const hasMoreTasks = tasks.length > maxTasks;
   const layout = getTaskLayout(taskCount);
 
   const handleTaskClick = (task: AssignmentTaskDto) => {
     onTaskClick?.(task);
   };
+
 
   // Special handling for 3 tasks layout (2 top, 1 bottom)
   const renderThreeTasksLayout = () => {
@@ -64,11 +79,16 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
               size={layout.cardSize}
               maxWidth="100%"
               onClick={handleTaskClick}
+              onEdit={onTaskEdit}
+              onDelete={onTaskDelete}
+              onView={onTaskView}
+              onCopy={onTaskCopy}
               showTooltip={true}
               isDraggable={isDraggable}
               sourceDate={sourceDate}
               sourceSlot={sourceSlot}
               sourceEmployeeId={sourceEmployeeId}
+              calculatedHours={tasksToShow[0].calculatedHours}
             />
           </motion.div>
           <motion.div
@@ -85,11 +105,16 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
               size={layout.cardSize}
               maxWidth="100%"
               onClick={handleTaskClick}
+              onEdit={onTaskEdit}
+              onDelete={onTaskDelete}
+              onView={onTaskView}
+              onCopy={onTaskCopy}
               showTooltip={true}
               isDraggable={isDraggable}
               sourceDate={sourceDate}
               sourceSlot={sourceSlot}
               sourceEmployeeId={sourceEmployeeId}
+              calculatedHours={tasksToShow[1].calculatedHours}
             />
           </motion.div>
         </div>
@@ -109,11 +134,16 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
             size={layout.cardSize}
             maxWidth="100%"
             onClick={handleTaskClick}
+            onEdit={onTaskEdit}
+            onDelete={onTaskDelete}
+            onView={onTaskView}
+            onCopy={onTaskCopy}
             showTooltip={true}
             isDraggable={isDraggable}
             sourceDate={sourceDate}
             sourceSlot={sourceSlot}
             sourceEmployeeId={sourceEmployeeId}
+            calculatedHours={tasksToShow[2].calculatedHours}
           />
         </motion.div>
       </div>
@@ -142,11 +172,16 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
                 size={layout.cardSize}
                 maxWidth="100%"
                 onClick={handleTaskClick}
+                onEdit={onTaskEdit}
+                onDelete={onTaskDelete}
+                onView={onTaskView}
+                onCopy={onTaskCopy}
                 showTooltip={true}
                 isDraggable={isDraggable}
                 sourceDate={sourceDate}
                 sourceSlot={sourceSlot}
                 sourceEmployeeId={sourceEmployeeId}
+                calculatedHours={task.calculatedHours}
               />
             </motion.div>
           ))}

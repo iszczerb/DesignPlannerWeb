@@ -52,16 +52,54 @@ namespace DesignPlanner.Core.DTOs
         public int AssignmentId { get; set; }
         public int TaskId { get; set; }
         public string TaskTitle { get; set; } = string.Empty;
+        public string TaskTypeName { get; set; } = string.Empty;
         public string ProjectCode { get; set; } = string.Empty;
         public string ProjectName { get; set; } = string.Empty;
         public string ClientCode { get; set; } = string.Empty;
         public string ClientName { get; set; } = string.Empty;
         public string ClientColor { get; set; } = string.Empty;
+        public DateTime AssignedDate { get; set; }
+        public Slot Slot { get; set; }
         public DesignPlanner.Core.Enums.TaskStatus TaskStatus { get; set; }
         public TaskPriority Priority { get; set; }
         public DateTime? DueDate { get; set; }
         public string? Notes { get; set; }
         public bool IsActive { get; set; }
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; } = string.Empty;
+        public double? Hours { get; set; }
+    }
+
+    public class ClientDto
+    {
+        public int Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class ProjectDto
+    {
+        public int Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string ClientName { get; set; } = string.Empty;
+        public int ClientId { get; set; }
+    }
+
+    public class TaskTypeDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class ProjectTaskDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public int TaskTypeId { get; set; }
+        public string TaskTypeName { get; set; } = string.Empty;
+        public TaskPriority Priority { get; set; }
+        public DesignPlanner.Core.Enums.TaskStatus Status { get; set; }
     }
 
 }

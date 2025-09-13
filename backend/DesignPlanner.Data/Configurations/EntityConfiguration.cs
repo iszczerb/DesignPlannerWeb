@@ -114,8 +114,8 @@ namespace DesignPlanner.Data.Configurations
                 .HasForeignKey(a => a.EmployeeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Composite index for performance and business rules
-            builder.HasIndex(a => new { a.EmployeeId, a.AssignedDate, a.Slot }).IsUnique();
+            // Composite index for performance (removed IsUnique to allow multiple tasks per slot)
+            builder.HasIndex(a => new { a.EmployeeId, a.AssignedDate, a.Slot });
             builder.HasIndex(a => new { a.AssignedDate, a.Slot });
         }
     }

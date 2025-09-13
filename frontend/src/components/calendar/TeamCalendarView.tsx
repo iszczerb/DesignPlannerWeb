@@ -39,6 +39,12 @@ interface TeamCalendarViewProps {
   onTaskClick?: (task: AssignmentTaskDto) => void;
   onSlotClick?: (date: Date, slot: Slot, employeeId: number) => void;
   onTaskDrop?: (dragItem: DragItem, targetDate: Date, targetSlot: Slot, targetEmployeeId: number) => void;
+  onTaskEdit?: (task: AssignmentTaskDto) => void;
+  onTaskDelete?: (assignmentId: number) => void;
+  onTaskView?: (task: AssignmentTaskDto) => void;
+  onTaskCopy?: (task: AssignmentTaskDto) => void;
+  onTaskPaste?: (date: Date, slot: Slot, employeeId: number) => void;
+  hasCopiedTask?: boolean;
   
   // Team-specific handlers
   onTeamViewChange?: (mode: TeamViewMode) => void;
@@ -60,6 +66,12 @@ const TeamCalendarView: React.FC<TeamCalendarViewProps> = ({
   onTaskClick,
   onSlotClick,
   onTaskDrop,
+  onTaskEdit,
+  onTaskDelete,
+  onTaskView,
+  onTaskCopy,
+  onTaskPaste,
+  hasCopiedTask = false,
   onTeamViewChange,
   onFetchTeamData
 }) => {
@@ -220,6 +232,12 @@ const TeamCalendarView: React.FC<TeamCalendarViewProps> = ({
           onSlotClick={handleSlotClick}
           onRefresh={onRefresh}
           onTaskDrop={handleTaskDrop}
+          onTaskEdit={onTaskEdit}
+          onTaskDelete={onTaskDelete}
+          onTaskView={onTaskView}
+          onTaskCopy={onTaskCopy}
+          onTaskPaste={onTaskPaste}
+          hasCopiedTask={hasCopiedTask}
           // Team management props
           teamViewMode={teamViewMode}
           teams={teams}

@@ -26,6 +26,9 @@ namespace DesignPlanner.Core.Entities
         [MaxLength(500)]
         public string? Notes { get; set; }
 
+        // Custom hours for this specific assignment (nullable - if null, use task's estimated hours)
+        public double? Hours { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

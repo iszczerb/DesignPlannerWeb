@@ -20,6 +20,12 @@ interface TeamInfo {
 
 interface ExtendedCalendarGridProps extends CalendarGridProps {
   onTaskDrop?: (dragItem: DragItem, targetDate: Date, targetSlot: Slot, targetEmployeeId: number) => void;
+  onTaskEdit?: (task: AssignmentTaskDto) => void;
+  onTaskDelete?: (assignmentId: number) => void;
+  onTaskView?: (task: AssignmentTaskDto) => void;
+  onTaskCopy?: (task: AssignmentTaskDto) => void;
+  onTaskPaste?: (date: Date, slot: Slot, employeeId: number) => void;
+  hasCopiedTask?: boolean;
   teamViewMode?: TeamViewMode;
   teams?: TeamInfo[];
   managedTeamId?: number;
@@ -35,6 +41,12 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   onSlotClick,
   onRefresh,
   onTaskDrop,
+  onTaskEdit,
+  onTaskDelete,
+  onTaskView,
+  onTaskCopy,
+  onTaskPaste,
+  hasCopiedTask = false,
   teamViewMode = TeamViewMode.MyTeam,
   teams = [],
   managedTeamId,
@@ -292,6 +304,12 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                   onTaskClick={handleTaskClick}
                   onSlotClick={handleSlotClick}
                   onTaskDrop={handleTaskDrop}
+                  onTaskEdit={onTaskEdit}
+                  onTaskDelete={onTaskDelete}
+                  onTaskView={onTaskView}
+                  onTaskCopy={onTaskCopy}
+                  onTaskPaste={onTaskPaste}
+                  hasCopiedTask={hasCopiedTask}
                 />
               );
             })}
@@ -314,6 +332,12 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                 onTaskClick={handleTaskClick}
                 onSlotClick={handleSlotClick}
                 onTaskDrop={handleTaskDrop}
+                onTaskEdit={onTaskEdit}
+                onTaskDelete={onTaskDelete}
+                onTaskView={onTaskView}
+                onTaskCopy={onTaskCopy}
+                onTaskPaste={onTaskPaste}
+                hasCopiedTask={hasCopiedTask}
               />
             )}
           </>
@@ -330,6 +354,12 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                   onTaskClick={handleTaskClick}
                   onSlotClick={handleSlotClick}
                   onTaskDrop={handleTaskDrop}
+                  onTaskEdit={onTaskEdit}
+                  onTaskDelete={onTaskDelete}
+                  onTaskView={onTaskView}
+                  onTaskCopy={onTaskCopy}
+                  onTaskPaste={onTaskPaste}
+                  hasCopiedTask={hasCopiedTask}
                   teamColor={team?.color}
                   isTeamManaged={team ? team.isManaged : true}
                   showTeamIndicator={true}

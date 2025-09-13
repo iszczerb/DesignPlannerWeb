@@ -10,6 +10,12 @@ import { DragItem } from '../../types/dragDrop';
 
 interface ExtendedEmployeeRowProps extends EmployeeRowProps {
   onTaskDrop?: (dragItem: DragItem, targetDate: Date, targetSlot: Slot, targetEmployeeId: number) => void;
+  onTaskEdit?: (task: AssignmentTaskDto) => void;
+  onTaskDelete?: (assignmentId: number) => void;
+  onTaskView?: (task: AssignmentTaskDto) => void;
+  onTaskCopy?: (task: AssignmentTaskDto) => void;
+  onTaskPaste?: (date: Date, slot: Slot, employeeId: number) => void;
+  hasCopiedTask?: boolean;
   teamColor?: string;
   isTeamManaged?: boolean;
   showTeamIndicator?: boolean;
@@ -22,6 +28,12 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
   onSlotClick,
   isReadOnly = false,
   onTaskDrop,
+  onTaskEdit,
+  onTaskDelete,
+  onTaskView,
+  onTaskCopy,
+  onTaskPaste,
+  hasCopiedTask = false,
   teamColor,
   isTeamManaged = true,
   showTeamIndicator = false
@@ -152,6 +164,12 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
           onTaskClick={handleTaskClick}
           onSlotClick={handleSlotClick}
           onTaskDrop={handleTaskDrop}
+          onTaskEdit={onTaskEdit}
+          onTaskDelete={onTaskDelete}
+          onTaskView={onTaskView}
+          onTaskCopy={onTaskCopy}
+          onTaskPaste={onTaskPaste}
+          hasCopiedTask={hasCopiedTask}
         />
 
         {/* Afternoon slot */}
@@ -164,6 +182,12 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
           onTaskClick={handleTaskClick}
           onSlotClick={handleSlotClick}
           onTaskDrop={handleTaskDrop}
+          onTaskEdit={onTaskEdit}
+          onTaskDelete={onTaskDelete}
+          onTaskView={onTaskView}
+          onTaskCopy={onTaskCopy}
+          onTaskPaste={onTaskPaste}
+          hasCopiedTask={hasCopiedTask}
         />
 
         {/* Day conflicts indicator */}

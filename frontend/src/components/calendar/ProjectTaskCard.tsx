@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDrag } from 'react-dnd';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { motion } from 'framer-motion';
@@ -8,8 +8,10 @@ import {
   STATUS_LABELS, 
   PRIORITY_LABELS 
 } from '../../types/schedule';
+import { formatHours } from '../../utils/hoursCalculator';
 import { ItemTypes, DragItem } from '../../types/dragDrop';
 import scheduleService from '../../services/scheduleService';
+import ContextMenu from './ContextMenu';
 
 interface ProjectTaskCardProps extends TaskCardProps {
   maxWidth?: string;
@@ -18,6 +20,9 @@ interface ProjectTaskCardProps extends TaskCardProps {
   sourceDate?: Date;
   sourceSlot?: number;
   sourceEmployeeId?: number;
+  onView?: (task: AssignmentTaskDto) => void;
+  onCopy?: (task: AssignmentTaskDto) => void;
+  calculatedHours?: number;
 }
 
 const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
@@ -31,7 +36,10 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
   sourceEmployeeId,
   onClick,
   onEdit,
-  onDelete
+  onDelete,
+  onView,
+  onCopy,
+  calculatedHours
 }) => {
   // Drag and drop setup
   const [{ isDragging }, drag, preview] = useDrag<DragItem, any, { isDragging: boolean }>({
@@ -61,6 +69,26 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
   React.useEffect(() => {
     preview(getEmptyImage(), { captureDraggingState: true });
   }, [preview]);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Context menu triggered at:', e.clientX, e.clientY);
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+  };
 
   const handleClick = (e: React.MouseEvent) => {
     if (isDragging) return; // Prevent click during drag
@@ -113,9 +141,10 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
   const cardStyles: React.CSSProperties = {
     ...sizeStyles,
     backgroundColor: task.clientColor || '#f8f9fa',
-    border: `1px solid ${task.clientColor ? task.clientColor : '#dee2e6'}`,
-    borderLeftWidth: '4px',
-    borderLeftColor: priorityColor,
+    borderTop: `1px solid ${task.clientColor ? task.clientColor : '#dee2e6'}`,
+    borderRight: `1px solid ${task.clientColor ? task.clientColor : '#dee2e6'}`,
+    borderBottom: `1px solid ${task.clientColor ? task.clientColor : '#dee2e6'}`,
+    borderLeft: `4px solid ${priorityColor}`,
     color: '#212529',
     cursor: isDraggable ? (isDragging ? 'grabbing' : 'grab') : (onClick ? 'pointer' : 'default'),
     position: 'relative',
@@ -135,7 +164,9 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
   const hoverStyles: React.CSSProperties = {
     transform: 'translateY(-1px)',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    borderColor: priorityColor,
+    borderTop: `1px solid ${priorityColor}`,
+    borderRight: `1px solid ${priorityColor}`,
+    borderBottom: `1px solid ${priorityColor}`,
   };
 
   const [isHovered, setIsHovered] = React.useState(false);
@@ -148,17 +179,18 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
       style={{
         ...cardStyles,
         ...(isHovered && !isDragging && (onClick || isDraggable) && hoverStyles),
-        ...(isOverdue && { borderLeftColor: '#dc3545', borderLeftWidth: '4px' }),
+        ...(isOverdue && { borderLeft: '4px solid #dc3545' }),
       }}
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
       onMouseEnter={() => !isDragging && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      title={showTooltip ? `${task.projectCode} - ${task.taskTitle}\nClient: ${task.clientName}\nStatus: ${STATUS_LABELS[task.taskStatus]}\nPriority: ${PRIORITY_LABELS[task.priority]}${task.dueDate ? `\nDue: ${new Date(task.dueDate).toLocaleDateString()}` : ''}${task.notes ? `\nNotes: ${task.notes}` : ''}${isDraggable ? '\n\n(Drag to move to another slot)' : ''}` : undefined}
+      title={showTooltip ? `${task.projectCode} - ${task.taskTitle}\nClient: ${task.clientName}\nType: ${task.taskTypeName}\nStatus: ${STATUS_LABELS[task.taskStatus]}\nPriority: ${PRIORITY_LABELS[task.priority]}${task.dueDate ? `\nDue: ${new Date(task.dueDate).toLocaleDateString()}` : ''}${task.notes ? `\nNotes: ${task.notes}` : ''}${isDraggable ? '\n\n(Drag to move to another slot)\n(Right-click for menu)' : '\n\n(Right-click for menu)'}` : undefined}
       whileHover={!isDragging && isDraggable ? { scale: 1.02 } : {}}
       whileTap={isDraggable ? { scale: 0.98 } : {}}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
     >
-      {/* Header with project code and status */}
+      {/* Header with project code (title) and status */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -166,9 +198,9 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
         marginBottom: size === 'small' ? '4px' : '6px',
       }}>
         <span style={{
-          fontWeight: '600',
-          color: '#495057',
-          fontSize: size === 'small' ? '0.6875rem' : '0.75rem',
+          fontWeight: '700',
+          color: '#212529',
+          fontSize: size === 'small' ? '0.75rem' : '0.875rem',
           lineHeight: '1.2',
         }}>
           {task.projectCode}
@@ -207,34 +239,46 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
         </div>
       </div>
 
-      {/* Task title */}
+      {/* Client name */}
       <div style={{
         fontWeight: '500',
-        color: '#212529',
+        color: '#495057',
+        fontSize: size === 'small' ? '0.6875rem' : '0.75rem',
         lineHeight: '1.3',
         marginBottom: size === 'small' ? '2px' : '4px',
         overflow: 'hidden',
-        display: '-webkit-box',
-        WebkitLineClamp: size === 'small' ? 1 : 2,
-        WebkitBoxOrient: 'vertical',
-        wordBreak: 'break-word',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
       }}>
-        {task.taskTitle}
+        {task.clientName}
       </div>
 
-      {/* Client name (for larger sizes) */}
-      {size !== 'small' && (
-        <div style={{
-          fontSize: '0.6875rem',
-          color: '#6c757d',
-          marginTop: 'auto',
+      {/* Task Type and Hours */}
+      <div style={{
+        fontSize: size === 'small' ? '0.625rem' : '0.6875rem',
+        color: '#6c757d',
+        marginTop: 'auto',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: '4px',
+      }}>
+        <span style={{
           overflow: 'hidden',
           whiteSpace: 'nowrap',
           textOverflow: 'ellipsis',
+          flex: 1,
         }}>
-          {task.clientName}
-        </div>
-      )}
+          {task.taskTypeName}
+        </span>
+        <span style={{
+          fontWeight: '600',
+          color: '#495057',
+          flexShrink: 0,
+        }}>
+          {calculatedHours !== undefined ? formatHours(calculatedHours) : (task.hours ? formatHours(task.hours) : '')}
+        </span>
+      </div>
 
       {/* Due date (if present and not small size) */}
       {size !== 'small' && task.dueDate && (
@@ -314,6 +358,20 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
           📝
         </div>
       )}
+
+      {/* Context Menu - Always render when contextMenu state exists */}
+      {contextMenu && (
+        <ContextMenu
+          task={task}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={handleCloseContextMenu}
+          onViewEdit={onView || onEdit}
+          onCopy={onCopy}
+          onDelete={onDelete}
+        />
+      )}
+      
     </motion.div>
   );
 };

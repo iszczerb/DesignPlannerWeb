@@ -51,6 +51,12 @@ namespace DesignPlanner.Core.DTOs
 
         [MaxLength(500)]
         public string? Notes { get; set; }
+
+        public double? Hours { get; set; }
+        
+        public TaskPriority? Priority { get; set; }
+
+        public DateTime? DueDate { get; set; }
     }
 
     public class BulkAssignmentDto

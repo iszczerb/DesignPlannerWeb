@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDrop } from 'react-dnd';
 import { motion } from 'framer-motion';
 import TaskLayout from './TaskLayout';
+import SlotContextMenu from './SlotContextMenu';
 import {
   TimeSlotProps,
   SLOT_LABELS,
@@ -13,6 +14,12 @@ import { ItemTypes, DragItem, DropResult } from '../../types/dragDrop';
 
 interface ExtendedTimeSlotProps extends TimeSlotProps {
   onTaskDrop?: (dragItem: DragItem, targetDate: Date, targetSlot: Slot, targetEmployeeId: number) => void;
+  onTaskEdit?: (task: AssignmentTaskDto) => void;
+  onTaskDelete?: (assignmentId: number) => void;
+  onTaskView?: (task: AssignmentTaskDto) => void;
+  onTaskCopy?: (task: AssignmentTaskDto) => void;
+  onTaskPaste?: (date: Date, slot: Slot, employeeId: number) => void;
+  hasCopiedTask?: boolean;
 }
 
 const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
@@ -23,7 +30,13 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
   isReadOnly = false,
   onTaskClick,
   onSlotClick,
-  onTaskDrop
+  onTaskDrop,
+  onTaskEdit,
+  onTaskDelete,
+  onTaskView,
+  onTaskCopy,
+  onTaskPaste,
+  hasCopiedTask = false
 }) => {
   // Drop functionality
   const canDropTask = (dragItem: DragItem): boolean => {
@@ -75,9 +88,44 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
 
   const handleSlotClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Prevent slot click if a context menu action happened recently (within 500ms)
+    const now = Date.now();
+    if (now - lastContextActionTime.current < 500) {
+      return;
+    }
+    
     if (!isReadOnly && onSlotClick) {
       onSlotClick(date, slot, employeeId);
     }
+  };
+
+  const handleSlotContextMenu = (e: React.MouseEvent) => {
+    if (hasTasks) return; // Only show context menu on empty slots
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isReadOnly) {
+      setSlotContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+      });
+    }
+  };
+
+  const handleCloseSlotContextMenu = () => {
+    setSlotContextMenu(null);
+  };
+
+  const handleContextMenuPaste = (date: Date, slot: Slot, employeeId: number) => {
+    lastContextActionTime.current = Date.now(); // Record the time of this action
+    onTaskPaste?.(date, slot, employeeId);
+  };
+
+  const handleContextMenuCreate = (date: Date, slot: Slot, employeeId: number) => {
+    lastContextActionTime.current = Date.now(); // Record the time of this action
+    onSlotClick?.(date, slot, employeeId);
   };
 
   const handleTaskClick = (task: AssignmentTaskDto) => {
@@ -85,6 +133,15 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
       onTaskClick(task);
     }
   };
+
+  // Slot context menu state
+  const [slotContextMenu, setSlotContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  
+  // Use ref to track context menu actions and prevent slot clicks
+  const lastContextActionTime = React.useRef(0);
 
   // Check if slot has tasks for easier reference
   const hasTasks = slotData?.tasks && slotData.tasks.length > 0;
@@ -187,6 +244,10 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
         <TaskLayout
           tasks={slotData!.tasks}
           onTaskClick={handleTaskClick}
+          onTaskEdit={onTaskEdit}
+          onTaskDelete={onTaskDelete}
+          onTaskView={onTaskView}
+          onTaskCopy={onTaskCopy}
           maxTasks={MAX_TASKS_PER_SLOT}
           isDraggable={!isReadOnly}
           sourceDate={date}
@@ -213,6 +274,7 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
         }),
       }}
       onClick={handleSlotClick}
+      onContextMenu={handleSlotContextMenu}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       whileHover={!isReadOnly && !isOver ? { scale: 1.01 } : {}}
@@ -297,6 +359,21 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
         }}>
           {slotData.availableCapacity} free
         </div>
+      )}
+
+      {/* Slot Context Menu - for empty slots */}
+      {slotContextMenu && !hasTasks && (
+        <SlotContextMenu
+          x={slotContextMenu.x}
+          y={slotContextMenu.y}
+          date={date}
+          slot={slot}
+          employeeId={employeeId}
+          onClose={handleCloseSlotContextMenu}
+          onCreateTask={handleContextMenuCreate}
+          onPasteTask={handleContextMenuPaste}
+          hasCopiedTask={hasCopiedTask}
+        />
       )}
     </motion.div>
   );

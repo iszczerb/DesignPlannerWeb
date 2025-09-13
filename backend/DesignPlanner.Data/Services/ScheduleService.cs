@@ -78,15 +78,32 @@ namespace DesignPlanner.Data.Services
 
         public async Task<AssignmentTaskDto> UpdateAssignmentAsync(UpdateAssignmentDto updateDto)
         {
-            var assignment = await _context.Assignments.FindAsync(updateDto.AssignmentId);
+            var assignment = await _context.Assignments
+                .Include(a => a.Task)
+                .FirstOrDefaultAsync(a => a.Id == updateDto.AssignmentId);
+            
             if (assignment == null)
                 throw new ArgumentException("Assignment not found");
 
+            // Update assignment fields
             if (updateDto.TaskId.HasValue) assignment.TaskId = updateDto.TaskId.Value;
             if (updateDto.EmployeeId.HasValue) assignment.EmployeeId = updateDto.EmployeeId.Value;
             if (updateDto.AssignedDate.HasValue) assignment.AssignedDate = updateDto.AssignedDate.Value.Date;
             if (updateDto.Slot.HasValue) assignment.Slot = updateDto.Slot.Value;
             if (updateDto.Notes != null) assignment.Notes = updateDto.Notes;
+            
+            // Note: Hours are now automatically calculated based on slot task count
+            // Custom hours feature has been removed
+            
+            if (updateDto.Priority.HasValue)
+            {
+                assignment.Task.Priority = updateDto.Priority.Value;
+            }
+            
+            if (updateDto.DueDate.HasValue)
+            {
+                assignment.Task.DueDate = updateDto.DueDate.Value;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -146,6 +163,7 @@ namespace DesignPlanner.Data.Services
                         .ThenInclude(p => p.Client)
                 .Include(a => a.Task.TaskType)
                 .Include(a => a.Employee)
+                    .ThenInclude(e => e.User)
                 .Where(a => a.IsActive && 
                            a.AssignedDate >= dateRange.StartDate.Date && 
                            a.AssignedDate <= dateRange.EndDate.Date);
@@ -156,7 +174,18 @@ namespace DesignPlanner.Data.Services
             }
 
             var assignments = await query.ToListAsync();
-            return assignments.Select(MapToAssignmentTaskDto).ToList();
+            
+            // Group assignments by date and slot to calculate automatic hours
+            var result = new List<AssignmentTaskDto>();
+            var groupedAssignments = assignments.GroupBy(a => new { a.AssignedDate, a.Slot, a.EmployeeId });
+            
+            foreach (var group in groupedAssignments)
+            {
+                var slotTaskCount = group.Count();
+                result.AddRange(group.Select(a => MapToAssignmentTaskDto(a, slotTaskCount)));
+            }
+            
+            return result;
         }
 
         public async Task<List<AssignmentTaskDto>> GetEmployeeAssignmentsAsync(int employeeId, DateTime startDate, DateTime endDate)
@@ -179,9 +208,20 @@ namespace DesignPlanner.Data.Services
                         .ThenInclude(p => p.Client)
                 .Include(a => a.Task.TaskType)
                 .Include(a => a.Employee)
+                    .ThenInclude(e => e.User)
                 .FirstOrDefaultAsync(a => a.Id == assignmentId && a.IsActive);
 
-            return assignment != null ? MapToAssignmentTaskDto(assignment) : null;
+            if (assignment == null) return null;
+            
+            // For single assignment queries, we need to calculate slot task count
+            var slotTaskCount = await _context.Assignments
+                .Where(a => a.IsActive && 
+                           a.EmployeeId == assignment.EmployeeId &&
+                           a.AssignedDate == assignment.AssignedDate &&
+                           a.Slot == assignment.Slot)
+                .CountAsync();
+                
+            return MapToAssignmentTaskDto(assignment, slotTaskCount);
         }
 
         // Capacity and availability
@@ -192,6 +232,8 @@ namespace DesignPlanner.Data.Services
                     .ThenInclude(t => t.Project)
                         .ThenInclude(p => p.Client)
                 .Include(a => a.Task.TaskType)
+                .Include(a => a.Employee)
+                    .ThenInclude(e => e.User)
                 .Where(a => a.IsActive && 
                            a.EmployeeId == capacityCheck.EmployeeId &&
                            a.AssignedDate == capacityCheck.Date.Date &&
@@ -211,7 +253,7 @@ namespace DesignPlanner.Data.Services
                 MaxCapacity = MAX_TASKS_PER_SLOT,
                 IsAvailable = isAvailable,
                 IsOverbooked = isOverbooked,
-                ExistingTasks = existingAssignments.Select(MapToAssignmentTaskDto).ToList()
+                ExistingTasks = existingAssignments.Select(a => MapToAssignmentTaskDto(a, existingAssignments.Count)).ToList()
             };
         }
 
@@ -445,13 +487,15 @@ namespace DesignPlanner.Data.Services
                         .ThenInclude(p => p.Client)
                 .Include(a => a.Task.TaskType)
                 .Include(a => a.Employee)
+                    .ThenInclude(e => e.User)
                 .Where(a => a.IsActive && 
                            a.Task.DueDate.HasValue && 
                            a.Task.DueDate.Value.Date < today &&
                            a.Task.Status != DesignPlanner.Core.Enums.TaskStatus.Done)
                 .ToListAsync();
 
-            return assignments.Select(MapToAssignmentTaskDto).ToList();
+            // For overdue assignments, use single task hours (4h each)
+            return assignments.Select(a => MapToAssignmentTaskDto(a, 1)).ToList();
         }
 
         public async Task<List<AssignmentTaskDto>> GetUpcomingDeadlinesAsync(int days = 7)
@@ -465,6 +509,7 @@ namespace DesignPlanner.Data.Services
                         .ThenInclude(p => p.Client)
                 .Include(a => a.Task.TaskType)
                 .Include(a => a.Employee)
+                    .ThenInclude(e => e.User)
                 .Where(a => a.IsActive && 
                            a.Task.DueDate.HasValue && 
                            a.Task.DueDate.Value.Date >= startDate &&
@@ -472,7 +517,8 @@ namespace DesignPlanner.Data.Services
                            a.Task.Status != DesignPlanner.Core.Enums.TaskStatus.Done)
                 .ToListAsync();
 
-            return assignments.Select(MapToAssignmentTaskDto).ToList();
+            // For upcoming deadlines, use single task hours (4h each)
+            return assignments.Select(a => MapToAssignmentTaskDto(a, 1)).ToList();
         }
 
         // Private helper methods
@@ -550,6 +596,7 @@ namespace DesignPlanner.Data.Services
                         .ThenInclude(p => p.Client)
                 .Include(a => a.Task.TaskType)
                 .Include(a => a.Employee)
+                    .ThenInclude(e => e.User)
                 .Where(a => a.IsActive && 
                            a.AssignedDate >= startDate.Date && 
                            a.AssignedDate <= endDate.Date);
@@ -579,8 +626,11 @@ namespace DesignPlanner.Data.Services
                     {
                         var dayTasks = employeeAssignments.Where(a => a.AssignedDate == currentDate).ToList();
                         
-                        var morningTasks = dayTasks.Where(a => a.Slot == Slot.Morning).Select(MapToAssignmentTaskDto).ToList();
-                        var afternoonTasks = dayTasks.Where(a => a.Slot == Slot.Afternoon).Select(MapToAssignmentTaskDto).ToList();
+                        var morningAssignments = dayTasks.Where(a => a.Slot == Slot.Morning).ToList();
+                        var afternoonAssignments = dayTasks.Where(a => a.Slot == Slot.Afternoon).ToList();
+                        
+                        var morningTasks = morningAssignments.Select(a => MapToAssignmentTaskDto(a, morningAssignments.Count)).ToList();
+                        var afternoonTasks = afternoonAssignments.Select(a => MapToAssignmentTaskDto(a, afternoonAssignments.Count)).ToList();
 
                         var dayAssignment = new DayAssignmentDto
                         {
@@ -633,24 +683,51 @@ namespace DesignPlanner.Data.Services
             return schedules;
         }
 
-        private AssignmentTaskDto MapToAssignmentTaskDto(Assignment assignment)
+        private AssignmentTaskDto MapToAssignmentTaskDto(Assignment assignment, int? slotTaskCount = null)
         {
+            var employeeName = assignment.Employee?.User != null 
+                ? $"{assignment.Employee.User.FirstName?.Trim()} {assignment.Employee.User.LastName?.Trim()}".Trim()
+                : "Unknown Employee";
+
+            // Ensure we never have an empty employee name
+            if (string.IsNullOrWhiteSpace(employeeName))
+            {
+                employeeName = $"Employee {assignment.EmployeeId}";
+            }
+
+            // Calculate automatic hours: 4 hours divided by number of tasks in the slot
+            var automaticHours = CalculateAutomaticHours(slotTaskCount ?? 1);
+            
             return new AssignmentTaskDto
             {
                 AssignmentId = assignment.Id,
                 TaskId = assignment.TaskId,
                 TaskTitle = assignment.Task.Title,
+                TaskTypeName = assignment.Task.TaskType?.Name ?? "Task",
                 ProjectCode = assignment.Task.Project.Code,
                 ProjectName = assignment.Task.Project.Name,
                 ClientCode = assignment.Task.Project.Client.Code,
                 ClientName = assignment.Task.Project.Client.Name,
                 ClientColor = GetClientColor(assignment.Task.Project.Client.Code),
+                AssignedDate = assignment.AssignedDate,
+                Slot = assignment.Slot,
                 TaskStatus = assignment.Task.Status,
                 Priority = assignment.Task.Priority,
                 DueDate = assignment.Task.DueDate,
                 Notes = assignment.Notes,
-                IsActive = assignment.IsActive
+                IsActive = assignment.IsActive,
+                EmployeeId = assignment.EmployeeId,
+                EmployeeName = employeeName,
+                Hours = automaticHours // Use automatic calculation
             };
+        }
+
+        // Helper method to calculate automatic hours based on slot task count
+        private double CalculateAutomaticHours(int taskCount)
+        {
+            if (taskCount <= 0) return 0;
+            var hours = 4.0 / taskCount;
+            return Math.Round(hours * 100) / 100; // Round to 2 decimal places
         }
 
         private async Task<AssignmentTaskDto> GetAssignmentTaskDtoAsync(int assignmentId)
@@ -660,9 +737,19 @@ namespace DesignPlanner.Data.Services
                     .ThenInclude(t => t.Project)
                         .ThenInclude(p => p.Client)
                 .Include(a => a.Task.TaskType)
+                .Include(a => a.Employee)
+                    .ThenInclude(e => e.User)
                 .FirstAsync(a => a.Id == assignmentId);
 
-            return MapToAssignmentTaskDto(assignment);
+            // For single assignment queries, we need to calculate slot task count
+            var slotTaskCount = await _context.Assignments
+                .Where(a => a.IsActive && 
+                           a.EmployeeId == assignment.EmployeeId &&
+                           a.AssignedDate == assignment.AssignedDate &&
+                           a.Slot == assignment.Slot)
+                .CountAsync();
+                
+            return MapToAssignmentTaskDto(assignment, slotTaskCount);
         }
 
         private string GetClientColor(string clientCode)

@@ -21,6 +21,12 @@ interface TeamSectionProps {
   onTaskClick?: (task: AssignmentTaskDto) => void;
   onSlotClick?: (date: Date, slot: Slot, employeeId: number) => void;
   onTaskDrop?: (dragItem: DragItem, targetDate: Date, targetSlot: Slot, targetEmployeeId: number) => void;
+  onTaskEdit?: (task: AssignmentTaskDto) => void;
+  onTaskDelete?: (assignmentId: number) => void;
+  onTaskView?: (task: AssignmentTaskDto) => void;
+  onTaskCopy?: (task: AssignmentTaskDto) => void;
+  onTaskPaste?: (date: Date, slot: Slot, employeeId: number) => void;
+  hasCopiedTask?: boolean;
 }
 
 const TeamSection: React.FC<TeamSectionProps> = ({
@@ -32,7 +38,13 @@ const TeamSection: React.FC<TeamSectionProps> = ({
   onToggleCollapse,
   onTaskClick,
   onSlotClick,
-  onTaskDrop
+  onTaskDrop,
+  onTaskEdit,
+  onTaskDelete,
+  onTaskView,
+  onTaskCopy,
+  onTaskPaste,
+  hasCopiedTask = false
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -226,6 +238,15 @@ const TeamSection: React.FC<TeamSectionProps> = ({
             onTaskClick={onTaskClick}
             onSlotClick={onSlotClick}
             onTaskDrop={onTaskDrop}
+            onTaskEdit={onTaskEdit}
+            onTaskDelete={onTaskDelete}
+            onTaskView={onTaskView}
+            onTaskCopy={onTaskCopy}
+            onTaskPaste={onTaskPaste}
+            hasCopiedTask={hasCopiedTask}
+            teamColor={team.color}
+            isTeamManaged={team.isManaged}
+            showTeamIndicator={false}
           />
         ))}
         

@@ -71,16 +71,22 @@ export interface AssignmentTaskDto {
   assignmentId: number;
   taskId: number;
   taskTitle: string;
+  taskTypeName: string;
   projectCode: string;
   projectName: string;
   clientCode: string;
   clientName: string;
   clientColor: string;
+  assignedDate: string;
+  slot: Slot;
   taskStatus: TaskStatus;
   priority: TaskPriority;
   dueDate?: string;
   notes?: string;
   isActive: boolean;
+  employeeId: number;
+  employeeName: string;
+  hours?: number; // Custom hours for this task (if not set, will be calculated automatically)
 }
 
 // Request DTOs
@@ -106,6 +112,9 @@ export interface UpdateAssignmentDto {
   assignedDate?: string;
   slot?: Slot;
   notes?: string;
+  hours?: number;
+  priority?: TaskPriority;
+  dueDate?: string;
 }
 
 export interface BulkAssignmentDto {

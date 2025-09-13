@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TeamCalendarView from '../components/calendar/TeamCalendarView';
+import TaskCreationModal from '../components/calendar/TaskCreationModal';
+import TaskDetailsModal from '../components/calendar/TaskDetailsModal';
 import { TeamViewMode } from '../components/calendar/TeamToggle';
 import { 
   CalendarViewType, 
   CalendarViewDto,
   AssignmentTaskDto,
   Slot,
-  ScheduleRequestDto
+  ScheduleRequestDto,
+  CreateAssignmentDto
 } from '../types/schedule';
 import { DragItem } from '../types/dragDrop';
 import teamService, { TeamInfo } from '../services/teamService';
@@ -28,6 +31,24 @@ const TeamSchedule: React.FC = () => {
   const [teams, setTeams] = useState<TeamInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Task creation modal state
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskModalData, setTaskModalData] = useState<{
+    date: Date;
+    slot: Slot;
+    employeeId: number;
+    employeeName: string;
+  } | null>(null);
+
+  // Task details modal state
+  const [taskDetailsModalOpen, setTaskDetailsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<AssignmentTaskDto | null>(null);
+  const [taskDetailsMode, setTaskDetailsMode] = useState<'view' | 'edit'>('view');
+  const [slotTasks, setSlotTasks] = useState<AssignmentTaskDto[]>([]);
+
+  // Clipboard state for copy/paste functionality
+  const [copiedTask, setCopiedTask] = useState<AssignmentTaskDto | null>(null);
 
   // Mock user context
   const [userContext] = useState<UserContext>({
@@ -40,6 +61,28 @@ const TeamSchedule: React.FC = () => {
   const managedTeam = teams.find(team => team.isManaged);
   const managedTeamId = managedTeam?.id;
   const currentTeamName = managedTeam?.name;
+
+  /**
+   * Get all tasks in the same slot as the given task
+   */
+  const getSlotTasks = useCallback((task: AssignmentTaskDto): AssignmentTaskDto[] => {
+    if (!calendarData) return [];
+    
+    const targetEmployee = calendarData.employees.find(emp => emp.employeeId === task.employeeId);
+    if (!targetEmployee) return [];
+    
+    const targetDate = new Date(task.assignedDate).toDateString();
+    const targetDayAssignment = targetEmployee.dayAssignments.find(day => 
+      new Date(day.date).toDateString() === targetDate
+    );
+    
+    if (!targetDayAssignment) return [];
+    
+    const slotKey = task.slot === 1 ? 'morningSlot' : 'afternoonSlot';
+    const slot = targetDayAssignment[slotKey];
+    
+    return slot?.tasks || [];
+  }, [calendarData]);
 
   /**
    * Load teams based on user role and permissions
@@ -122,12 +165,11 @@ const TeamSchedule: React.FC = () => {
   }, [loadCalendarData]);
 
   /**
-   * Handle task clicks - open task modal/details
+   * Handle task clicks - disabled for now (use right-click context menu instead)
    */
   const handleTaskClick = useCallback((task: AssignmentTaskDto) => {
     console.log('Task clicked:', task);
-    // In a real app, this would open a task details modal
-    alert(`Task: ${task.taskTitle}\nProject: ${task.projectName}\nClient: ${task.clientName}`);
+    // Disabled: Use right-click context menu instead
   }, []);
 
   /**
@@ -135,24 +177,63 @@ const TeamSchedule: React.FC = () => {
    */
   const handleSlotClick = useCallback((date: Date, slot: Slot, employeeId: number) => {
     console.log('Slot clicked:', { date, slot, employeeId });
-    // In a real app, this would open a create task modal
-    const slotName = slot === Slot.Morning ? 'Morning' : 'Afternoon';
-    alert(`Create new task for ${date.toLocaleDateString()} ${slotName}`);
-  }, []);
+    
+    // Find employee name from calendar data
+    let employeeName = 'Employee';
+    if (calendarData?.employees) {
+      const employee = calendarData.employees.find(emp => emp.employeeId === employeeId);
+      employeeName = employee?.employeeName || `Employee ${employeeId}`;
+    }
+    
+    // Set modal data and open
+    setTaskModalData({
+      date,
+      slot,
+      employeeId,
+      employeeName,
+    });
+    setTaskModalOpen(true);
+  }, [calendarData]);
 
   /**
    * Handle task drag and drop
    */
-  const handleTaskDrop = useCallback((
+  const handleTaskDrop = useCallback(async (
     dragItem: DragItem, 
     targetDate: Date, 
     targetSlot: Slot, 
     targetEmployeeId: number
   ) => {
-    console.log('Task drop:', { dragItem, targetDate, targetSlot, targetEmployeeId });
-    // In a real app, this would update the task assignment
-    alert(`Move task to ${targetDate.toLocaleDateString()} ${targetSlot === Slot.Morning ? 'Morning' : 'Afternoon'}`);
-  }, []);
+    try {
+      console.log('Task drop:', { dragItem, targetDate, targetSlot, targetEmployeeId });
+      
+      // Format the target date as YYYY-MM-DD for API
+      const year = targetDate.getFullYear();
+      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const day = String(targetDate.getDate()).padStart(2, '0');
+      const targetDateString = `${year}-${month}-${day}`;
+      
+      // Move the assignment using the schedule service
+      await scheduleService.moveAssignment(
+        dragItem.task.assignmentId,
+        targetEmployeeId,
+        targetDateString,
+        targetSlot
+      );
+      
+      console.log('Task moved successfully');
+      
+      // Refresh the calendar data to show the moved task
+      await loadCalendarData(
+        teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+        teamViewMode
+      );
+      
+    } catch (error) {
+      console.error('Error moving task:', error);
+      alert('Failed to move task. Please try again.');
+    }
+  }, [teamViewMode, managedTeamId, loadCalendarData]);
 
   /**
    * Handle date changes
@@ -160,6 +241,163 @@ const TeamSchedule: React.FC = () => {
   const handleDateChange = useCallback((date: Date) => {
     setCurrentDate(date);
     // Calendar data will be reloaded by useEffect
+  }, []);
+
+  /**
+   * Handle task assignment creation
+   */
+  const handleTaskAssignmentCreate = useCallback(async (assignment: CreateAssignmentDto) => {
+    try {
+      console.log('Creating task assignment:', assignment);
+      
+      // Call the real API to create the assignment
+      const createdAssignment = await scheduleService.createAssignment(assignment);
+      console.log('Assignment created successfully:', createdAssignment);
+      
+      // Refresh the calendar data using the same logic as loadCalendarData
+      await loadCalendarData(
+        teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+        teamViewMode
+      );
+      
+    } catch (error) {
+      console.error('Error creating task assignment:', error);
+      throw error; // Re-throw so modal can show error
+    }
+  }, [teamViewMode, managedTeamId, loadCalendarData]);
+
+  /**
+   * Handle task edit - edit existing task assignment
+   */
+  const handleTaskEdit = useCallback((task: AssignmentTaskDto) => {
+    console.log('Edit task:', task);
+    const tasksInSlot = getSlotTasks(task);
+    setSelectedTask(task);
+    setSlotTasks(tasksInSlot);
+    setTaskDetailsMode('edit');
+    setTaskDetailsModalOpen(true);
+  }, [getSlotTasks]);
+
+  /**
+   * Handle task delete - delete task assignment
+   */
+  const handleTaskDelete = useCallback(async (assignmentId: number) => {
+    try {
+      console.log('Delete assignment:', assignmentId);
+      await scheduleService.deleteAssignment(assignmentId);
+      
+      // Refresh calendar data
+      await loadCalendarData(
+        teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+        teamViewMode
+      );
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      alert('Failed to delete assignment. Please try again.');
+    }
+  }, [teamViewMode, managedTeamId, loadCalendarData]);
+
+  /**
+   * Handle task view - view task details
+   */
+  const handleTaskView = useCallback((task: AssignmentTaskDto) => {
+    console.log('View task details:', task);
+    const tasksInSlot = getSlotTasks(task);
+    setSelectedTask(task);
+    setSlotTasks(tasksInSlot);
+    setTaskDetailsMode('view');
+    setTaskDetailsModalOpen(true);
+  }, [getSlotTasks]);
+
+  /**
+   * Handle task copy - copy task to create duplicate
+   */
+  const handleTaskCopy = useCallback((task: AssignmentTaskDto) => {
+    console.log('Copy task:', task);
+    setCopiedTask(task);
+  }, []);
+
+  /**
+   * Handle task paste - paste copied task to a new slot
+   */
+  const handleTaskPaste = useCallback(async (date: Date, slot: Slot, employeeId: number) => {
+    if (!copiedTask) {
+      console.log('No copied task available');
+      return;
+    }
+
+    try {
+      // Format date for API
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      const assignment: CreateAssignmentDto = {
+        taskId: copiedTask.taskId,
+        employeeId: employeeId,
+        assignedDate: dateStr,
+        slot: slot,
+        notes: copiedTask.notes || undefined,
+      };
+
+      await scheduleService.createAssignment(assignment);
+      
+      // Refresh calendar data
+      await loadCalendarData(
+        teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+        teamViewMode
+      );
+    } catch (error) {
+      console.error('Error pasting task:', error);
+      alert('Failed to paste task. Please try again.');
+    }
+  }, [copiedTask, teamViewMode, managedTeamId, loadCalendarData]);
+
+  /**
+   * Handle task update from details modal
+   */
+  const handleTaskUpdate = useCallback(async (updatedTask: AssignmentTaskDto) => {
+    console.log('Task updated:', updatedTask);
+    
+    // Update only the specific task in the calendar data instead of reloading everything
+    setCalendarData(prevData => {
+      if (!prevData) return prevData;
+      
+      return {
+        ...prevData,
+        employees: prevData.employees.map(employee => {
+          if (employee.employeeId === updatedTask.employeeId) {
+            return {
+              ...employee,
+              dayAssignments: employee.dayAssignments.map(dayAssignment => {
+                const taskDate = new Date(updatedTask.assignedDate).toDateString();
+                const dayDate = new Date(dayAssignment.date).toDateString();
+                
+                if (taskDate === dayDate) {
+                  const slotKey = updatedTask.slot === 1 ? 'morningSlot' : 'afternoonSlot';
+                  const slot = dayAssignment[slotKey];
+                  
+                  if (slot) {
+                    return {
+                      ...dayAssignment,
+                      [slotKey]: {
+                        ...slot,
+                        tasks: slot.tasks.map(task => 
+                          task.assignmentId === updatedTask.assignmentId ? updatedTask : task
+                        )
+                      }
+                    };
+                  }
+                }
+                return dayAssignment;
+              })
+            };
+          }
+          return employee;
+        })
+      };
+    });
   }, []);
 
   /**
@@ -264,6 +502,12 @@ const TeamSchedule: React.FC = () => {
           onTaskClick={handleTaskClick}
           onSlotClick={handleSlotClick}
           onTaskDrop={handleTaskDrop}
+          onTaskEdit={handleTaskEdit}
+          onTaskDelete={handleTaskDelete}
+          onTaskView={handleTaskView}
+          onTaskCopy={handleTaskCopy}
+          onTaskPaste={handleTaskPaste}
+          hasCopiedTask={!!copiedTask}
           onTeamViewChange={handleTeamViewChange}
           onFetchTeamData={handleFetchTeamData}
         />
@@ -283,6 +527,36 @@ const TeamSchedule: React.FC = () => {
           Employees: {calendarData?.employees.length || 0}
         </div>
       )}
+
+      {/* Task Creation Modal */}
+      {taskModalData && (
+        <TaskCreationModal
+          open={taskModalOpen}
+          onClose={() => {
+            setTaskModalOpen(false);
+            setTaskModalData(null);
+          }}
+          onSubmit={handleTaskAssignmentCreate}
+          initialDate={taskModalData.date}
+          initialSlot={taskModalData.slot}
+          employeeId={taskModalData.employeeId}
+          employeeName={taskModalData.employeeName}
+        />
+      )}
+
+      {/* Task Details Modal */}
+      <TaskDetailsModal
+        open={taskDetailsModalOpen}
+        onClose={() => {
+          setTaskDetailsModalOpen(false);
+          setSelectedTask(null);
+          setSlotTasks([]);
+        }}
+        task={selectedTask}
+        onUpdate={handleTaskUpdate}
+        mode={taskDetailsMode}
+        slotTasks={slotTasks}
+      />
     </div>
   );
 };
