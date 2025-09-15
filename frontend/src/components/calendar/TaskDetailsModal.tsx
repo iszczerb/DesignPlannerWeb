@@ -79,6 +79,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [preserveTaskTypeName, setPreserveTaskTypeName] = useState<string | null>(null);
 
   // Load dropdown data
   useEffect(() => {
@@ -134,6 +135,18 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     loadProjectTasks();
   }, [selectedProjectId]);
 
+  // Auto-select task with matching task type when changing projects
+  useEffect(() => {
+    if (preserveTaskTypeName && projectTasks.length > 0) {
+      const matchingTask = projectTasks.find(task => task.taskTypeName === preserveTaskTypeName);
+      if (matchingTask) {
+        setSelectedTaskId(matchingTask.id);
+      }
+      // Clear the preserve flag after attempting to match
+      setPreserveTaskTypeName(null);
+    }
+  }, [projectTasks, preserveTaskTypeName]);
+
   // Reset when task changes or modal opens
   useEffect(() => {
     if (task && open) {
@@ -188,6 +201,19 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
         priority: task.priority,
         taskStatus: task.taskStatus,
       });
+      
+      // Reset selected values to original task values
+      const currentClient = clients.find(c => c.name === task.clientName);
+      if (currentClient) {
+        setSelectedClientId(currentClient.id);
+      }
+      
+      const currentProject = projects.find(p => p.name === task.projectName);
+      if (currentProject) {
+        setSelectedProjectId(currentProject.id);
+      }
+      
+      setSelectedTaskId(task.taskId);
     }
     setMode('view');
     setErrors({});
@@ -200,14 +226,18 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     try {
       const updateData = {
         assignmentId: task.assignmentId,
-        taskId: selectedTaskId || undefined,
-        notes: editedTask.notes || undefined,
+        taskId: selectedTaskId || task.taskId, // Use selectedTaskId if available, otherwise keep original
+        notes: editedTask.notes !== undefined ? editedTask.notes : task.notes,
         dueDate: editedTask.dueDate || undefined,
         priority: editedTask.priority !== undefined ? editedTask.priority : undefined,
-        // Note: taskStatus should be handled by a separate endpoint in the future
+        taskStatus: editedTask.taskStatus !== undefined ? editedTask.taskStatus : undefined,
       };
+      
+      console.log('Updating task with data:', updateData);
 
       const updatedTask = await scheduleService.updateAssignment(updateData);
+      
+      console.log('Task updated:', updatedTask);
       
       if (onUpdate) {
         onUpdate(updatedTask);
@@ -273,7 +303,13 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             <Card elevation={1}>
               <CardContent>
                 <Typography variant="h6" gutterBottom color="primary">
-                  {task.projectCode} - {task.taskTitle}
+                  {selectedProjectId ? 
+                    (projects.find(p => p.id === selectedProjectId)?.code || task.projectCode)
+                    : task.projectCode
+                  } - {selectedTaskId ? 
+                    (projectTasks.find(t => t.id === selectedTaskId)?.title || task.taskTitle)
+                    : task.taskTitle
+                  }
                 </Typography>
                 
                 <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -305,7 +341,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       </FormControl>
                     ) : (
                       <Typography variant="body1" fontWeight="medium">
-                        {task.clientName}
+                        {selectedClientId ? 
+                          clients.find(c => c.id === selectedClientId)?.name || task.clientName
+                          : task.clientName
+                        }
                       </Typography>
                     )}
                   </Grid>
@@ -320,6 +359,16 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                           value={selectedProjectId || ''}
                           onChange={(e) => {
                             const projectId = e.target.value as number;
+                            
+                            // Preserve task type name if a task is currently selected
+                            const currentTaskTypeName = selectedTaskId ? 
+                              projectTasks.find(t => t.id === selectedTaskId)?.taskTypeName || task?.taskTypeName
+                              : task?.taskTypeName;
+                            
+                            if (currentTaskTypeName) {
+                              setPreserveTaskTypeName(currentTaskTypeName);
+                            }
+                            
                             setSelectedProjectId(projectId);
                             setSelectedTaskId(null);
                           }}
@@ -338,7 +387,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       </FormControl>
                     ) : (
                       <Typography variant="body1" fontWeight="medium">
-                        {task.projectName}
+                        {selectedProjectId ? 
+                          projects.find(p => p.id === selectedProjectId)?.name || task.projectName
+                          : task.projectName
+                        }
                       </Typography>
                     )}
                   </Grid>
@@ -368,7 +420,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                     ) : (
                       <Box>
                         <Typography variant="body1" fontWeight="medium">
-                          {task.taskTitle}
+                          {selectedTaskId ? 
+                            projectTasks.find(t => t.id === selectedTaskId)?.title || task.taskTitle
+                            : task.taskTitle
+                          }
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Type: {selectedTaskId ? 
@@ -428,11 +483,11 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                             width: 12,
                             height: 12,
                             borderRadius: '50%',
-                            backgroundColor: getStatusColor(task.taskStatus),
+                            backgroundColor: getStatusColor(editedTask.taskStatus !== undefined ? editedTask.taskStatus : task.taskStatus),
                           }}
                         />
                         <Typography variant="body2" fontWeight="medium">
-                          {STATUS_LABELS[task.taskStatus]}
+                          {STATUS_LABELS[editedTask.taskStatus !== undefined ? editedTask.taskStatus : task.taskStatus]}
                         </Typography>
                       </Box>
                     )}
@@ -460,8 +515,8 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       </FormControl>
                     ) : (
                       <Chip 
-                        label={PRIORITY_LABELS[task.priority]}
-                        color={getPriorityColor(task.priority)}
+                        label={PRIORITY_LABELS[editedTask.priority !== undefined ? editedTask.priority : task.priority]}
+                        color={getPriorityColor(editedTask.priority !== undefined ? editedTask.priority : task.priority)}
                         size="small"
                       />
                     )}

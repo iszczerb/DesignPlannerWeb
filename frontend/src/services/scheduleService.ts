@@ -5,6 +5,7 @@ import {
   CreateAssignmentDto,
   UpdateAssignmentDto,
   BulkAssignmentDto,
+  BulkUpdateAssignmentDto,
   AssignmentTaskDto,
   CapacityCheckDto,
   CapacityResponseDto,
@@ -72,6 +73,10 @@ class ScheduleService {
 
   async createBulkAssignments(bulkAssignment: BulkAssignmentDto): Promise<AssignmentTaskDto[]> {
     return apiService.post<AssignmentTaskDto[]>(`${this.baseUrl}/assignments/bulk`, bulkAssignment);
+  }
+
+  async bulkUpdateAssignments(bulkUpdate: BulkUpdateAssignmentDto): Promise<AssignmentTaskDto[]> {
+    return apiService.put<AssignmentTaskDto[]>(`${this.baseUrl}/assignments/bulk`, bulkUpdate);
   }
 
   // Assignment queries

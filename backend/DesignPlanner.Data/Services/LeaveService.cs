@@ -75,7 +75,7 @@ namespace DesignPlanner.Data.Services
             var pendingLeave = await _context.LeaveRequests
                 .Where(lr => lr.EmployeeId == employeeId && 
                            lr.Status == LeaveStatus.Pending &&
-                           lr.LeaveType == LeaveType.Annual &&
+                           lr.LeaveType == LeaveType.AnnualLeave &&
                            lr.StartDate.Year == currentYear)
                 .SumAsync(lr => lr.LeaveDaysRequested);
 
@@ -151,7 +151,7 @@ namespace DesignPlanner.Data.Services
 
         public async Task<bool> CanRequestLeaveAsync(int employeeId, decimal requestedDays, LeaveType leaveType)
         {
-            if (leaveType == LeaveType.Sick || leaveType == LeaveType.Training)
+            if (leaveType == LeaveType.SickDay || leaveType == LeaveType.Training)
             {
                 // Sick and training leave don't have balance limitations
                 return true;
@@ -170,7 +170,7 @@ namespace DesignPlanner.Data.Services
                 request.IsEndDateAM);
 
             // Check if employee can request this leave
-            if (request.LeaveType == LeaveType.Annual)
+            if (request.LeaveType == LeaveType.AnnualLeave)
             {
                 var canRequest = await CanRequestLeaveAsync(employeeId, leaveDays, request.LeaveType);
                 if (!canRequest)
@@ -192,7 +192,7 @@ namespace DesignPlanner.Data.Services
                 IsEndDateAM = request.IsEndDateAM,
                 LeaveDaysRequested = leaveDays,
                 Reason = request.Reason,
-                Status = request.LeaveType == LeaveType.Annual 
+                Status = request.LeaveType == LeaveType.AnnualLeave 
                     ? LeaveStatus.Pending 
                     : LeaveStatus.Approved, // Auto-approve sick and training leave
                 CreatedAt = DateTime.UtcNow,
@@ -200,7 +200,7 @@ namespace DesignPlanner.Data.Services
             };
 
             // If auto-approved, update used leave days immediately for sick/training
-            if (leaveRequest.Status == LeaveStatus.Approved && request.LeaveType != LeaveType.Annual)
+            if (leaveRequest.Status == LeaveStatus.Approved && request.LeaveType != LeaveType.AnnualLeave)
             {
                 leaveRequest.ApprovedAt = DateTime.UtcNow;
             }
@@ -227,7 +227,7 @@ namespace DesignPlanner.Data.Services
             leaveRequest.UpdatedAt = DateTime.UtcNow;
 
             // Update employee's used leave days if approved
-            if (approvalDto.IsApproved && leaveRequest.LeaveType == LeaveType.Annual)
+            if (approvalDto.IsApproved && leaveRequest.LeaveType == LeaveType.AnnualLeave)
             {
                 leaveRequest.Employee.UsedLeaveDays += (int)Math.Ceiling(leaveRequest.LeaveDaysRequested);
             }

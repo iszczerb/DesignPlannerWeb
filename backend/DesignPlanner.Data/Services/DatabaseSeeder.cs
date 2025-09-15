@@ -723,7 +723,7 @@ namespace DesignPlanner.Data.Services
                     {
                         Id = 1,
                         EmployeeId = 2, // Alex Smith
-                        LeaveType = LeaveType.Annual,
+                        LeaveType = LeaveType.AnnualLeave,
                         StartDate = DateTime.Today.AddDays(-20),
                         EndDate = DateTime.Today.AddDays(-18),
                         LeaveDaysRequested = 3,
@@ -755,7 +755,7 @@ namespace DesignPlanner.Data.Services
                     {
                         Id = 3,
                         EmployeeId = 3, // Emma Wilson
-                        LeaveType = LeaveType.Annual,
+                        LeaveType = LeaveType.AnnualLeave,
                         StartDate = DateTime.Today.AddDays(25),
                         EndDate = DateTime.Today.AddDays(29),
                         LeaveDaysRequested = 5,
@@ -768,7 +768,7 @@ namespace DesignPlanner.Data.Services
                     {
                         Id = 4,
                         EmployeeId = 6, // Mike Garcia
-                        LeaveType = LeaveType.Sick,
+                        LeaveType = LeaveType.SickDay,
                         StartDate = DateTime.Today.AddDays(1),
                         EndDate = DateTime.Today.AddDays(1),
                         LeaveDaysRequested = 1,
@@ -781,7 +781,7 @@ namespace DesignPlanner.Data.Services
                     {
                         Id = 5,
                         EmployeeId = 4, // David Brown
-                        LeaveType = LeaveType.Annual,
+                        LeaveType = LeaveType.AnnualLeave,
                         StartDate = DateTime.Today.AddDays(7),
                         EndDate = DateTime.Today.AddDays(7),
                         IsStartDateAM = false, // PM only
@@ -799,7 +799,7 @@ namespace DesignPlanner.Data.Services
                     {
                         Id = 6,
                         EmployeeId = 1, // Sarah Johnson (Manager)
-                        LeaveType = LeaveType.Annual,
+                        LeaveType = LeaveType.AnnualLeave,
                         StartDate = DateTime.Today.AddDays(35),
                         EndDate = DateTime.Today.AddDays(42),
                         LeaveDaysRequested = 6, // Excluding weekends

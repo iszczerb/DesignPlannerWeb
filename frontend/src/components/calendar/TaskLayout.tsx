@@ -55,15 +55,16 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
         flexDirection: 'column',
         width: '100%',
         height: '100%',
-        gap: '4px',
+        maxHeight: '72px',
+        gap: '3px',
       }}>
         {/* Top row - 2 tasks */}
         <div style={{
           display: 'flex',
           flexDirection: 'row',
           width: '100%',
-          height: '50%',
-          gap: '4px',
+          height: '48%',
+          gap: '3px',
         }}>
           <motion.div
             key={`task-${tasksToShow[0].assignmentId}`}
@@ -72,7 +73,7 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            style={{ width: '50%', height: '100%' }}
+            style={{ width: '48%', height: '100%' }}
           >
             <ProjectTaskCard
               task={tasksToShow[0]}
@@ -98,7 +99,7 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            style={{ width: '50%', height: '100%' }}
+            style={{ width: '48%', height: '100%' }}
           >
             <ProjectTaskCard
               task={tasksToShow[1]}
@@ -127,7 +128,7 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          style={{ width: '100%', height: '50%' }}
+          style={{ width: '100%', height: '48%' }}
         >
           <ProjectTaskCard
             task={tasksToShow[2]}
@@ -191,7 +192,14 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
   };
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div style={{ 
+      width: '100%', 
+      height: '100%', 
+      position: 'relative',
+      maxHeight: '72px', // Fixed content area height accounting for header (100px - 20px header - 8px padding)
+      overflow: 'hidden', // Prevent overflow from breaking fixed height
+      maxWidth: '144px', // Match TimeSlot width constraint
+    }}>
       {taskCount === 3 ? renderThreeTasksLayout() : renderRegularLayout()}
       
       {/* More tasks indicator */}
@@ -201,15 +209,16 @@ const TaskLayout: React.FC<TaskLayoutProps> = ({
           animate={{ opacity: 1 }}
           style={{
             position: 'absolute',
-            bottom: '4px',
-            right: '4px',
-            padding: '2px 6px',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            bottom: '2px',
+            right: '2px',
+            padding: '1px 4px',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
             color: 'white',
-            borderRadius: '4px',
-            fontSize: '0.6875rem',
-            fontWeight: '500',
+            borderRadius: '3px',
+            fontSize: '0.625rem',
+            fontWeight: '600',
             zIndex: 10,
+            lineHeight: '1.2',
           }}
         >
           +{tasks.length - maxTasks}

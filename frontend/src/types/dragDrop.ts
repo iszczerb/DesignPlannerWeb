@@ -50,11 +50,13 @@ export const TASK_LAYOUTS: Record<number, TaskLayoutConfig> = {
       flexDirection: 'column',
       width: '100%',
       height: '100%',
+      maxHeight: '72px', // Fixed height constraint
     },
     cardStyle: {
       width: '100%',
       height: '100%',
       flex: 1,
+      minHeight: '56px', // Ensure minimum size for single task
     }
   },
   2: {
@@ -64,12 +66,14 @@ export const TASK_LAYOUTS: Record<number, TaskLayoutConfig> = {
       flexDirection: 'row',
       width: '100%',
       height: '100%',
-      gap: '4px',
+      maxHeight: '72px',
+      gap: '3px',
     },
     cardStyle: {
       width: '50%',
       height: '100%',
       flex: 1,
+      minHeight: '36px',
     }
   },
   3: {
@@ -79,11 +83,13 @@ export const TASK_LAYOUTS: Record<number, TaskLayoutConfig> = {
       flexDirection: 'column',
       width: '100%',
       height: '100%',
-      gap: '4px',
+      maxHeight: '72px',
+      gap: '3px',
     },
     cardStyle: {
-      width: '50%',
+      width: '100%',
       height: '50%',
+      minHeight: '22px',
     }
   },
   4: {
@@ -94,11 +100,13 @@ export const TASK_LAYOUTS: Record<number, TaskLayoutConfig> = {
       gridTemplateRows: '1fr 1fr',
       width: '100%',
       height: '100%',
-      gap: '4px',
+      maxHeight: '72px',
+      gap: '3px',
     },
     cardStyle: {
       width: '100%',
       height: '100%',
+      minHeight: '30px',
     }
   }
 };
@@ -121,12 +129,14 @@ export const getTaskLayout = (taskCount: number): TaskLayoutConfig => {
         flexDirection: 'column',
         width: '100%',
         height: '100%',
-        gap: '4px',
+        maxHeight: '72px',
+        gap: '3px',
       },
       cardStyle: {
         // This will be overridden by individual card positioning
-        width: '50%',
+        width: '100%',
         height: '50%',
+        minHeight: '22px',
       }
     };
   }

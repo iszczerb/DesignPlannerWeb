@@ -14,6 +14,7 @@ namespace DesignPlanner.Core.Services
         Task<AssignmentTaskDto> UpdateAssignmentAsync(UpdateAssignmentDto updateDto);
         Task<bool> DeleteAssignmentAsync(int assignmentId);
         Task<List<AssignmentTaskDto>> CreateBulkAssignmentsAsync(BulkAssignmentDto bulkDto);
+        Task<List<AssignmentTaskDto>> BulkUpdateAssignmentsAsync(BulkUpdateAssignmentDto bulkUpdateDto);
         
         // Assignment queries
         Task<List<AssignmentTaskDto>> GetAssignmentsByDateRangeAsync(DateRangeDto dateRange);

@@ -78,7 +78,7 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
     position: 'sticky',
     left: 0,
     zIndex: 2,
-    minHeight: '280px', // Accommodate 2 time slots (2 * 120px + padding)
+    minHeight: '240px', // Accommodate 2 time slots (2 * 108px + padding + gap)
     opacity: isTeamManaged ? 1 : 0.75,
   });
 
@@ -134,25 +134,13 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
           display: 'flex',
           flexDirection: 'column',
           gap: '4px',
+          width: '160px',
           minWidth: '160px',
+          maxWidth: '160px',
           flexShrink: 0,
+          overflow: 'hidden',
         }}
       >
-        {/* Day header */}
-        <div style={{
-          textAlign: 'center',
-          padding: '4px',
-          backgroundColor: day.isToday ? '#dbeafe' : '#ffffff',
-          borderRadius: '4px',
-          fontSize: '0.75rem',
-          fontWeight: '600',
-          color: day.isToday ? '#1d4ed8' : '#374151',
-          border: day.isToday ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-          marginBottom: '4px',
-        }}>
-          <div>{day.dayName}</div>
-          <div>{day.displayDate}</div>
-        </div>
 
         {/* Morning slot */}
         <TimeSlot
@@ -214,7 +202,7 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
       display: 'flex',
       borderBottom: '1px solid #e5e7eb',
       backgroundColor: '#ffffff',
-      minHeight: '280px',
+      minHeight: '240px',
     }}>
       {/* Employee sidebar */}
       <div style={getEmployeeSidebarStyle()}>
@@ -319,6 +307,7 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
         overflowX: 'auto',
         flex: 1,
         backgroundColor: '#fafbfc',
+        alignItems: 'stretch',
       }}>
         {days.map(renderDaySlots)}
       </div>

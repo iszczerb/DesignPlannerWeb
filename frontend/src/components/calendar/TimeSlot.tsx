@@ -41,13 +41,18 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
   // Drop functionality
   const canDropTask = (dragItem: DragItem): boolean => {
     if (isReadOnly) return false;
-    
+
     // Can't drop on itself
     if (
       dragItem.sourceSlot.date.toDateString() === date.toDateString() &&
       dragItem.sourceSlot.slot === slot &&
       dragItem.sourceSlot.employeeId === employeeId
     ) {
+      return false;
+    }
+
+    // Check if slot is blocked by leave
+    if (slotData?.leave) {
       return false;
     }
 
@@ -88,24 +93,29 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
 
   const handleSlotClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Prevent slot click if a context menu action happened recently (within 500ms)
     const now = Date.now();
     if (now - lastContextActionTime.current < 500) {
       return;
     }
-    
+
+    // Prevent slot click if blocked by leave
+    if (slotData?.leave) {
+      return;
+    }
+
     if (!isReadOnly && onSlotClick) {
       onSlotClick(date, slot, employeeId);
     }
   };
 
   const handleSlotContextMenu = (e: React.MouseEvent) => {
-    if (hasTasks) return; // Only show context menu on empty slots
-    
+    if (slotData?.leave) return; // Don't show context menu on blocked slots
+
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isReadOnly) {
       setSlotContextMenu({
         x: e.clientX,
@@ -148,7 +158,12 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
 
   const getSlotStyle = (): React.CSSProperties => {
     const baseStyle: React.CSSProperties = {
-      minHeight: '120px',
+      width: '144px', // Fixed width (160px - 16px padding)
+      minWidth: '144px',
+      maxWidth: '144px',
+      height: '100px', // Fixed height for consistent layout
+      minHeight: '100px',
+      maxHeight: '100px',
       borderWidth: '1px',
       borderStyle: 'solid',
       borderColor: '#e9ecef',
@@ -162,6 +177,7 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
       flexDirection: 'column',
       gap: '4px',
       overflow: 'hidden',
+      flexShrink: 0,
     };
 
     // Drop zone visual feedback
@@ -177,7 +193,19 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
     }
 
     // Add styling based on slot state
-    if (slotData?.isOverbooked) {
+    if (slotData?.leave) {
+      // Slot is blocked by leave - use leave type colors
+      const leaveColors = {
+        1: '#dcfce7', // Annual Leave - light green
+        2: '#fef2f2', // Sick Day - light red
+        3: '#f3f4f6', // Training - light gray
+      };
+      baseStyle.backgroundColor = leaveColors[slotData.leave.leaveType] || '#f3f4f6';
+      baseStyle.borderColor = '#9ca3af';
+      baseStyle.borderWidth = '2px';
+      baseStyle.cursor = 'not-allowed';
+      baseStyle.opacity = 0.8;
+    } else if (slotData?.isOverbooked) {
       baseStyle.backgroundColor = '#fff5f5';
       baseStyle.borderColor = '#fecaca';
       baseStyle.borderWidth = '2px';
@@ -223,6 +251,30 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
 
   const renderTasks = () => {
     if (!hasTasks) {
+      // Show different message for blocked slots
+      if (slotData?.leave) {
+        const leaveTypeNames = {
+          1: 'Annual Leave',
+          2: 'Sick Day',
+          3: 'Training'
+        };
+        return (
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#6b7280',
+            fontSize: '0.75rem',
+            textAlign: 'center',
+            padding: '8px 0',
+            fontWeight: '500',
+          }}>
+            {leaveTypeNames[slotData.leave.leaveType] || 'On Leave'}
+          </div>
+        );
+      }
+
       return (
         <div style={{
           flex: 1,
@@ -232,7 +284,7 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
           color: '#9ca3af',
           fontSize: '0.75rem',
           textAlign: 'center',
-          padding: '20px 0',
+          padding: '8px 0', // Reduced padding for fixed height
         }}>
           {isReadOnly ? 'No tasks' : 'Click to add task'}
         </div>
@@ -240,7 +292,12 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
     }
 
     return (
-      <div style={{ flex: 1, width: '100%' }}>
+      <div style={{ 
+        flex: 1, 
+        width: '100%', 
+        maxWidth: '144px', 
+        overflow: 'hidden' 
+      }}>
         <TaskLayout
           tasks={slotData!.tasks}
           onTaskClick={handleTaskClick}
@@ -266,7 +323,7 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
       layout
       style={{
         ...getSlotStyle(),
-        ...(isHovered && !isReadOnly && !isOver && {
+        ...(isHovered && !isReadOnly && !isOver && !slotData?.leave && {
           borderColor: '#3b82f6',
           backgroundColor: '#fafbff',
           transform: 'translateY(-1px)',
@@ -277,14 +334,14 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
       onContextMenu={handleSlotContextMenu}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      whileHover={!isReadOnly && !isOver ? { scale: 1.01 } : {}}
+      whileHover={!isReadOnly && !isOver && !slotData?.leave ? { scale: 1.01 } : {}}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
     >
       {/* Slot header */}
       <div style={getHeaderStyle()}>
         <span>{SLOT_LABELS[slot]}</span>
         <span style={getCapacityIndicatorStyle()}>
-          {slotData?.tasks?.length || 0}/{MAX_TASKS_PER_SLOT}
+          {slotData?.leave ? 'BLOCKED' : `${slotData?.tasks?.length || 0}/${MAX_TASKS_PER_SLOT}`}
         </span>
       </div>
 
@@ -312,35 +369,88 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
         </div>
       )}
 
-      {/* Add task button (on hover for non-readonly) */}
-      {!isReadOnly && isHovered && (!hasTasks || slotData!.tasks.length < MAX_TASKS_PER_SLOT) && (
+      {/* Action buttons (on hover for non-readonly) */}
+      {!isReadOnly && isHovered && !slotData?.leave && (
         <div style={{
           position: 'absolute',
           bottom: '8px',
           right: '8px',
-          backgroundColor: '#3b82f6',
-          color: 'white',
-          borderRadius: '50%',
-          width: '24px',
-          height: '24px',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '1rem',
-          cursor: 'pointer',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          transition: 'all 0.2s ease-in-out',
-        }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#2563eb';
-            e.currentTarget.style.transform = 'scale(1.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#3b82f6';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          +
+          gap: '6px',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: '6px',
+          padding: '4px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        }}>
+          {/* Create new task button */}
+          {(slotData?.tasks?.length || 0) < MAX_TASKS_PER_SLOT && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSlotClick?.(date, slot, employeeId);
+              }}
+              style={{
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                width: '22px',
+                height: '22px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2563eb';
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#3b82f6';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              title="Add new task"
+            >
+              +
+            </button>
+          )}
+
+          {/* Paste task button */}
+          {hasCopiedTask && (slotData?.tasks?.length || 0) < MAX_TASKS_PER_SLOT && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTaskPaste?.(date, slot, employeeId);
+              }}
+              style={{
+                background: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                width: '22px',
+                height: '22px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#059669';
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#10b981';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              title="Paste copied task"
+            >
+              📋
+            </button>
+          )}
         </div>
       )}
 
@@ -361,8 +471,8 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
         </div>
       )}
 
-      {/* Slot Context Menu - for empty slots */}
-      {slotContextMenu && !hasTasks && (
+      {/* Slot Context Menu - for all slots */}
+      {slotContextMenu && (
         <SlotContextMenu
           x={slotContextMenu.x}
           y={slotContextMenu.y}

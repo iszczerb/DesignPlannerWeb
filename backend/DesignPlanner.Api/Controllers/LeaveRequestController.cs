@@ -126,7 +126,7 @@ namespace DesignPlanner.Api.Controllers
                 var leaveRequest = await _leaveService.CreateLeaveRequestAsync(employeeId, request);
                 
                 // Send notification for annual leave requests (requires approval)
-                if (leaveRequest.LeaveType == LeaveType.Annual)
+                if (leaveRequest.LeaveType == LeaveType.AnnualLeave)
                 {
                     // Get employee name for notification (this would need to be implemented in service)
                     var employeeName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Employee";

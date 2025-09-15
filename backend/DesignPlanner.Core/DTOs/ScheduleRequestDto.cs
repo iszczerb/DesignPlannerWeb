@@ -57,6 +57,10 @@ namespace DesignPlanner.Core.DTOs
         public TaskPriority? Priority { get; set; }
 
         public DateTime? DueDate { get; set; }
+        
+        public DesignPlanner.Core.Enums.TaskStatus? TaskStatus { get; set; }
+
+        public int? TaskTypeId { get; set; }
     }
 
     public class BulkAssignmentDto
@@ -99,5 +103,24 @@ namespace DesignPlanner.Core.DTOs
         public DateTime EndDate { get; set; }
 
         public int? EmployeeId { get; set; }
+    }
+
+    public class BulkUpdateAssignmentDto
+    {
+        [Required]
+        public List<int> AssignmentIds { get; set; } = new List<int>();
+
+        [Required]
+        public AssignmentUpdateFieldsDto Updates { get; set; } = new AssignmentUpdateFieldsDto();
+    }
+
+    public class AssignmentUpdateFieldsDto
+    {
+        public int? TaskId { get; set; }
+        public int? TaskTypeId { get; set; }
+        public TaskPriority? Priority { get; set; }
+        public DesignPlanner.Core.Enums.TaskStatus? TaskStatus { get; set; }
+        public DateTime? DueDate { get; set; }
+        public string? Notes { get; set; }
     }
 }

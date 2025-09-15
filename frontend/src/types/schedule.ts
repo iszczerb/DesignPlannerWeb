@@ -26,6 +26,17 @@ export enum TaskPriority {
   Critical = 4
 }
 
+export enum LeaveType {
+  AnnualLeave = 1,
+  SickDay = 2,
+  Training = 3
+}
+
+export enum LeaveDuration {
+  FullDay = 1,
+  HalfDay = 2
+}
+
 // Calendar DTOs
 export interface CalendarViewDto {
   startDate: string;
@@ -58,6 +69,9 @@ export interface DayAssignmentDto {
   afternoonSlot?: TimeSlotAssignmentDto;
   totalAssignments: number;
   hasConflicts: boolean;
+  leave?: LeaveSlotDto;
+  isHoliday?: boolean;
+  holidayName?: string;
 }
 
 export interface TimeSlotAssignmentDto {
@@ -65,6 +79,17 @@ export interface TimeSlotAssignmentDto {
   tasks: AssignmentTaskDto[];
   availableCapacity: number;
   isOverbooked: boolean;
+  leave?: LeaveSlotDto;
+}
+
+export interface LeaveSlotDto {
+  leaveType: LeaveType;
+  duration: LeaveDuration;
+  slot?: Slot; // Only for half-day leaves
+  employeeId: number;
+  employeeName: string;
+  startDate: string;
+  endDate?: string;
 }
 
 export interface AssignmentTaskDto {
@@ -121,6 +146,18 @@ export interface BulkAssignmentDto {
   assignments: CreateAssignmentDto[];
   validateConflicts?: boolean;
   allowOverbooking?: boolean;
+}
+
+export interface BulkUpdateAssignmentDto {
+  assignmentIds: number[];
+  updates: {
+    taskId?: number;
+    taskTypeId?: number;
+    priority?: TaskPriority;
+    taskStatus?: TaskStatus;
+    dueDate?: string | null; // null means clear the due date
+    notes?: string | null; // null means clear the notes
+  };
 }
 
 export interface CapacityCheckDto {
@@ -206,6 +243,10 @@ export type PriorityLabel = {
   [key in TaskPriority]: string;
 };
 
+export type LeaveTypeLabel = {
+  [key in LeaveType]: string;
+};
+
 // Constants
 export const VIEW_TYPE_LABELS: ViewTypeLabel = {
   [CalendarViewType.Day]: 'Day',
@@ -232,6 +273,24 @@ export const PRIORITY_LABELS: PriorityLabel = {
   [TaskPriority.Medium]: 'Medium',
   [TaskPriority.High]: 'High',
   [TaskPriority.Critical]: 'Critical',
+};
+
+export const LEAVE_TYPE_LABELS: LeaveTypeLabel = {
+  [LeaveType.AnnualLeave]: 'Annual Leave',
+  [LeaveType.SickDay]: 'Sick Day',
+  [LeaveType.Training]: 'Training',
+};
+
+export const LEAVE_TYPE_COLORS = {
+  [LeaveType.AnnualLeave]: '#10b981', // Green
+  [LeaveType.SickDay]: '#ef4444',     // Red
+  [LeaveType.Training]: '#6b7280',    // Gray
+};
+
+export const LEAVE_TYPE_ICONS = {
+  [LeaveType.AnnualLeave]: '✈️',
+  [LeaveType.SickDay]: '🤒',
+  [LeaveType.Training]: '🎓',
 };
 
 export const MAX_TASKS_PER_SLOT = 4;

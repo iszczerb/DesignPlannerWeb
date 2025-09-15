@@ -112,24 +112,24 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
     switch (size) {
       case 'small':
         return {
-          fontSize: '0.75rem',
-          padding: '6px 8px',
-          minHeight: '32px',
+          fontSize: '0.6875rem',
+          padding: '4px 6px',
+          minHeight: '28px',
           borderRadius: '4px',
         };
       case 'large':
         return {
           fontSize: '0.875rem',
-          padding: '12px 16px',
-          minHeight: '64px',
-          borderRadius: '8px',
+          padding: '8px 12px',
+          minHeight: '56px', // Reduced from 64px to fit better in fixed height
+          borderRadius: '6px',
         };
       default: // medium
         return {
-          fontSize: '0.8125rem',
-          padding: '8px 12px',
-          minHeight: '48px',
-          borderRadius: '6px',
+          fontSize: '0.75rem',
+          padding: '6px 8px',
+          minHeight: '36px', // Reduced from 48px to fit better
+          borderRadius: '5px',
         };
     }
   };
@@ -195,13 +195,13 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: size === 'small' ? '4px' : '6px',
+        marginBottom: size === 'small' ? '2px' : (size === 'large' ? '6px' : '3px'),
       }}>
         <span style={{
           fontWeight: '700',
           color: '#212529',
-          fontSize: size === 'small' ? '0.75rem' : '0.875rem',
-          lineHeight: '1.2',
+          fontSize: size === 'small' ? '0.6875rem' : (size === 'large' ? '0.875rem' : '0.75rem'),
+          lineHeight: '1.1',
         }}>
           {task.projectCode}
         </span>
@@ -243,9 +243,9 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
       <div style={{
         fontWeight: '500',
         color: '#495057',
-        fontSize: size === 'small' ? '0.6875rem' : '0.75rem',
-        lineHeight: '1.3',
-        marginBottom: size === 'small' ? '2px' : '4px',
+        fontSize: size === 'small' ? '0.625rem' : (size === 'large' ? '0.75rem' : '0.6875rem'),
+        lineHeight: '1.2',
+        marginBottom: size === 'small' ? '1px' : (size === 'large' ? '4px' : '2px'),
         overflow: 'hidden',
         whiteSpace: 'nowrap',
         textOverflow: 'ellipsis',
@@ -255,13 +255,13 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
 
       {/* Task Type and Hours */}
       <div style={{
-        fontSize: size === 'small' ? '0.625rem' : '0.6875rem',
+        fontSize: size === 'small' ? '0.5625rem' : (size === 'large' ? '0.6875rem' : '0.625rem'),
         color: '#6c757d',
         marginTop: 'auto',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: '4px',
+        gap: '3px',
       }}>
         <span style={{
           overflow: 'hidden',
@@ -292,8 +292,8 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
         </div>
       )}
 
-      {/* Action buttons (on hover for edit/delete - only for larger sizes) */}
-      {size !== 'small' && isHovered && (onEdit || onDelete) && (
+      {/* Action buttons (on hover for copy/edit/delete - only for larger sizes) */}
+      {size !== 'small' && isHovered && (onCopy || onEdit || onDelete) && (
         <div style={{
           position: 'absolute',
           top: '4px',
@@ -304,6 +304,28 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
           borderRadius: '4px',
           padding: '2px',
         }}>
+          {onCopy && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopy(task);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '2px 4px',
+                borderRadius: '2px',
+                color: '#10b981',
+                fontSize: '0.75rem',
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#d1fae5')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              title="Copy task"
+            >
+              📋
+            </button>
+          )}
           {onEdit && (
             <button
               onClick={handleEdit}

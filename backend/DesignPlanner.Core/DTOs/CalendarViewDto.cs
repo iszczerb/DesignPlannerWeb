@@ -9,6 +9,7 @@ namespace DesignPlanner.Core.DTOs
         public CalendarViewType ViewType { get; set; }
         public List<CalendarDayDto> Days { get; set; } = new List<CalendarDayDto>();
         public List<EmployeeScheduleDto> Employees { get; set; } = new List<EmployeeScheduleDto>();
+        public List<TaskTypeDto> TaskTypes { get; set; } = new List<TaskTypeDto>();
     }
 
     public class CalendarDayDto

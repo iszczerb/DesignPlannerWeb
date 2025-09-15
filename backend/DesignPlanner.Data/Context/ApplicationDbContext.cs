@@ -22,6 +22,8 @@ namespace DesignPlanner.Data.Context
         public DbSet<TaskType> TaskTypes { get; set; }
         public DbSet<Assignment> Assignments { get; set; }
         public DbSet<LeaveRequest> LeaveRequests { get; set; }
+        public DbSet<Leave> Leaves { get; set; }
+        public DbSet<Holiday> Holidays { get; set; }
         public DbSet<Skill> Skills { get; set; }
         public DbSet<EmployeeSkill> EmployeeSkills { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -40,6 +42,8 @@ namespace DesignPlanner.Data.Context
             modelBuilder.ApplyConfiguration(new TaskConfiguration());
             modelBuilder.ApplyConfiguration(new AssignmentConfiguration());
             modelBuilder.ApplyConfiguration(new LeaveRequestConfiguration());
+            modelBuilder.ApplyConfiguration(new LeaveConfiguration());
+            modelBuilder.ApplyConfiguration(new HolidayConfiguration());
             modelBuilder.ApplyConfiguration(new SkillConfiguration());
             modelBuilder.ApplyConfiguration(new EmployeeSkillConfiguration());
             modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());

@@ -89,6 +89,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   });
 
   const getHeaderCellStyle = (isFirst: boolean = false): React.CSSProperties => ({
+    width: isFirst ? '200px' : '160px',
     minWidth: isFirst ? '200px' : '160px',
     maxWidth: isFirst ? '200px' : '160px',
     padding: '12px 16px',
@@ -101,6 +102,8 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
     display: 'flex',
     flexDirection: 'column',
     gap: '4px',
+    flexShrink: 0,
+    overflow: 'hidden',
   });
 
   const getScrollContainerStyle = (): React.CSSProperties => ({
@@ -138,6 +141,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
         color: day.isToday ? '#1d4ed8' : '#374151',
         border: day.isToday ? '2px solid #3b82f6' : '1px solid #e5e7eb',
         borderBottom: '2px solid #e2e8f0',
+        marginRight: '8px', // Match the gap in EmployeeRow
       }}
     >
       <div>{day.dayName}</div>

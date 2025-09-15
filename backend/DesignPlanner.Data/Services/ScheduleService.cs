@@ -26,14 +26,25 @@ namespace DesignPlanner.Data.Services
 
             var employees = await GetEmployeesForViewAsync(request.EmployeeId, request.IncludeInactive);
             var assignments = await GetAssignmentsForDateRangeAsync(startDate, endDate, request.EmployeeId);
-            
+
+            // Get all task types from database
+            var taskTypes = await _context.TaskTypes
+                .Where(tt => tt.IsActive)
+                .Select(tt => new TaskTypeDto
+                {
+                    Id = tt.Id,
+                    Name = tt.Name
+                })
+                .ToListAsync();
+
             var calendarView = new CalendarViewDto
             {
                 StartDate = startDate,
                 EndDate = endDate,
                 ViewType = request.ViewType,
                 Days = GenerateCalendarDays(startDate, endDate),
-                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate)
+                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate),
+                TaskTypes = taskTypes
             };
 
             return calendarView;
@@ -78,6 +89,8 @@ namespace DesignPlanner.Data.Services
 
         public async Task<AssignmentTaskDto> UpdateAssignmentAsync(UpdateAssignmentDto updateDto)
         {
+            Console.WriteLine($"DEBUG: UpdateAssignment called with data: AssignmentId={updateDto.AssignmentId}, TaskId={updateDto.TaskId}, Priority={updateDto.Priority}, TaskStatus={updateDto.TaskStatus}, TaskTypeId={updateDto.TaskTypeId}, Notes={updateDto.Notes}");
+            
             var assignment = await _context.Assignments
                 .Include(a => a.Task)
                 .FirstOrDefaultAsync(a => a.Id == updateDto.AssignmentId);
@@ -86,7 +99,10 @@ namespace DesignPlanner.Data.Services
                 throw new ArgumentException("Assignment not found");
 
             // Update assignment fields
-            if (updateDto.TaskId.HasValue) assignment.TaskId = updateDto.TaskId.Value;
+            if (updateDto.TaskId.HasValue) {
+                Console.WriteLine($"DEBUG: Updating TaskId from {assignment.TaskId} to {updateDto.TaskId.Value}");
+                assignment.TaskId = updateDto.TaskId.Value;
+            }
             if (updateDto.EmployeeId.HasValue) assignment.EmployeeId = updateDto.EmployeeId.Value;
             if (updateDto.AssignedDate.HasValue) assignment.AssignedDate = updateDto.AssignedDate.Value.Date;
             if (updateDto.Slot.HasValue) assignment.Slot = updateDto.Slot.Value;
@@ -97,12 +113,26 @@ namespace DesignPlanner.Data.Services
             
             if (updateDto.Priority.HasValue)
             {
+                Console.WriteLine($"DEBUG: Updating Priority from {assignment.Task.Priority} to {updateDto.Priority.Value}");
                 assignment.Task.Priority = updateDto.Priority.Value;
             }
             
             if (updateDto.DueDate.HasValue)
             {
+                Console.WriteLine($"DEBUG: Updating DueDate from {assignment.Task.DueDate} to {updateDto.DueDate.Value}");
                 assignment.Task.DueDate = updateDto.DueDate.Value;
+            }
+            
+            if (updateDto.TaskStatus.HasValue)
+            {
+                Console.WriteLine($"DEBUG: Updating TaskStatus from {assignment.Task.Status} to {updateDto.TaskStatus.Value}");
+                assignment.Task.Status = updateDto.TaskStatus.Value;
+            }
+
+            if (updateDto.TaskTypeId.HasValue)
+            {
+                Console.WriteLine($"DEBUG: Updating TaskTypeId from {assignment.Task.TaskTypeId} to {updateDto.TaskTypeId.Value}");
+                assignment.Task.TaskTypeId = updateDto.TaskTypeId.Value;
             }
 
             await _context.SaveChangesAsync();
@@ -118,6 +148,122 @@ namespace DesignPlanner.Data.Services
             assignment.IsActive = false;
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<AssignmentTaskDto>> BulkUpdateAssignmentsAsync(BulkUpdateAssignmentDto bulkUpdateDto)
+        {
+            Console.WriteLine($"DEBUG: BulkUpdateAssignments called for {bulkUpdateDto.AssignmentIds.Count} assignments");
+
+            var assignments = await _context.Assignments
+                .Include(a => a.Task)
+                .Where(a => bulkUpdateDto.AssignmentIds.Contains(a.Id))
+                .ToListAsync();
+
+            if (assignments.Count == 0)
+                throw new ArgumentException("No assignments found");
+
+            foreach (var assignment in assignments)
+            {
+                // Update assignment fields
+                if (bulkUpdateDto.Updates.TaskId.HasValue)
+                {
+                    Console.WriteLine($"DEBUG: Updating TaskId from {assignment.TaskId} to {bulkUpdateDto.Updates.TaskId.Value}");
+                    assignment.TaskId = bulkUpdateDto.Updates.TaskId.Value;
+                }
+
+                // For task property updates, check if we need to create a new task instance
+                bool needsNewTask = bulkUpdateDto.Updates.Priority.HasValue ||
+                                   bulkUpdateDto.Updates.TaskStatus.HasValue ||
+                                   bulkUpdateDto.Updates.TaskTypeId.HasValue ||
+                                   bulkUpdateDto.Updates.DueDate.HasValue;
+
+                if (needsNewTask)
+                {
+                    // Check if this task is shared by other assignments
+                    var otherAssignments = await _context.Assignments
+                        .Where(a => a.TaskId == assignment.TaskId && a.Id != assignment.Id)
+                        .CountAsync();
+
+                    if (otherAssignments > 0)
+                    {
+                        // Task is shared, create a new task instance for this assignment
+                        Console.WriteLine($"DEBUG: Creating new task instance for assignment {assignment.Id} (shared task detected)");
+
+                        var newTask = new ProjectTask
+                        {
+                            Title = assignment.Task.Title,
+                            Description = assignment.Task.Description,
+                            ProjectId = assignment.Task.ProjectId,
+                            TaskTypeId = bulkUpdateDto.Updates.TaskTypeId ?? assignment.Task.TaskTypeId,
+                            Priority = bulkUpdateDto.Updates.Priority ?? assignment.Task.Priority,
+                            Status = bulkUpdateDto.Updates.TaskStatus ?? assignment.Task.Status,
+                            EstimatedHours = assignment.Task.EstimatedHours,
+                            ActualHours = assignment.Task.ActualHours,
+                            DueDate = bulkUpdateDto.Updates.DueDate ?? assignment.Task.DueDate,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow,
+                            IsActive = assignment.Task.IsActive
+                        };
+
+                        _context.ProjectTasks.Add(newTask);
+                        await _context.SaveChangesAsync(); // Save to get the new task ID
+
+                        assignment.TaskId = newTask.Id;
+                        Console.WriteLine($"DEBUG: New task created with ID {newTask.Id}");
+                    }
+                    else
+                    {
+                        // Task is not shared, safe to modify directly
+                        Console.WriteLine($"DEBUG: Updating existing task {assignment.TaskId} (not shared)");
+
+                        if (bulkUpdateDto.Updates.Priority.HasValue)
+                        {
+                            Console.WriteLine($"DEBUG: Updating Priority from {assignment.Task.Priority} to {bulkUpdateDto.Updates.Priority.Value}");
+                            assignment.Task.Priority = bulkUpdateDto.Updates.Priority.Value;
+                        }
+
+                        if (bulkUpdateDto.Updates.TaskStatus.HasValue)
+                        {
+                            Console.WriteLine($"DEBUG: Updating TaskStatus from {assignment.Task.Status} to {bulkUpdateDto.Updates.TaskStatus.Value}");
+                            assignment.Task.Status = bulkUpdateDto.Updates.TaskStatus.Value;
+                        }
+
+                        if (bulkUpdateDto.Updates.TaskTypeId.HasValue)
+                        {
+                            Console.WriteLine($"DEBUG: Updating TaskTypeId from {assignment.Task.TaskTypeId} to {bulkUpdateDto.Updates.TaskTypeId.Value}");
+                            assignment.Task.TaskTypeId = bulkUpdateDto.Updates.TaskTypeId.Value;
+                        }
+
+                        if (bulkUpdateDto.Updates.DueDate.HasValue)
+                        {
+                            Console.WriteLine($"DEBUG: Updating DueDate from {assignment.Task.DueDate} to {bulkUpdateDto.Updates.DueDate.Value}");
+                            assignment.Task.DueDate = bulkUpdateDto.Updates.DueDate.Value;
+                        }
+
+                        assignment.Task.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+
+                // Assignment-level updates (always safe)
+                if (bulkUpdateDto.Updates.Notes != null)
+                {
+                    Console.WriteLine($"DEBUG: Updating Notes from '{assignment.Notes}' to '{bulkUpdateDto.Updates.Notes}'");
+                    assignment.Notes = bulkUpdateDto.Updates.Notes;
+                }
+
+                assignment.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Return updated assignments
+            var result = new List<AssignmentTaskDto>();
+            foreach (var assignment in assignments)
+            {
+                result.Add(await GetAssignmentTaskDtoAsync(assignment.Id));
+            }
+
+            return result;
         }
 
         public async Task<List<AssignmentTaskDto>> CreateBulkAssignmentsAsync(BulkAssignmentDto bulkDto)
@@ -327,12 +473,15 @@ namespace DesignPlanner.Data.Services
         public DateTime GetViewStartDate(DateTime baseDate, CalendarViewType viewType)
         {
             var date = baseDate.Date;
-            
+
             return viewType switch
             {
                 CalendarViewType.Day => date,
-                CalendarViewType.Week => GetWeekStart(date),
-                CalendarViewType.BiWeek => GetBiWeekStart(date),
+                // For Week view, use the exact date provided (sliding window mode)
+                // The frontend manages the window start position
+                CalendarViewType.Week => SkipWeekendIfNecessary(date),
+                // For BiWeek view, also use sliding window from the provided date
+                CalendarViewType.BiWeek => SkipWeekendIfNecessary(date),
                 CalendarViewType.Month => new DateTime(date.Year, date.Month, 1),
                 _ => date
             };
@@ -522,6 +671,16 @@ namespace DesignPlanner.Data.Services
         }
 
         // Private helper methods
+        private DateTime SkipWeekendIfNecessary(DateTime date)
+        {
+            // If the date falls on a weekend, move to the next Monday
+            if (date.DayOfWeek == DayOfWeek.Saturday)
+                return date.AddDays(2);
+            if (date.DayOfWeek == DayOfWeek.Sunday)
+                return date.AddDays(1);
+            return date;
+        }
+
         private DateTime GetWeekStart(DateTime date)
         {
             var diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
@@ -830,14 +989,25 @@ namespace DesignPlanner.Data.Services
                 .ToListAsync();
 
             var assignments = await GetAssignmentsForDateRangeAsync(startDate, endDate, null, request.TeamId);
-            
+
+            // Get all task types from database
+            var taskTypes = await _context.TaskTypes
+                .Where(tt => tt.IsActive)
+                .Select(tt => new TaskTypeDto
+                {
+                    Id = tt.Id,
+                    Name = tt.Name
+                })
+                .ToListAsync();
+
             var calendarView = new CalendarViewDto
             {
                 StartDate = startDate,
                 EndDate = endDate,
                 ViewType = request.ViewType,
                 Days = GenerateCalendarDays(startDate, endDate),
-                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate)
+                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate),
+                TaskTypes = taskTypes
             };
 
             return calendarView;

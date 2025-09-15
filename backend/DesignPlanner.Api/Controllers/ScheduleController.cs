@@ -239,6 +239,32 @@ namespace DesignPlanner.Api.Controllers
             }
         }
 
+        // PUT: api/schedule/assignments/bulk
+        [HttpPut("assignments/bulk")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<ActionResult<List<AssignmentTaskDto>>> UpdateBulkAssignments([FromBody] BulkUpdateAssignmentDto bulkUpdateDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var assignments = await _scheduleService.BulkUpdateAssignmentsAsync(bulkUpdateDto);
+                return Ok(assignments);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating bulk assignments");
+                return StatusCode(500, "An error occurred while updating bulk assignments");
+            }
+        }
+
         // GET: api/schedule/capacity/check
         [HttpGet("capacity/check")]
         public async Task<ActionResult<CapacityResponseDto>> CheckCapacity([FromQuery] CapacityCheckDto capacityCheck)
