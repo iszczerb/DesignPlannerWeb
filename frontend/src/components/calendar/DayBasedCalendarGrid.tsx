@@ -40,6 +40,8 @@ interface DayBasedCalendarGridProps {
   selectedTaskIds?: number[];
   selectedSlots?: Array<{ date: Date; slot: Slot; employeeId: number; }>;
   onSlotFocus?: (date: Date, slot: Slot, employeeId: number, event?: React.MouseEvent) => void;
+  selectedDays?: string[]; // Array of date strings (toDateString() format)
+  onDayClick?: (date: Date, event?: React.MouseEvent) => void;
 }
 
 const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
@@ -68,7 +70,9 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   onClearBlocking,
   selectedTaskIds = [],
   selectedSlots = [],
-  onSlotFocus
+  onSlotFocus,
+  selectedDays = [],
+  onDayClick
 }) => {
   // State management for hover and context menus
   const [hoveredSlot, setHoveredSlot] = useState<{
@@ -355,6 +359,11 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       slot.date.toDateString() === date.toDateString() &&
       ((isAM && slot.slot === Slot.Morning) || (!isAM && slot.slot === Slot.Afternoon))
     ) || false;
+  };
+
+  // Helper function to check if a day is selected
+  const isDaySelected = (date: Date): boolean => {
+    return selectedDays?.includes(date.toDateString()) || false;
   };
 
   // Handle slot click with Ctrl detection for multi-select
@@ -1151,6 +1160,8 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
 
   const getDayHeaderStyle = (day: CalendarDayDto): React.CSSProperties => {
     const isTodayDate = isToday(new Date(day.date));
+    const isSelected = isDaySelected(new Date(day.date));
+
     return {
       flex: '1 1 0',
       minWidth: '250px',
@@ -1158,16 +1169,21 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       padding: '12px 8px',
       fontSize: '1rem',
       fontWeight: '700',
-      color: isTodayDate ? '#1d4ed8' : '#374151',
+      color: isSelected ? '#ffffff' : (isTodayDate ? '#1d4ed8' : '#374151'),
       textAlign: 'center',
       borderRight: '1px solid #e5e7eb',
-      backgroundColor: isTodayDate ? '#dbeafe' : '#f1f5f9',
+      backgroundColor: isSelected
+        ? '#3b82f6'
+        : (isTodayDate ? '#dbeafe' : '#f1f5f9'),
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '50px',
       cursor: isReadOnly ? 'default' : 'pointer',
       transition: 'all 0.2s ease',
+      border: isSelected ? '2px solid #1d4ed8' : 'none',
+      boxShadow: isSelected ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none',
+      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
     };
   };
 
@@ -1245,15 +1261,30 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           <div
             key={day.date}
             style={getDayHeaderStyle(day)}
+            data-day-header="true"
+            onClick={(e) => {
+              if (!isReadOnly) {
+                console.log('Day header clicked:', day.date, 'Ctrl:', e.ctrlKey);
+                onDayClick?.(new Date(day.date), e);
+              }
+            }}
             onMouseEnter={(e) => {
               if (!isReadOnly) {
                 const isTodayDate = isToday(new Date(day.date));
-                e.currentTarget.style.backgroundColor = isTodayDate ? '#bfdbfe' : '#e2e8f0';
+                const isSelected = isDaySelected(new Date(day.date));
+                if (!isSelected) {
+                  e.currentTarget.style.backgroundColor = isTodayDate ? '#bfdbfe' : '#e2e8f0';
+                }
               }
             }}
             onMouseLeave={(e) => {
-              const isTodayDate = isToday(new Date(day.date));
-              e.currentTarget.style.backgroundColor = isTodayDate ? '#dbeafe' : '#f1f5f9';
+              if (!isReadOnly) {
+                const isTodayDate = isToday(new Date(day.date));
+                const isSelected = isDaySelected(new Date(day.date));
+                if (!isSelected) {
+                  e.currentTarget.style.backgroundColor = isTodayDate ? '#dbeafe' : '#f1f5f9';
+                }
+              }
             }}
             onContextMenu={(e) => {
               if (isReadOnly) return;
@@ -1293,21 +1324,41 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                        dayAssignment?.afternoonSlot?.leave;
               });
 
+              // Check if this day is selected and determine count for context menu
+              const isDayCurrentlySelected = isDaySelected(dayDate);
+              let daysCount = 1; // Default to 1 (just this day)
+
+              if (selectedDays && selectedDays.length > 0) {
+                if (isDayCurrentlySelected) {
+                  // This day is part of selection - show count for all selected days
+                  daysCount = selectedDays.length;
+                } else {
+                  // This day is NOT in selection - will only process this day
+                  daysCount = 1;
+                }
+              }
+
               const menuItems = [
                 {
-                  label: '🏦 Set Bank Holiday',
+                  label: `🏦 Set Bank Holiday${daysCount > 1 ? ` (${daysCount})` : ''}`,
                   action: () => onSetBankHoliday?.(dayDate),
-                  description: 'Block all slots for all team members on this day'
+                  description: daysCount > 1
+                    ? `Block all slots for all team members on ${daysCount} selected days`
+                    : 'Block all slots for all team members on this day'
                 },
                 {
-                  label: '✈️ Set Leave',
+                  label: `✈️ Set Leave${daysCount > 1 ? ` (${daysCount})` : ''}`,
                   action: () => onSetLeave?.(dayDate),
-                  description: 'Set leave for specific team members'
+                  description: daysCount > 1
+                    ? `Set leave for specific team members on ${daysCount} selected days`
+                    : 'Set leave for specific team members'
                 },
                 ...(hasBlocking ? [{
-                  label: '🧹 Clear Blocking',
+                  label: `🧹 Clear Blocking${daysCount > 1 ? ` (${daysCount})` : ''}`,
                   action: () => onClearBlocking?.(dayDate),
-                  description: 'Remove all leave and holidays from this day'
+                  description: daysCount > 1
+                    ? `Remove all leave and holidays from ${daysCount} selected days`
+                    : 'Remove all leave and holidays from this day'
                 }] : [])
               ];
 

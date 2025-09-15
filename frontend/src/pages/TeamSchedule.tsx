@@ -375,6 +375,12 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     employeeId: number;
   }>>([]);
 
+  // Selected days state for multi-day selection (like multi-select tasks)
+  const [selectedDays, setSelectedDays] = useState<Date[]>([]);
+
+  // Captured days for multi-day actions (to preserve selection when modal opens)
+  const [capturedMultiDays, setCapturedMultiDays] = useState<Date[]>([]);
+
   // Helper to check if a slot is selected
   const isSlotSelected = useCallback((date: Date, slot: Slot, employeeId: number): boolean => {
     return selectedSlots.some(selected =>
@@ -388,6 +394,42 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const isTaskSelected = useCallback((taskId: number): boolean => {
     return selectedTasks.some(task => task.assignmentId === taskId);
   }, [selectedTasks]);
+
+  // Helper to check if a day is selected
+  const isDaySelected = useCallback((date: Date): boolean => {
+    return selectedDays.some(selectedDay =>
+      selectedDay.toDateString() === date.toDateString()
+    );
+  }, [selectedDays]);
+
+  // Helper to toggle day selection
+  const toggleDaySelection = useCallback((date: Date, ctrlKey: boolean = false) => {
+    if (ctrlKey) {
+      // Multi-selection with Ctrl
+      setSelectedDays(prev => {
+        const isCurrentlySelected = prev.some(d => d.toDateString() === date.toDateString());
+        if (isCurrentlySelected) {
+          // Remove from selection
+          return prev.filter(d => d.toDateString() !== date.toDateString());
+        } else {
+          // Add to selection
+          return [...prev, new Date(date)];
+        }
+      });
+    } else {
+      // Single selection without Ctrl
+      setSelectedDays(prev => {
+        const isCurrentlySelected = prev.some(d => d.toDateString() === date.toDateString());
+        if (isCurrentlySelected && prev.length === 1) {
+          // Deselect if it's the only selected day
+          return [];
+        } else {
+          // Select only this day
+          return [new Date(date)];
+        }
+      });
+    }
+  }, []);
 
   // Helper to toggle task selection
   const toggleTaskSelection = useCallback((task: AssignmentTaskDto, ctrlKey: boolean = false) => {
@@ -662,6 +704,20 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     // Handle multi-task selection
     toggleTaskSelection(task, event?.ctrlKey || false);
   }, [toggleTaskSelection]);
+
+  /**
+   * Handle day header clicks - for multi-day selection
+   */
+  const handleDayClick = useCallback((date: Date, event?: React.MouseEvent) => {
+    console.log('Day clicked:', date, 'Ctrl:', event?.ctrlKey);
+
+    // Clear slot and task selections when clicking on days
+    setSelectedSlots([]);
+    setSelectedTasks([]);
+
+    // Handle multi-day selection
+    toggleDaySelection(date, event?.ctrlKey || false);
+  }, [toggleDaySelection]);
 
   /**
    * Handle slot clicks - create new task
@@ -1492,53 +1548,97 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   }, [calendarData]);
 
   /**
-   * Handle bank holiday creation - blocks all slots for all team members on selected date
+   * Handle bank holiday creation - blocks all slots for all team members on selected date(s)
    */
-  const handleSetBankHoliday = useCallback(async (date: Date) => {
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const handleSetBankHoliday = useCallback(async (clickedDate: Date) => {
+    // CAPTURE multi-day selection immediately (like handleTaskPasteMultiple pattern)
+    let daysToProcess: Date[] = [];
+    if (selectedDays.length > 0) {
+      // Check if clicked day is in the selection
+      const isCurrentInSelection = selectedDays.some(d => d.toDateString() === clickedDate.toDateString());
+      if (isCurrentInSelection) {
+        // Clicked day is part of selection - process all selected days
+        daysToProcess = [...selectedDays];
+      } else {
+        // Clicked day is NOT in selection - only process this day
+        daysToProcess = [clickedDate];
+      }
+    } else {
+      // No selection - process only clicked day
+      daysToProcess = [clickedDate];
+    }
 
-    // Detect task conflicts first
-    const conflictCheck = detectBankHolidayConflicts(date);
+    console.log('🎯 Setting bank holiday for days:', daysToProcess.map(d => d.toLocaleDateString()));
+    setCapturedMultiDays(daysToProcess);
 
-    let confirmMessage = `Are you sure you want to set ${dayName} as a Bank Holiday?\n\nThis will block all slots for ALL team members on this day`;
+    const dayName = daysToProcess.length === 1
+      ? daysToProcess[0].toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      : `${daysToProcess.length} selected days`;
 
-    if (conflictCheck.hasConflicts) {
-      const conflictList = conflictCheck.conflicts.join('\n• ');
+    // Detect task conflicts for all days
+    let allConflicts: string[] = [];
+    let totalConflictCount = 0;
+
+    daysToProcess.forEach(date => {
+      const conflictCheck = detectBankHolidayConflicts(date);
+      if (conflictCheck.hasConflicts) {
+        const dayStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const dayConflicts = conflictCheck.conflicts.map(conflict => `${dayStr}: ${conflict}`);
+        allConflicts.push(...dayConflicts);
+        totalConflictCount += conflictCheck.conflicts.length;
+      }
+    });
+
+    let confirmMessage = `Are you sure you want to set ${dayName} as Bank Holiday${daysToProcess.length > 1 ? 's' : ''}?\n\nThis will block all slots for ALL team members on ${daysToProcess.length > 1 ? 'these days' : 'this day'}`;
+
+    if (allConflicts.length > 0) {
+      const conflictList = allConflicts.join('\n• ');
       confirmMessage += ` and delete the following existing tasks:\n\n• ${conflictList}`;
     }
 
     confirmMessage += '\n\nDo you want to proceed?';
 
-    // Show custom confirmation dialog
+    // Show custom confirmation dialog - CAPTURE the days in the closure!
     setConfirmDialog({
       isOpen: true,
-      title: 'Set Bank Holiday',
+      title: `Set Bank Holiday${daysToProcess.length > 1 ? 's' : ''}`,
       message: confirmMessage,
       type: 'warning',
       onConfirm: async () => {
         setConfirmDialog({ ...confirmDialog, isOpen: false });
 
         try {
-          console.log('Setting bank holiday for:', date);
+          console.log('🎯 Setting bank holidays for captured days:', daysToProcess.map(d => d.toLocaleDateString()));
 
           // Mark that user has created leave (to disable mock data)
           localStorage.setItem('hasUserCreatedLeave', 'true');
 
-          // Save to persistent storage first
-          addHolidayToStorage(date, 'Bank Holiday');
+          // Process all captured days (use daysToProcess from closure, not state!)
+          for (const date of daysToProcess) {
+            // Save to persistent storage first
+            addHolidayToStorage(date, 'Bank Holiday');
 
-          // Update calendar data immediately (this will be redundant after refresh, but needed for immediate UI update)
-          addBankHolidayToCalendarData(date, 'Bank Holiday');
+            // Update calendar data immediately
+            addBankHolidayToCalendarData(date, 'Bank Holiday');
+          }
+
+          // Clear selections after successful operation
+          setSelectedDays([]);
+          setCapturedMultiDays([]);
 
           // Show success notification
-          const conflictMessage = conflictCheck.hasConflicts
-            ? `${conflictCheck.conflicts.length} existing task(s) were deleted.`
+          const conflictMessage = totalConflictCount > 0
+            ? `${totalConflictCount} existing task(s) were deleted.`
             : '';
+
+          const successDayName = daysToProcess.length === 1
+            ? daysToProcess[0].toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+            : `${daysToProcess.length} days`;
 
           showNotification({
             type: 'success',
-            title: 'Bank Holiday Set Successfully',
-            message: `${dayName} has been set as a Bank Holiday.${conflictMessage ? '\n' + conflictMessage : ''}`
+            title: `Bank Holiday${daysToProcess.length > 1 ? 's' : ''} Set Successfully`,
+            message: `${successDayName} ${daysToProcess.length > 1 ? 'have' : 'has'} been set as Bank Holiday${daysToProcess.length > 1 ? 's' : ''}.${conflictMessage ? '\n' + conflictMessage : ''}`
           });
 
         } catch (error) {
@@ -1551,44 +1651,95 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         }
       }
     });
-  }, [detectBankHolidayConflicts, showNotification, confirmDialog, addBankHolidayToCalendarData]);
+  }, [selectedDays, detectBankHolidayConflicts, showNotification, confirmDialog, addBankHolidayToCalendarData]);
 
   /**
-   * Handle leave creation - opens modal to select team members and leave type
+   * Handle leave creation - opens modal to select team members and leave type for selected date(s)
    */
-  const handleSetLeave = useCallback(async (date: Date) => {
-    console.log('Setting leave for:', date);
-    setSelectedLeaveDate(date);
+  const handleSetLeave = useCallback(async (clickedDate: Date) => {
+    // CAPTURE multi-day selection immediately (like handleTaskPasteMultiple pattern)
+    let daysToProcess: Date[] = [];
+    if (selectedDays.length > 0) {
+      // Check if clicked day is in the selection
+      const isCurrentInSelection = selectedDays.some(d => d.toDateString() === clickedDate.toDateString());
+      if (isCurrentInSelection) {
+        // Clicked day is part of selection - process all selected days
+        daysToProcess = [...selectedDays];
+      } else {
+        // Clicked day is NOT in selection - only process this day
+        daysToProcess = [clickedDate];
+      }
+    } else {
+      // No selection - process only clicked day
+      daysToProcess = [clickedDate];
+    }
+
+    console.log('🎯 Setting leave for days:', daysToProcess.map(d => d.toLocaleDateString()));
+    setCapturedMultiDays(daysToProcess);
+
+    // For multi-day leave, we use the first selected day as the "primary" date for the modal
+    setSelectedLeaveDate(daysToProcess[0]);
     setSetLeaveModalOpen(true);
-  }, []);
+  }, [selectedDays]);
 
   /**
    * Handle clearing leave/holiday from a date
    */
-  const handleClearBlocking = useCallback(async (date: Date) => {
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const handleClearBlocking = useCallback(async (clickedDate: Date) => {
+    // CAPTURE multi-day selection immediately (like handleTaskPasteMultiple pattern)
+    let daysToProcess: Date[] = [];
+    if (selectedDays.length > 0) {
+      // Check if clicked day is in the selection
+      const isCurrentInSelection = selectedDays.some(d => d.toDateString() === clickedDate.toDateString());
+      if (isCurrentInSelection) {
+        // Clicked day is part of selection - process all selected days
+        daysToProcess = [...selectedDays];
+      } else {
+        // Clicked day is NOT in selection - only process this day
+        daysToProcess = [clickedDate];
+      }
+    } else {
+      // No selection - process only clicked day
+      daysToProcess = [clickedDate];
+    }
+
+    console.log('🎯 Clearing blocking for days:', daysToProcess.map(d => d.toLocaleDateString()));
+
+    const dayName = daysToProcess.length === 1
+      ? daysToProcess[0].toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      : `${daysToProcess.length} selected days`;
 
     setConfirmDialog({
       isOpen: true,
-      title: 'Clear Blocking Day',
-      message: `Are you sure you want to clear all leave and holidays from ${dayName}?\n\nThis will remove any blocking slots and make the day available for tasks again.`,
+      title: `Clear Blocking ${daysToProcess.length > 1 ? 'Days' : 'Day'}`,
+      message: `Are you sure you want to clear all leave and holidays from ${dayName}?\n\nThis will remove any blocking slots and make ${daysToProcess.length > 1 ? 'these days' : 'the day'} available for tasks again.`,
       type: 'info',
       onConfirm: async () => {
         setConfirmDialog({ ...confirmDialog, isOpen: false });
 
         try {
-          console.log('Clearing blocking for:', date);
+          console.log('🎯 Clearing blocking for captured days:', daysToProcess.map(d => d.toLocaleDateString()));
 
-          // Remove from persistent storage first
-          removeLeaveFromStorage(date);
+          // Process all captured days (use daysToProcess from closure, not state!)
+          for (const date of daysToProcess) {
+            // Remove from persistent storage first
+            removeLeaveFromStorage(date);
 
-          // Clear from calendar data (immediate UI update)
-          clearBlockingFromCalendarData(date);
+            // Clear from calendar data (immediate UI update)
+            clearBlockingFromCalendarData(date);
+          }
+
+          // Clear selections after successful operation
+          setSelectedDays([]);
+
+          const successDayName = daysToProcess.length === 1
+            ? daysToProcess[0].toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+            : `${daysToProcess.length} days`;
 
           showNotification({
             type: 'success',
-            title: 'Blocking Cleared',
-            message: `All leave and holidays have been cleared from ${dayName}.`
+            title: `Blocking Cleared${daysToProcess.length > 1 ? ` (${daysToProcess.length} days)` : ''}`,
+            message: `All leave and holidays have been cleared from ${successDayName}.`
           });
 
         } catch (error) {
@@ -1601,7 +1752,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         }
       }
     });
-  }, [confirmDialog, clearBlockingFromCalendarData, showNotification]);
+  }, [selectedDays, confirmDialog, clearBlockingFromCalendarData, showNotification]);
 
   /**
    * Detect task conflicts for leave setting
@@ -1723,19 +1874,30 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
           // Mark that user has created leave (to disable mock data)
           localStorage.setItem('hasUserCreatedLeave', 'true');
 
-          // Save to persistent storage first
-          leaveData.employeeIds.forEach(employeeId => {
-            addLeaveToStorage(
-              employeeId,
-              leaveData.date,
-              leaveData.leaveType as LeaveType,
-              leaveData.duration as LeaveDuration,
-              leaveData.slot as Slot | undefined
-            );
+          // Process all captured days (for multi-day leave)
+          const daysToProcess = capturedMultiDays.length > 0 ? capturedMultiDays : [leaveData.date];
+
+          console.log('🎯 Processing leave for captured days:', daysToProcess.map(d => d.toLocaleDateString()));
+
+          // Save to persistent storage and update calendar for all days
+          daysToProcess.forEach(date => {
+            leaveData.employeeIds.forEach(employeeId => {
+              addLeaveToStorage(
+                employeeId,
+                date,
+                leaveData.leaveType as LeaveType,
+                leaveData.duration as LeaveDuration,
+                leaveData.slot as Slot | undefined
+              );
+            });
+
+            // Update calendar data immediately for each day
+            addLeaveToCalendarData({ ...leaveData, date });
           });
 
-          // Update calendar data immediately (this will be redundant after refresh, but needed for immediate UI update)
-          addLeaveToCalendarData(leaveData);
+          // Clear selections after successful operation
+          setSelectedDays([]);
+          setCapturedMultiDays([]);
 
           // Prepare success message
           const leaveTypeNames = {
@@ -1756,14 +1918,18 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
             ? `${conflictCheck.conflicts.length} conflicting task(s) were deleted.`
             : '';
 
+          const dateInfo = daysToProcess.length === 1
+            ? `Date: ${daysToProcess[0].toLocaleDateString()}`
+            : `Dates: ${daysToProcess.length} selected days (${daysToProcess[0].toLocaleDateString()} - ${daysToProcess[daysToProcess.length - 1].toLocaleDateString()})`;
+
           const leaveDetails = `Employees: ${employeeNames}
 Type: ${leaveTypeNames[leaveData.leaveType as keyof typeof leaveTypeNames]}
 Duration: ${duration}
-Date: ${leaveData.date.toLocaleDateString()}`;
+${dateInfo}`;
 
           showNotification({
             type: 'success',
-            title: 'Leave Set Successfully',
+            title: `Leave Set Successfully${daysToProcess.length > 1 ? ` (${daysToProcess.length} days)` : ''}`,
             message: `${leaveDetails}${conflictMessage ? '\n\n' + conflictMessage : ''}`
           });
 
@@ -1801,7 +1967,7 @@ Date: ${leaveData.date.toLocaleDateString()}`;
         message: 'Failed to set leave. Please try again.'
       });
     }
-  }, [calendarData, detectTaskConflicts, showNotification, confirmDialog, addLeaveToCalendarData]);
+  }, [calendarData, capturedMultiDays, detectTaskConflicts, showNotification, confirmDialog, addLeaveToCalendarData]);
 
   /**
    * Handle task update from details modal
@@ -1937,6 +2103,10 @@ Date: ${leaveData.date.toLocaleDateString()}`;
         if (selectedTasks.length > 0) {
           setSelectedTasks([]);
           clearedItems.push(`${selectedTasks.length} selected task${selectedTasks.length > 1 ? 's' : ''}`);
+        }
+        if (selectedDays.length > 0) {
+          setSelectedDays([]);
+          clearedItems.push(`${selectedDays.length} selected day${selectedDays.length > 1 ? 's' : ''}`);
         }
 
         if (clearedItems.length > 0) {
@@ -2087,7 +2257,7 @@ Date: ${leaveData.date.toLocaleDateString()}`;
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [copiedTask, selectedTasks, selectedSlots, handleTaskCopy, handleTaskPaste, handleTaskDelete, showNotification]);
+  }, [copiedTask, selectedTasks, selectedSlots, selectedDays, handleTaskCopy, handleTaskPaste, handleTaskDelete, showNotification]);
 
   // Transform teams for UI components
   const teamsForUI = teamService.transformTeamsForUI(teams);
@@ -2099,12 +2269,14 @@ Date: ${leaveData.date.toLocaleDateString()}`;
       return;
     }
 
-    // Don't clear if clicking on a task or within a context menu
+    // Don't clear if clicking on a task, day header, or within a context menu
     const target = e.target as HTMLElement;
     const isTaskClick = target.closest('[data-task-card]') || target.closest('[data-context-menu]');
+    const isDayClick = target.closest('[data-day-header]');
 
-    if (!isTaskClick) {
+    if (!isTaskClick && !isDayClick) {
       setSelectedTasks([]);
+      setSelectedDays([]);
     }
   }, []);
 
@@ -2191,6 +2363,8 @@ Date: ${leaveData.date.toLocaleDateString()}`;
             selectedTaskIds={selectedTasks.map(task => task.assignmentId)}
             selectedSlots={selectedSlots}
             onSlotFocus={handleSlotFocus}
+            selectedDays={selectedDays.map(d => d.toDateString())}
+            onDayClick={handleDayClick}
             onBulkEdit={() => setBulkEditModalOpen(true)}
             onQuickEditTaskType={(task) => {
               console.log('QuickEdit TaskType clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
@@ -2452,8 +2626,10 @@ Date: ${leaveData.date.toLocaleDateString()}`;
           onClose={() => {
             setSetLeaveModalOpen(false);
             setSelectedLeaveDate(null);
+            setCapturedMultiDays([]);
           }}
           selectedDate={selectedLeaveDate}
+          selectedDates={capturedMultiDays}
           employees={calendarData?.employees || []}
           onSubmit={handleLeaveSubmit}
         />
