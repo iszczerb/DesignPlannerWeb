@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import AppHeader from '../components/layout/AppHeader';
 import DayBasedCalendarGrid from '../components/calendar/DayBasedCalendarGrid';
 import TaskCreationModal from '../components/calendar/TaskCreationModal';
 import TaskDetailsModal from '../components/calendar/TaskDetailsModal';
 import SetLeaveModal from '../components/calendar/SetLeaveModal';
+import TeamMemberViewModal from '../components/calendar/TeamMemberViewModal';
+import TeamMemberEditModal from '../components/calendar/TeamMemberEditModal';
+import TeamMemberListModal from '../components/calendar/TeamMemberListModal';
 import BulkEditModal, { BulkEditData } from '../components/calendar/BulkEditModal';
 import QuickEditTaskType from '../components/calendar/QuickEditTaskType';
 import QuickEditStatus from '../components/calendar/QuickEditStatus';
@@ -26,11 +29,17 @@ import {
   LeaveDuration,
   TaskPriority,
   TaskStatus,
-  TaskType
+  CreateTeamMemberDto,
+  UpdateTeamMemberDto
 } from '../types/schedule';
 import { DragItem } from '../types/dragDrop';
 import teamService, { TeamInfo } from '../services/teamService';
 import scheduleService from '../services/scheduleService';
+import { enhanceScheduleEmployeeWithTeamData, createTeamMember, updateTeamMember } from '../services/teamMemberUtils';
+import { employeeService } from '../services/employeeService';
+import { CreateEmployeeRequest } from '../types/employee';
+import { UserRole } from '../types/auth';
+import { storeUpdatedMember, applyStoredTeamMemberChanges, storeDeletedMember, clearAllStoredChanges } from '../services/teamMemberPersistence';
 
 // Mock user context (in real app, this would come from auth context)
 interface UserContext {
@@ -330,6 +339,8 @@ const addMockLeaveData = (data: CalendarViewDto): CalendarViewDto => {
     }
   }
 
+  // DO NOT MODIFY EMPLOYEE DATA - use only database values
+
   return mockData;
 };
 
@@ -360,10 +371,6 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const [taskDetailsMode, setTaskDetailsMode] = useState<'view' | 'edit'>('view');
   const [slotTasks, setSlotTasks] = useState<AssignmentTaskDto[]>([]);
 
-  // Add debugging to track when selectedTasks changes
-  useEffect(() => {
-    console.log('🔍 selectedTasks changed:', selectedTasks.map(t => t.assignmentId));
-  }, [selectedTasks]);
 
   // Clipboard state for copy/paste functionality
   const [copiedTask, setCopiedTask] = useState<AssignmentTaskDto | null>(null);
@@ -507,6 +514,53 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
   // Captured tasks for quick edit (to preserve selection when modal opens)
   const [capturedQuickEditTasks, setCapturedQuickEditTasks] = useState<AssignmentTaskDto[]>([]);
+
+  // Team member management modal states
+  const [teamMemberViewModal, setTeamMemberViewModal] = useState<{
+    isOpen: boolean;
+    member: any;
+  }>({ isOpen: false, member: null });
+
+  const [teamMemberEditModal, setTeamMemberEditModal] = useState<{
+    isOpen: boolean;
+    member: any;
+    mode: 'create' | 'edit';
+    teamId?: number;
+  }>({ isOpen: false, member: null, mode: 'create', teamId: undefined });
+
+  const [teamMemberListModal, setTeamMemberListModal] = useState<{
+    isOpen: boolean;
+    teamId?: number;
+  }>({ isOpen: false, teamId: undefined });
+
+  // Memoize enhanced employees to prevent random data changes on re-render
+  const enhancedEmployees = useMemo(() => {
+    if (!calendarData?.employees) return [];
+
+    // Enhance with team data
+    return calendarData.employees.map(emp => enhanceScheduleEmployeeWithTeamData(emp));
+  }, [calendarData?.employees]);
+
+  // Team member management handlers
+  const handleEmployeeView = useCallback((employee: any) => {
+    const enhancedEmployee = enhanceScheduleEmployeeWithTeamData(employee);
+    setTeamMemberViewModal({ isOpen: true, member: enhancedEmployee });
+  }, []);
+
+  const handleEmployeeEdit = useCallback((employee: any) => {
+    const enhancedEmployee = enhanceScheduleEmployeeWithTeamData(employee);
+    setTeamMemberEditModal({ isOpen: true, member: enhancedEmployee, mode: 'edit', teamId: enhancedEmployee?.teamId });
+  }, []);
+
+
+  const handleTeamAddMember = useCallback((teamId: number) => {
+    console.log('🔍 handleTeamAddMember called with teamId:', teamId);
+    setTeamMemberEditModal({ isOpen: true, member: null, mode: 'create', teamId: teamId });
+  }, []);
+
+  const handleTeamManage = useCallback((teamId: number) => {
+    setTeamMemberListModal({ isOpen: true, teamId });
+  }, []);
 
   // Confirmation dialog state
   const [confirmationDialog, setConfirmationDialog] = useState<{
@@ -655,6 +709,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('🔍 loadCalendarData: Received calendar data:', data);
       console.log('🔍 loadCalendarData: Days in response:', data.days?.map(d => ({ date: d.date, dayName: d.dayName, displayDate: d.displayDate })));
+      console.log('🔍 loadCalendarData: Employee team IDs:', data.employees?.map(e => ({ name: e.fullName, teamId: e.teamId })));
 
       // Always merge stored leave data (this persists through navigation and refresh!)
       const dataWithStoredLeaves = mergeStoredLeaveData(data);
@@ -664,7 +719,27 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       const finalData = shouldAddMockData ? addMockLeaveData(dataWithStoredLeaves) : dataWithStoredLeaves;
 
       console.log('🔍 loadCalendarData: Final data with persistent leaves:', finalData);
-      setCalendarData(finalData);
+
+      // Apply stored team member changes to persist edits through calendar reloads
+      console.log('🔍 Applying stored team member changes...');
+      const updatedEmployees = applyStoredTeamMemberChanges(finalData.employees, finalData.days);
+      console.log('🔍 Team member changes applied. Employee count:', updatedEmployees.length);
+      const dataWithTeamChanges = {
+        ...finalData,
+        employees: updatedEmployees
+      };
+
+      // No more local task assignments - all tasks come from backend
+      const dataWithLocalAssignments = dataWithTeamChanges;
+
+
+      // Ensure employees are sorted alphabetically by first name
+      const finalDataWithSorting = {
+        ...dataWithLocalAssignments,
+        employees: [...dataWithLocalAssignments.employees].sort((a, b) => a.employeeName.localeCompare(b.employeeName))
+      };
+
+      setCalendarData(finalDataWithSorting);
     } catch (err) {
       console.error('Failed to load calendar data:', err);
       setError('Failed to load schedule data');
@@ -684,6 +759,55 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       mode
     );
   }, [loadCalendarData, managedTeamId]);
+
+  /**
+   * TEMPORARY: Clear all stored team member changes (for debugging)
+   */
+  const clearStoredTeamMembers = useCallback(() => {
+    console.log('🧹 Clearing all stored team member changes...');
+    clearAllStoredChanges();
+    console.log('🧹 All stored team member changes cleared!');
+    // Reload calendar to see clean data
+    loadCalendarData();
+  }, [loadCalendarData]);
+
+  // Make this available globally for console access
+  useEffect(() => {
+    (window as any).clearStoredTeamMembers = clearStoredTeamMembers;
+    return () => {
+      delete (window as any).clearStoredTeamMembers;
+    };
+  }, [clearStoredTeamMembers]);
+
+  /**
+   * Handle employee deletion
+   */
+  const handleEmployeeDelete = useCallback(async (employeeId: number) => {
+    try {
+      // Check if this is a fake ID (newly added member) or real database ID
+      const isFakeId = employeeId > 1000000000000; // Timestamp-based IDs are very large
+
+      if (isFakeId) {
+        // This is a locally added member - just remove from persistence
+        console.log('🔍 Deleting locally added member with fake ID:', employeeId);
+        storeDeletedMember(employeeId);
+      } else {
+        // This is a real database employee - call backend API
+        console.log('🔍 Deleting real database member with ID:', employeeId);
+        await employeeService.deleteEmployee(employeeId);
+        // Also store in persistence to persist the deletion
+        storeDeletedMember(employeeId);
+      }
+
+      // Reload calendar data to reflect changes
+      await loadCalendarData();
+
+      showNotification('Team member deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting team member:', error);
+      showNotification('Failed to delete team member. Please try again.', 'error');
+    }
+  }, [loadCalendarData, showNotification]);
 
   /**
    * Handle data fetching requests
@@ -2070,15 +2194,16 @@ ${dateInfo}`;
     loadTeams();
   }, []); // Only run once on mount
 
-  // Load calendar data when dependencies change
+  // Load calendar data when ONLY essential dependencies change (not windowStartDate or viewType!)
   useEffect(() => {
     if (teams.length > 0 || teamViewMode === TeamViewMode.AllTeams) {
+      console.log('🔍 Loading calendar data due to team/mode change');
       loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
         teamViewMode
       );
     }
-  }, [loadCalendarData, teams.length, managedTeamId, teamViewMode, windowStartDate, viewType]); // Changed dependency from currentDate to windowStartDate
+  }, [loadCalendarData, teams.length, managedTeamId, teamViewMode]); // REMOVED windowStartDate and viewType to prevent constant reloads!
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -2499,6 +2624,11 @@ ${dateInfo}`;
                 }
               });
             }}
+            onEmployeeView={handleEmployeeView}
+            onEmployeeEdit={handleEmployeeEdit}
+            onEmployeeDelete={handleEmployeeDelete}
+            onAddNewMember={handleTeamAddMember}
+            onManageTeam={handleTeamManage}
           />
         ) : (
           <div style={{ 
@@ -2634,6 +2764,236 @@ ${dateInfo}`;
           onSubmit={handleLeaveSubmit}
         />
       )}
+
+      {/* Team Member Modals */}
+      <TeamMemberViewModal
+        isOpen={teamMemberViewModal.isOpen}
+        member={teamMemberViewModal.member}
+        onClose={() => {
+          setTeamMemberViewModal({ isOpen: false, member: null });
+          // Reopen the manage team modal to maintain navigation flow
+          setTeamMemberListModal({ isOpen: true, teamId: teamMemberListModal.teamId });
+        }}
+        onEdit={(member) => {
+          setTeamMemberViewModal({ isOpen: false, member: null });
+          setTeamMemberEditModal({ isOpen: true, member, mode: 'edit', teamId: member?.teamId });
+        }}
+        onDelete={(employeeId) => {
+          setTeamMemberViewModal({ isOpen: false, member: null });
+          handleEmployeeDelete(employeeId);
+        }}
+      />
+
+      <TeamMemberEditModal
+        isOpen={teamMemberEditModal.isOpen}
+        member={teamMemberEditModal.member}
+        isCreating={teamMemberEditModal.mode === 'create'}
+        onClose={() => {
+          const currentTeamId = teamMemberEditModal.teamId;
+          setTeamMemberEditModal({ isOpen: false, member: null, mode: 'create', teamId: undefined });
+          // Reopen manage modal when closing edit modal
+          if (currentTeamId) {
+            setTeamMemberListModal({ isOpen: true, teamId: currentTeamId });
+          }
+        }}
+        onSave={async (memberData) => {
+          console.log('Save team member:', memberData);
+
+          try {
+            if (teamMemberEditModal.mode === 'create') {
+              // Create new employee in backend
+              const createData = memberData as CreateTeamMemberDto;
+
+              // Generate unique username from name with timestamp
+              const baseUsername = `${createData.firstName.toLowerCase()}.${createData.lastName.toLowerCase()}`.replace(/[^a-z.]/g, '');
+              const username = `${baseUsername}.${Date.now().toString().slice(-4)}`;
+              const password = 'TempPassword123!';
+
+              // Use the team ID from existing employees if teamId is null
+              const effectiveTeamId = teamMemberEditModal.teamId || calendarData?.employees?.[0]?.teamId || 1;
+
+              const createEmployeeRequest: CreateEmployeeRequest = {
+                username,
+                password,
+                firstName: createData.firstName,
+                lastName: createData.lastName,
+                role: UserRole.TeamMember,
+                employeeId: createData.employeeId,
+                position: createData.role,
+                hireDate: createData.startDate,
+                teamId: effectiveTeamId
+              };
+
+              console.log('🔍 teamMemberEditModal.teamId:', teamMemberEditModal.teamId);
+              console.log('🔍 Creating employee with request:', createEmployeeRequest);
+
+              try {
+                const newEmployee = await employeeService.createEmployee(createEmployeeRequest);
+
+                // Add the new employee to local calendar data instead of reloading from server
+                if (calendarData && newEmployee) {
+                  const newEmployeeData = {
+                    employeeId: newEmployee.employee?.id || newEmployee.id,
+                    employeeName: `${newEmployee.firstName} ${newEmployee.lastName}`,
+                    firstName: newEmployee.firstName,
+                    lastName: newEmployee.lastName,
+                    role: newEmployee.employee?.position || createData.role,
+                    team: 'Design & Development Team',
+                    teamType: createData.teamType,
+                    skills: createData.skills || [],
+                    startDate: createData.startDate,
+                    isActive: newEmployee.isActive ?? true,
+                    notes: createData.notes || '',
+                    dayAssignments: []
+                  };
+
+                  const updatedCalendarData = {
+                    ...calendarData,
+                    employees: [...calendarData.employees, newEmployeeData]
+                  };
+                  setCalendarData(updatedCalendarData);
+                  console.log('🔍 Added new employee to local calendar data without server reload');
+                }
+
+                // Show success notification
+                showNotification('Team member created successfully!', 'success');
+
+                // Close edit modal and reopen manage modal on success
+                setTeamMemberEditModal({ isOpen: false, member: null, mode: 'create', teamId: undefined });
+                setTeamMemberListModal({ isOpen: true, teamId: teamMemberEditModal.teamId });
+              } catch (error: any) {
+                console.error('Failed to create employee:', error);
+                console.error('🔍 Error response:', error.response?.data);
+                console.error('🔍 Validation errors:', error.response?.data?.errors);
+                if (error.response?.data?.errors) {
+                  console.error('🔍 Detailed validation errors:', JSON.stringify(error.response.data.errors, null, 2));
+                }
+                showNotification(`Failed to create team member: ${error.response?.data?.message || error.message}`, 'error');
+                return; // Don't close modal on error
+              }
+            } else if (teamMemberEditModal.mode === 'edit' && teamMemberEditModal.member) {
+              // Update existing member via API
+              const updateData = memberData as UpdateTeamMemberDto;
+
+              console.log('🔍 Updating employee with data:', updateData);
+
+              // Find the employee in the current data to get the database ID
+              const currentEmployee = calendarData?.employees.find(emp => emp.employeeId === updateData.employeeId);
+              if (!currentEmployee) {
+                throw new Error(`Employee not found in current data. Looking for employeeId: ${updateData.employeeId}`);
+              }
+
+              console.log('🔍 Found current employee:', currentEmployee);
+
+              const updateRequest = {
+                firstName: updateData.firstName,
+                lastName: updateData.lastName,
+                role: UserRole.TeamMember,
+                teamId: teamMemberEditModal.teamId || 1,
+                position: updateData.role,
+                hireDate: updateData.startDate,
+                isActive: updateData.isActive ?? true
+              };
+
+              console.log('🔍 Sending update request to API:', {
+                employeeId: currentEmployee.employeeId,
+                request: updateRequest
+              });
+
+              try {
+                console.log('🔍 About to call employeeService.updateEmployee with:', currentEmployee.employeeId, updateRequest);
+                const result = await employeeService.updateEmployee(currentEmployee.employeeId, updateRequest);
+                console.log('🔍 employeeService.updateEmployee returned:', result);
+                console.log('🔍 Update API response:', result);
+
+                // Store the updated member in persistence to survive calendar reloads
+                const persistedMember: TeamMemberDto = {
+                  employeeId: updateData.employeeId,
+                  employeeName: `${result.firstName} ${result.lastName}`,
+                  firstName: result.firstName,
+                  lastName: result.lastName,
+                  role: result.employee?.position || updateData.role,
+                  team: updateData.team, // Keep current team name
+                  teamType: updateData.teamType,
+                  skills: updateData.skills,
+                  startDate: updateData.startDate,
+                  isActive: true,
+                  notes: updateData.notes
+                };
+                storeUpdatedMember(persistedMember);
+                console.log('🔍 Stored updated member in persistence:', persistedMember);
+
+                // Update the local calendar data directly instead of reloading from server
+                if (calendarData && result) {
+                  const updatedCalendarData = {
+                    ...calendarData,
+                    employees: calendarData.employees.map(emp =>
+                      emp.employeeId === updateData.employeeId
+                        ? {
+                            ...emp,
+                            firstName: result.firstName,
+                            lastName: result.lastName,
+                            employeeName: `${result.firstName} ${result.lastName}`,
+                            role: result.employee?.position || updateData.role,
+                            startDate: updateData.startDate,
+                            teamType: updateData.teamType,
+                            skills: updateData.skills,
+                            notes: updateData.notes
+                          }
+                        : emp
+                    )
+                  };
+                  setCalendarData(updatedCalendarData);
+                  console.log('🔍 Updated local calendar data without server reload');
+                }
+
+                // Show success notification
+                showNotification('Team member updated successfully!', 'success');
+
+                // Close edit modal and reopen manage modal on success
+                setTeamMemberEditModal({ isOpen: false, member: null, mode: 'create', teamId: undefined });
+                setTeamMemberListModal({ isOpen: true, teamId: teamMemberEditModal.teamId });
+              } catch (error: any) {
+                console.error('Failed to update employee:', error);
+                console.error('🔍 Update Error response:', error.response?.data);
+                console.error('🔍 Update Validation errors:', error.response?.data?.errors);
+                if (error.response?.data?.errors) {
+                  console.error('🔍 Update Detailed validation errors:', JSON.stringify(error.response.data.errors, null, 2));
+                }
+                showNotification(`Failed to update team member: ${error.response?.data?.message || error.message}`, 'error');
+                return; // Don't close modal on error
+              }
+            }
+          } catch (error) {
+            console.error('Error saving team member:', error);
+            showNotification('Failed to save team member. Please try again.', 'error');
+          }
+        }}
+      />
+
+      <TeamMemberListModal
+        isOpen={teamMemberListModal.isOpen}
+        teamId={teamMemberListModal.teamId}
+        onClose={() => setTeamMemberListModal({ isOpen: false, teamId: undefined })}
+        onCreateMember={() => {
+          const currentTeamId = teamMemberListModal.teamId;
+          setTeamMemberListModal({ isOpen: false, teamId: undefined });
+          setTeamMemberEditModal({ isOpen: true, member: null, mode: 'create', teamId: currentTeamId });
+        }}
+        onViewMember={(member) => {
+          setTeamMemberListModal({ isOpen: false, teamId: undefined });
+          setTeamMemberViewModal({ isOpen: true, member });
+        }}
+        onEditMember={(member) => {
+          const currentTeamId = teamMemberListModal.teamId;
+          setTeamMemberListModal({ isOpen: false, teamId: undefined });
+          setTeamMemberEditModal({ isOpen: true, member, mode: 'edit', teamId: currentTeamId });
+        }}
+        onDeleteMember={(employeeId) => {
+          handleEmployeeDelete(employeeId);
+        }}
+        members={enhancedEmployees}
+      />
 
       {/* Confirmation Dialog */}
       <ConfirmDialog

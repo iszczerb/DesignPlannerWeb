@@ -67,14 +67,6 @@ const Dashboard: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary">
-                  Email
-                </Typography>
-                <Typography variant="body1">
-                  {user?.email}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
                   Role
                 </Typography>
                 <Typography 

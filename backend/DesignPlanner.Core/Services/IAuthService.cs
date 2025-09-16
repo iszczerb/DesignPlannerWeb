@@ -10,9 +10,7 @@ namespace DesignPlanner.Core.Services
         Task LogoutAsync(int userId);
         Task<UserDto?> GetUserByIdAsync(int userId);
         Task<UserDto?> GetUserByUsernameAsync(string username);
-        Task<UserDto?> GetUserByEmailAsync(string email);
         Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
         Task<bool> IsUsernameAvailableAsync(string username);
-        Task<bool> IsEmailAvailableAsync(string email);
     }
 }

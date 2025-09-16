@@ -32,6 +32,24 @@ export enum LeaveType {
   Training = 3
 }
 
+export enum TeamType {
+  Structural = 1,
+  NonStructural = 2,
+  BIM = 3,
+  RD = 4
+}
+
+export enum SkillType {
+  BOM = 1,
+  BIM = 2,
+  REVIT = 3,
+  SOLIDWORKS = 4,
+  NAVISWORKS = 5,
+  MESH = 6,
+  MANIFOLD = 7,
+  FISHTANK = 8
+}
+
 export enum LeaveDuration {
   FullDay = 1,
   HalfDay = 2
@@ -61,6 +79,13 @@ export interface EmployeeScheduleDto {
   team: string;
   isActive: boolean;
   dayAssignments: DayAssignmentDto[];
+  // New fields for enhanced team member management
+  firstName?: string;
+  lastName?: string;
+  teamType?: TeamType;
+  skills?: SkillType[];
+  startDate?: string;
+  notes?: string;
 }
 
 export interface DayAssignmentDto {
@@ -183,6 +208,51 @@ export interface DateRangeDto {
   employeeId?: number;
 }
 
+// Team Member Management DTOs
+export interface TeamMemberDto {
+  employeeId: number;
+  employeeName: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  team: string;
+  teamType: TeamType;
+  skills: SkillType[];
+  startDate: string;
+  isActive: boolean;
+  notes?: string;
+}
+
+export interface CreateTeamMemberDto {
+  firstName: string;
+  lastName: string;
+  role: string;
+  employeeId: string;
+  teamType: TeamType;
+  skills: SkillType[];
+  startDate: string;
+  notes?: string;
+}
+
+export interface UpdateTeamMemberDto {
+  employeeId: number;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  teamType?: TeamType;
+  skills?: SkillType[];
+  startDate?: string;
+  isActive?: boolean;
+  notes?: string;
+}
+
+export interface TeamMemberListDto {
+  members: TeamMemberDto[];
+  totalCount: number;
+  activeCount: number;
+  teamCounts: { [key in TeamType]: number };
+}
+
 // UI-specific interfaces
 export interface CalendarViewProps {
   viewType: CalendarViewType;
@@ -224,6 +294,32 @@ export interface CalendarGridProps {
   onTaskClick?: (task: AssignmentTaskDto) => void;
   onSlotClick?: (date: Date, slot: Slot, employeeId: number) => void;
   onRefresh?: () => void;
+}
+
+export interface TeamMemberViewModalProps {
+  isOpen: boolean;
+  member: TeamMemberDto | null;
+  onClose: () => void;
+  onEdit?: (member: TeamMemberDto) => void;
+  onDelete?: (employeeId: number) => void;
+}
+
+export interface TeamMemberEditModalProps {
+  isOpen: boolean;
+  member: TeamMemberDto | null;
+  onClose: () => void;
+  onSave: (member: CreateTeamMemberDto | UpdateTeamMemberDto) => void;
+  isCreating?: boolean;
+}
+
+export interface TeamMemberListModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  teamId?: number;
+  onViewMember?: (member: TeamMemberDto) => void;
+  onEditMember?: (member: TeamMemberDto) => void;
+  onDeleteMember?: (employeeId: number) => void;
+  onCreateMember?: () => void;
 }
 
 // Utility types
@@ -291,6 +387,50 @@ export const LEAVE_TYPE_ICONS = {
   [LeaveType.AnnualLeave]: '✈️',
   [LeaveType.SickDay]: '🤒',
   [LeaveType.Training]: '🎓',
+};
+
+export type TeamTypeLabel = {
+  [key in TeamType]: string;
+};
+
+export type SkillTypeLabel = {
+  [key in SkillType]: string;
+};
+
+export const TEAM_TYPE_LABELS: TeamTypeLabel = {
+  [TeamType.Structural]: 'Structural',
+  [TeamType.NonStructural]: 'Non-Structural',
+  [TeamType.BIM]: 'BIM',
+  [TeamType.RD]: 'R&D',
+};
+
+export const SKILL_TYPE_LABELS: SkillTypeLabel = {
+  [SkillType.BOM]: 'BOM',
+  [SkillType.BIM]: 'BIM',
+  [SkillType.REVIT]: 'REVIT',
+  [SkillType.SOLIDWORKS]: 'SOLIDWORKS',
+  [SkillType.NAVISWORKS]: 'NAVISWORKS',
+  [SkillType.MESH]: 'MESH',
+  [SkillType.MANIFOLD]: 'MANIFOLD',
+  [SkillType.FISHTANK]: 'FISHTANK',
+};
+
+export const TEAM_TYPE_COLORS = {
+  [TeamType.Structural]: '#3b82f6',     // Blue
+  [TeamType.NonStructural]: '#10b981',  // Green
+  [TeamType.BIM]: '#8b5cf6',            // Purple
+  [TeamType.RD]: '#f59e0b',             // Orange
+};
+
+export const SKILL_TYPE_COLORS = {
+  [SkillType.BOM]: '#6b7280',           // Gray
+  [SkillType.BIM]: '#8b5cf6',           // Purple
+  [SkillType.REVIT]: '#3b82f6',         // Blue
+  [SkillType.SOLIDWORKS]: '#10b981',    // Green
+  [SkillType.NAVISWORKS]: '#f59e0b',    // Orange
+  [SkillType.MESH]: '#ef4444',          // Red
+  [SkillType.MANIFOLD]: '#ec4899',      // Pink
+  [SkillType.FISHTANK]: '#06b6d4',      // Cyan
 };
 
 export const MAX_TASKS_PER_SLOT = 4;

@@ -26,6 +26,9 @@ namespace DesignPlanner.Api.Controllers
         {
             try
             {
+                _logger.LogInformation("🔍 Received CreateEmployee request: Username={Username}, FirstName={FirstName}, LastName={LastName}, TeamId={TeamId}",
+                    request.Username, request.FirstName, request.LastName, request.TeamId);
+
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
@@ -118,6 +121,7 @@ namespace DesignPlanner.Api.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<UserDto>> UpdateEmployee(int id, [FromBody] UpdateEmployeeRequestDto request)
         {
+            _logger.LogInformation("🔍 UpdateEmployee called with id: {Id}, request: {@Request}", id, request);
             try
             {
                 if (!ModelState.IsValid)

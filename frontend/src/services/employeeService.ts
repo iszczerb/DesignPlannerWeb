@@ -26,6 +26,7 @@ employeeApi.interceptors.request.use((config) => {
 });
 
 export const employeeService = {
+
   // Create new employee
   async createEmployee(request: CreateEmployeeRequest): Promise<User> {
     const response = await employeeApi.post('', request);

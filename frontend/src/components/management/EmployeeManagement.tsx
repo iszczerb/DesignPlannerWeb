@@ -300,7 +300,6 @@ const EmployeeManagement: React.FC = () => {
             <TableRow>
               <TableCell>Name</TableCell>
               <TableCell>Username</TableCell>
-              <TableCell>Email</TableCell>
               <TableCell>Role</TableCell>
               <TableCell>Position</TableCell>
               <TableCell>Team</TableCell>
@@ -338,7 +337,6 @@ const EmployeeManagement: React.FC = () => {
                     )}
                   </TableCell>
                   <TableCell>{employee.username}</TableCell>
-                  <TableCell>{employee.email}</TableCell>
                   <TableCell>
                     <Chip
                       label={getRoleDisplayName(employee.role)}

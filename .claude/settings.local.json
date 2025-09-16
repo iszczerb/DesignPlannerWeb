@@ -22,7 +22,12 @@
       "Bash(copy referenceTateLogo.png frontendpublicassetslogostate-logo.png)",
       "Bash(dir:*)",
       "Bash(copy:*)",
-      "Read(//c/Users/igor/source/repos/**)"
+      "Read(//c/Users/igor/source/repos/**)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(git checkout:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

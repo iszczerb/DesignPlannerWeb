@@ -31,7 +31,6 @@ namespace DesignPlanner.Core.Services
             {
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Name, user.Username),
-                new(ClaimTypes.Email, user.Email),
                 new(ClaimTypes.GivenName, user.FirstName),
                 new(ClaimTypes.Surname, user.LastName),
                 new(ClaimTypes.Role, user.Role.ToString()),

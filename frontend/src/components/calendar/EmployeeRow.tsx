@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import TimeSlot from './TimeSlot';
 import {
   EmployeeRowProps,
   Slot,
   AssignmentTaskDto,
-  CalendarDayDto
+  CalendarDayDto,
+  TEAM_TYPE_LABELS
 } from '../../types/schedule';
 import { DragItem } from '../../types/dragDrop';
 
@@ -19,6 +20,9 @@ interface ExtendedEmployeeRowProps extends EmployeeRowProps {
   teamColor?: string;
   isTeamManaged?: boolean;
   showTeamIndicator?: boolean;
+  onEmployeeView?: (employee: EmployeeScheduleDto) => void;
+  onEmployeeEdit?: (employee: EmployeeScheduleDto) => void;
+  onEmployeeDelete?: (employeeId: number) => void;
 }
 
 const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
@@ -36,7 +40,10 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
   hasCopiedTask = false,
   teamColor,
   isTeamManaged = true,
-  showTeamIndicator = false
+  showTeamIndicator = false,
+  onEmployeeView,
+  onEmployeeEdit,
+  onEmployeeDelete
 }) => {
   // Create a map of day assignments for easy lookup
   const dayAssignmentMap = useMemo(() => {
@@ -46,6 +53,17 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
     });
     return map;
   }, [employee.dayAssignments]);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0
+  });
 
   const handleTaskClick = (task: AssignmentTaskDto) => {
     if (onTaskClick) {
@@ -63,6 +81,48 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
     if (onTaskDrop) {
       onTaskDrop(dragItem, targetDate, targetSlot, targetEmployeeId);
     }
+  };
+
+  const handleEmployeeContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setContextMenu({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  };
+
+  const handleEmployeeView = () => {
+    onEmployeeView?.(employee);
+    handleCloseContextMenu();
+  };
+
+  const handleEmployeeEdit = () => {
+    onEmployeeEdit?.(employee);
+    handleCloseContextMenu();
+  };
+
+  const handleEmployeeDelete = () => {
+    const confirmMessage = `Are you sure you want to delete ${employee.employeeName}?\n\n` +
+      `Role: ${employee.role}\n` +
+      `Team: ${employee.team}\n` +
+      `Status: ${employee.isActive ? 'Active' : 'Inactive'}\n\n` +
+      `This action cannot be undone and will:\n` +
+      `• Remove the member from all teams and assignments\n` +
+      `• Delete all associated schedule data\n` +
+      `• Remove access to all systems and projects\n\n` +
+      `Are you absolutely sure you want to proceed?`;
+
+    if (window.confirm(confirmMessage)) {
+      onEmployeeDelete?.(employee.employeeId);
+    }
+    handleCloseContextMenu();
   };
 
   const getEmployeeSidebarStyle = (): React.CSSProperties => ({
@@ -205,7 +265,14 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
       minHeight: '240px',
     }}>
       {/* Employee sidebar */}
-      <div style={getEmployeeSidebarStyle()}>
+      <div
+        style={{
+          ...getEmployeeSidebarStyle(),
+          cursor: 'pointer',
+        }}
+        onContextMenu={handleEmployeeContextMenu}
+        title="Right-click to view employee options"
+      >
         <div style={getEmployeeNameStyle()}>
           {employee.employeeName}
           {!isTeamManaged && (
@@ -234,7 +301,9 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
         
         <div style={getEmployeeInfoStyle()}>
           <div>{employee.role}</div>
-          <div>{employee.team}</div>
+          <div style={{ fontWeight: '600', color: '#4f46e5' }}>
+            {employee.team || (employee.teamType ? TEAM_TYPE_LABELS[employee.teamType] : 'Unassigned')}
+          </div>
         </div>
 
         <div style={getEmployeeStatusStyle()}>
@@ -311,6 +380,112 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
       }}>
         {days.map(renderDaySlots)}
       </div>
+
+      {/* Employee Context Menu */}
+      {contextMenu.visible && (
+        <>
+          {/* Backdrop to close menu */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999998,
+            }}
+            onClick={handleCloseContextMenu}
+          />
+
+          {/* Context Menu */}
+          <div
+            style={{
+              position: 'fixed',
+              left: Math.max(10, Math.min(contextMenu.x, window.innerWidth - 200)),
+              top: Math.max(10, Math.min(contextMenu.y, window.innerHeight - 200)),
+              zIndex: 999999,
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              overflow: 'hidden',
+              minWidth: '180px',
+            }}
+          >
+            <div style={{
+              padding: '8px 16px',
+              borderBottom: '1px solid #f3f4f6',
+              backgroundColor: '#f9fafb',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              color: '#6b7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>
+              {employee.employeeName}
+            </div>
+
+            <div
+              onClick={handleEmployeeView}
+              style={{
+                padding: '12px 16px',
+                fontSize: '0.875rem',
+                color: '#374151',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <span style={{ fontSize: '1rem' }}>👁️</span>
+              View Member Details
+            </div>
+
+            <div
+              onClick={handleEmployeeEdit}
+              style={{
+                padding: '12px 16px',
+                fontSize: '0.875rem',
+                color: '#374151',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <span style={{ fontSize: '1rem' }}>✏️</span>
+              Edit Member
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '4px 0' }} />
+
+            <div
+              onClick={handleEmployeeDelete}
+              style={{
+                padding: '12px 16px',
+                fontSize: '0.875rem',
+                color: '#dc2626',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <span style={{ fontSize: '1rem' }}>🗑️</span>
+              Delete Member
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

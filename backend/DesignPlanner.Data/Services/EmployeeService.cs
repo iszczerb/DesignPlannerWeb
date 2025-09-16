@@ -26,17 +26,10 @@ namespace DesignPlanner.Data.Services
                 throw new ArgumentException("Username is already taken");
             }
 
-            // Check if email already exists
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
-            {
-                throw new ArgumentException("Email is already registered");
-            }
-
-            // Create user
+// Create user
             var user = new User
             {
                 Username = request.Username,
-                Email = request.Email,
                 PasswordHash = HashPassword(request.Password),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
@@ -49,7 +42,7 @@ namespace DesignPlanner.Data.Services
             await _context.SaveChangesAsync();
 
             // Create employee if team info provided
-            if (request.TeamId.HasValue && !string.IsNullOrEmpty(request.EmployeeId))
+            if (request.TeamId.HasValue)
             {
                 var employee = new Employee
                 {
@@ -57,7 +50,6 @@ namespace DesignPlanner.Data.Services
                     TeamId = request.TeamId.Value,
                     EmployeeId = request.EmployeeId,
                     Position = request.Position,
-                    PhoneNumber = request.PhoneNumber,
                     HireDate = request.HireDate ?? DateTime.UtcNow,
                     TotalAnnualLeaveDays = 25, // Default
                     UsedLeaveDays = 0,
@@ -87,18 +79,12 @@ namespace DesignPlanner.Data.Services
             if (employee == null)
                 throw new ArgumentException("Employee not found");
 
-            // Check if email already exists (excluding current user)
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email && u.Id != employee.UserId))
-            {
-                throw new ArgumentException("Email is already registered");
-            }
 
             // Update user
-            employee.User.Email = request.Email;
             employee.User.FirstName = request.FirstName;
             employee.User.LastName = request.LastName;
             employee.User.Role = request.Role;
-            employee.User.UpdatedAt = DateTime.UtcNow;
+            // employee.User.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
             // Update employee
             if (request.TeamId.HasValue)
@@ -106,13 +92,12 @@ namespace DesignPlanner.Data.Services
             
             employee.EmployeeId = request.EmployeeId ?? employee.EmployeeId;
             employee.Position = request.Position;
-            employee.PhoneNumber = request.PhoneNumber;
             
             if (request.HireDate.HasValue)
                 employee.HireDate = request.HireDate.Value;
                 
             employee.IsActive = request.IsActive;
-            employee.UpdatedAt = DateTime.UtcNow;
+            // employee.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
             await _context.SaveChangesAsync();
 
@@ -137,8 +122,8 @@ namespace DesignPlanner.Data.Services
             // Soft delete - deactivate user and employee
             employee.User.IsActive = false;
             employee.IsActive = false;
-            employee.UpdatedAt = DateTime.UtcNow;
-            employee.User.UpdatedAt = DateTime.UtcNow;
+            // employee.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
+            // employee.User.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
             await _context.SaveChangesAsync();
             return true;
@@ -169,11 +154,10 @@ namespace DesignPlanner.Data.Services
             if (!string.IsNullOrEmpty(query.SearchTerm))
             {
                 var searchTerm = query.SearchTerm.ToLower();
-                queryable = queryable.Where(u => 
+                queryable = queryable.Where(u =>
                     u.FirstName.ToLower().Contains(searchTerm) ||
                     u.LastName.ToLower().Contains(searchTerm) ||
                     u.Username.ToLower().Contains(searchTerm) ||
-                    u.Email.ToLower().Contains(searchTerm) ||
                     (u.Employee!.EmployeeId != null && u.Employee.EmployeeId.ToLower().Contains(searchTerm)));
             }
 
@@ -204,9 +188,6 @@ namespace DesignPlanner.Data.Services
                 "username" => query.SortDirection.ToLower() == "desc" 
                     ? queryable.OrderByDescending(u => u.Username) 
                     : queryable.OrderBy(u => u.Username),
-                "email" => query.SortDirection.ToLower() == "desc" 
-                    ? queryable.OrderByDescending(u => u.Email) 
-                    : queryable.OrderBy(u => u.Email),
                 "role" => query.SortDirection.ToLower() == "desc" 
                     ? queryable.OrderByDescending(u => u.Role) 
                     : queryable.OrderBy(u => u.Role),
@@ -226,7 +207,6 @@ namespace DesignPlanner.Data.Services
                 {
                     Id = u.Id,
                     Username = u.Username,
-                    Email = u.Email,
                     FirstName = u.FirstName,
                     LastName = u.LastName,
                     Role = u.Role,
@@ -235,7 +215,6 @@ namespace DesignPlanner.Data.Services
                     LastLoginAt = u.LastLoginAt,
                     EmployeeId = u.Employee!.EmployeeId,
                     Position = u.Employee.Position,
-                    PhoneNumber = u.Employee.PhoneNumber,
                     HireDate = u.Employee.HireDate,
                     TeamName = u.Employee.Team != null ? u.Employee.Team.Name : null
                 })
@@ -261,7 +240,7 @@ namespace DesignPlanner.Data.Services
                 return false;
 
             employee.User.PasswordHash = HashPassword(newPassword);
-            employee.User.UpdatedAt = DateTime.UtcNow;
+            // employee.User.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
             await _context.SaveChangesAsync();
             return true;
@@ -278,8 +257,8 @@ namespace DesignPlanner.Data.Services
 
             employee.User.IsActive = isActive;
             employee.IsActive = isActive;
-            employee.UpdatedAt = DateTime.UtcNow;
-            employee.User.UpdatedAt = DateTime.UtcNow;
+            // employee.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
+            // employee.User.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
             await _context.SaveChangesAsync();
             return true;
@@ -330,7 +309,6 @@ namespace DesignPlanner.Data.Services
             {
                 Id = user.Id,
                 Username = user.Username,
-                Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Role = user.Role,
@@ -342,7 +320,6 @@ namespace DesignPlanner.Data.Services
                     Id = user.Employee.Id,
                     EmployeeId = user.Employee.EmployeeId,
                     Position = user.Employee.Position,
-                    PhoneNumber = user.Employee.PhoneNumber,
                     HireDate = user.Employee.HireDate,
                     IsActive = user.Employee.IsActive,
                     Team = user.Employee.Team != null ? new TeamDto

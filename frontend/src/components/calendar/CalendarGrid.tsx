@@ -31,6 +31,13 @@ interface ExtendedCalendarGridProps extends CalendarGridProps {
   managedTeamId?: number;
   collapsedTeams?: Set<number>;
   onToggleTeamCollapse?: (teamId: number) => void;
+  // Team member management props
+  onEmployeeView?: (employee: any) => void;
+  onEmployeeEdit?: (employee: any) => void;
+  onEmployeeDelete?: (employeeId: number) => void;
+  onTeamViewAllMembers?: (teamId: number) => void;
+  onTeamAddMember?: (teamId: number) => void;
+  onTeamManage?: (teamId: number) => void;
 }
 
 const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
@@ -51,7 +58,13 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   teams = [],
   managedTeamId,
   collapsedTeams = new Set(),
-  onToggleTeamCollapse
+  onToggleTeamCollapse,
+  onEmployeeView,
+  onEmployeeEdit,
+  onEmployeeDelete,
+  onTeamViewAllMembers,
+  onTeamAddMember,
+  onTeamManage
 }) => {
   const handleTaskClick = (task: AssignmentTaskDto) => {
     if (onTaskClick) {
@@ -314,6 +327,12 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                   onTaskCopy={onTaskCopy}
                   onTaskPaste={onTaskPaste}
                   hasCopiedTask={hasCopiedTask}
+                  onEmployeeView={onEmployeeView}
+                  onEmployeeEdit={onEmployeeEdit}
+                  onEmployeeDelete={onEmployeeDelete}
+                  onTeamViewAllMembers={onTeamViewAllMembers}
+                  onTeamAddMember={onTeamAddMember}
+                  onTeamManage={onTeamManage}
                 />
               );
             })}
@@ -342,6 +361,12 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                 onTaskCopy={onTaskCopy}
                 onTaskPaste={onTaskPaste}
                 hasCopiedTask={hasCopiedTask}
+                onEmployeeView={onEmployeeView}
+                onEmployeeEdit={onEmployeeEdit}
+                onEmployeeDelete={onEmployeeDelete}
+                onTeamViewAllMembers={onTeamViewAllMembers}
+                onTeamAddMember={onTeamAddMember}
+                onTeamManage={onTeamManage}
               />
             )}
           </>
@@ -367,6 +392,9 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                   teamColor={team?.color}
                   isTeamManaged={team ? team.isManaged : true}
                   showTeamIndicator={true}
+                  onEmployeeView={onEmployeeView}
+                  onEmployeeEdit={onEmployeeEdit}
+                  onEmployeeDelete={onEmployeeDelete}
                 />
               );
             })}

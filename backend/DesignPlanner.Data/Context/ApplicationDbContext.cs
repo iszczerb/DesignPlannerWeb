@@ -107,7 +107,7 @@ namespace DesignPlanner.Data.Context
                     ((ITimestampEntity)entity.Entity).CreatedAt = now;
                 }
 
-                ((ITimestampEntity)entity.Entity).UpdatedAt = now;
+                // ((ITimestampEntity)entity.Entity).UpdatedAt = now; // Disabled to prevent data regeneration on every action
             }
         }
     }

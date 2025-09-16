@@ -154,6 +154,93 @@ if (app.Environment.IsDevelopment())
             return Results.Problem($"Failed to seed database: {ex.Message}");
         }
     }).WithTags("Development");
+
+    // Development-only fix manager role endpoint
+    app.MapPost("/api/dev/fix-manager-role", async (IServiceProvider serviceProvider) =>
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            var managerUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "manager");
+            if (managerUser != null)
+            {
+                managerUser.Role = DesignPlanner.Core.Enums.UserRole.Manager;
+                await context.SaveChangesAsync();
+                logger.LogInformation("Manager role updated successfully");
+                return Results.Ok(new { success = true, message = "Manager role updated to Manager (2)" });
+            }
+            else
+            {
+                return Results.NotFound(new { success = false, message = "Manager user not found" });
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to update manager role");
+            return Results.Problem($"Failed to update manager role: {ex.Message}");
+        }
+    }).WithTags("Development");
+
+    // Development-only revert manager role endpoint
+    app.MapPost("/api/dev/revert-manager-role", async (IServiceProvider serviceProvider) =>
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            var managerUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "manager");
+            if (managerUser != null)
+            {
+                managerUser.Role = DesignPlanner.Core.Enums.UserRole.TeamMember;
+                await context.SaveChangesAsync();
+                logger.LogInformation("Manager role reverted to TeamMember successfully");
+                return Results.Ok(new { success = true, message = "Manager role reverted to TeamMember (3)" });
+            }
+            else
+            {
+                return Results.NotFound(new { success = false, message = "Manager user not found" });
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to revert manager role");
+            return Results.Problem($"Failed to revert manager role: {ex.Message}");
+        }
+    }).WithTags("Development");
+
+    // Development-only set manager to admin endpoint
+    app.MapPost("/api/dev/set-manager-admin", async (IServiceProvider serviceProvider) =>
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            var managerUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "manager");
+            if (managerUser != null)
+            {
+                managerUser.Role = DesignPlanner.Core.Enums.UserRole.Admin;
+                await context.SaveChangesAsync();
+                logger.LogInformation("Manager role updated to Admin successfully");
+                return Results.Ok(new { success = true, message = "Manager role updated to Admin (1)" });
+            }
+            else
+            {
+                return Results.NotFound(new { success = false, message = "Manager user not found" });
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to update manager role to Admin");
+            return Results.Problem($"Failed to update manager role to Admin: {ex.Message}");
+        }
+    }).WithTags("Development");
 }
 
 app.UseHttpsRedirection();

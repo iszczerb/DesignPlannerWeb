@@ -9,10 +9,6 @@ namespace DesignPlanner.Core.DTOs
         [StringLength(100, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 100 characters")]
         public string Username { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Email is required")]
-        [EmailAddress(ErrorMessage = "Invalid email format")]
-        [StringLength(255, ErrorMessage = "Email cannot exceed 255 characters")]
-        public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Password is required")]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between 6 and 100 characters")]
@@ -45,10 +41,6 @@ namespace DesignPlanner.Core.DTOs
 
     public class UpdateEmployeeRequestDto
     {
-        [Required(ErrorMessage = "Email is required")]
-        [EmailAddress(ErrorMessage = "Invalid email format")]
-        [StringLength(255, ErrorMessage = "Email cannot exceed 255 characters")]
-        public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "First name is required")]
         [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters")]

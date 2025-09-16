@@ -1,6 +1,5 @@
 export interface CreateEmployeeRequest {
   username: string;
-  email: string;
   password: string;
   firstName: string;
   lastName: string;
@@ -13,7 +12,6 @@ export interface CreateEmployeeRequest {
 }
 
 export interface UpdateEmployeeRequest {
-  email: string;
   firstName: string;
   lastName: string;
   role: number;

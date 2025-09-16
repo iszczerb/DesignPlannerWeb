@@ -92,7 +92,7 @@ namespace DesignPlanner.Data.Services
                     Description = "Main team responsible for design and development projects",
                     Code = "TEAM01",
                     IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = new DateTime(2025, 1, 1)
                 };
 
                 _context.Teams.Add(team);
@@ -112,74 +112,68 @@ namespace DesignPlanner.Data.Services
                     {
                         Id = 1,
                         Username = "manager",
-                        Email = "manager@designplanner.com",
                         PasswordHash = HashPassword("password123"),
                         FirstName = "Sarah",
                         LastName = "Johnson",
                         Role = UserRole.Manager,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-6)
+                        CreatedAt = new DateTime(2024, 7, 1)
                     },
                     // Team Members
                     new User
                     {
                         Id = 2,
                         Username = "alex.smith",
-                        Email = "alex.smith@designplanner.com",
                         PasswordHash = HashPassword("password123"),
                         FirstName = "Alex",
                         LastName = "Smith",
                         Role = UserRole.TeamMember,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-5)
+                        CreatedAt = new DateTime(2023, 8, 1)
                     },
                     new User
                     {
                         Id = 3,
                         Username = "emma.wilson",
-                        Email = "emma.wilson@designplanner.com",
                         PasswordHash = HashPassword("password123"),
                         FirstName = "Emma",
                         LastName = "Wilson",
                         Role = UserRole.TeamMember,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-4)
                     },
                     new User
                     {
                         Id = 4,
                         Username = "david.brown",
-                        Email = "david.brown@designplanner.com",
                         PasswordHash = HashPassword("password123"),
                         FirstName = "David",
                         LastName = "Brown",
                         Role = UserRole.TeamMember,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-3)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-3)
                     },
                     new User
                     {
                         Id = 5,
                         Username = "lisa.taylor",
-                        Email = "lisa.taylor@designplanner.com",
                         PasswordHash = HashPassword("password123"),
                         FirstName = "Lisa",
                         LastName = "Taylor",
                         Role = UserRole.TeamMember,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-2)
                     },
                     new User
                     {
                         Id = 6,
                         Username = "mike.garcia",
-                        Email = "mike.garcia@designplanner.com",
                         PasswordHash = HashPassword("password123"),
                         FirstName = "Mike",
                         LastName = "Garcia",
                         Role = UserRole.TeamMember,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-1)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-1)
                     }
                 };
 
@@ -203,11 +197,11 @@ namespace DesignPlanner.Data.Services
                         EmployeeId = "EMP001",
                         Position = "Team Manager",
                         PhoneNumber = "+1-555-0001",
-                        HireDate = DateTime.UtcNow.AddMonths(-24),
+                        HireDate = new DateTime(2023, 1, 1),
                         TotalAnnualLeaveDays = 30,
                         UsedLeaveDays = 8,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-6)
+                        CreatedAt = new DateTime(2024, 7, 1)
                     },
                     new Employee
                     {
@@ -217,11 +211,11 @@ namespace DesignPlanner.Data.Services
                         EmployeeId = "EMP002",
                         Position = "Senior UI/UX Designer",
                         PhoneNumber = "+1-555-0002",
-                        HireDate = DateTime.UtcNow.AddMonths(-18),
+                        HireDate = new DateTime(2025, 1, 1).AddMonths(-18),
                         TotalAnnualLeaveDays = 25,
                         UsedLeaveDays = 5,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-5)
+                        CreatedAt = new DateTime(2023, 8, 1)
                     },
                     new Employee
                     {
@@ -231,11 +225,11 @@ namespace DesignPlanner.Data.Services
                         EmployeeId = "EMP003",
                         Position = "Full Stack Developer",
                         PhoneNumber = "+1-555-0003",
-                        HireDate = DateTime.UtcNow.AddMonths(-15),
+                        HireDate = new DateTime(2025, 1, 1).AddMonths(-15),
                         TotalAnnualLeaveDays = 25,
                         UsedLeaveDays = 3,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-4)
                     },
                     new Employee
                     {
@@ -245,11 +239,11 @@ namespace DesignPlanner.Data.Services
                         EmployeeId = "EMP004",
                         Position = "Backend Developer",
                         PhoneNumber = "+1-555-0004",
-                        HireDate = DateTime.UtcNow.AddMonths(-12),
+                        HireDate = new DateTime(2025, 1, 1).AddMonths(-12),
                         TotalAnnualLeaveDays = 25,
                         UsedLeaveDays = 2,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-3)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-3)
                     },
                     new Employee
                     {
@@ -259,11 +253,11 @@ namespace DesignPlanner.Data.Services
                         EmployeeId = "EMP005",
                         Position = "Frontend Developer",
                         PhoneNumber = "+1-555-0005",
-                        HireDate = DateTime.UtcNow.AddMonths(-8),
+                        HireDate = new DateTime(2025, 1, 1).AddMonths(-8),
                         TotalAnnualLeaveDays = 25,
                         UsedLeaveDays = 1,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-2)
                     },
                     new Employee
                     {
@@ -273,11 +267,11 @@ namespace DesignPlanner.Data.Services
                         EmployeeId = "EMP006",
                         Position = "QA Tester",
                         PhoneNumber = "+1-555-0006",
-                        HireDate = DateTime.UtcNow.AddMonths(-6),
+                        HireDate = new DateTime(2024, 7, 1),
                         TotalAnnualLeaveDays = 25,
                         UsedLeaveDays = 0,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-1)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-1)
                     }
                 };
 
@@ -294,36 +288,36 @@ namespace DesignPlanner.Data.Services
                 var employeeSkills = new List<EmployeeSkill>
                 {
                     // Sarah Johnson (Manager) - Leadership and technical overview
-                    new EmployeeSkill { EmployeeId = 1, SkillId = 5, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-3) }, // Project Management
-                    new EmployeeSkill { EmployeeId = 1, SkillId = 1, ProficiencyLevel = 3, AcquiredDate = DateTime.UtcNow.AddYears(-2) }, // C#
+                    new EmployeeSkill { EmployeeId = 1, SkillId = 5, ProficiencyLevel = 5, AcquiredDate = new DateTime(2022, 1, 1) }, // Project Management
+                    new EmployeeSkill { EmployeeId = 1, SkillId = 1, ProficiencyLevel = 3, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-2) }, // C#
                     
                     // Alex Smith (UI/UX Designer)
-                    new EmployeeSkill { EmployeeId = 2, SkillId = 4, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-4) }, // UI/UX Design
-                    new EmployeeSkill { EmployeeId = 2, SkillId = 2, ProficiencyLevel = 3, AcquiredDate = DateTime.UtcNow.AddYears(-2) }, // JavaScript
-                    new EmployeeSkill { EmployeeId = 2, SkillId = 3, ProficiencyLevel = 3, AcquiredDate = DateTime.UtcNow.AddYears(-1) }, // React
+                    new EmployeeSkill { EmployeeId = 2, SkillId = 4, ProficiencyLevel = 5, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-4) }, // UI/UX Design
+                    new EmployeeSkill { EmployeeId = 2, SkillId = 2, ProficiencyLevel = 3, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-2) }, // JavaScript
+                    new EmployeeSkill { EmployeeId = 2, SkillId = 3, ProficiencyLevel = 3, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-1) }, // React
                     
                     // Emma Wilson (Full Stack Developer)
-                    new EmployeeSkill { EmployeeId = 3, SkillId = 1, ProficiencyLevel = 4, AcquiredDate = DateTime.UtcNow.AddYears(-3) }, // C#
-                    new EmployeeSkill { EmployeeId = 3, SkillId = 2, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-4) }, // JavaScript
-                    new EmployeeSkill { EmployeeId = 3, SkillId = 3, ProficiencyLevel = 4, AcquiredDate = DateTime.UtcNow.AddYears(-2) }, // React
-                    new EmployeeSkill { EmployeeId = 3, SkillId = 6, ProficiencyLevel = 4, AcquiredDate = DateTime.UtcNow.AddYears(-2) }, // Database Design
-                    new EmployeeSkill { EmployeeId = 3, SkillId = 7, ProficiencyLevel = 4, AcquiredDate = DateTime.UtcNow.AddYears(-2) }, // API Development
+                    new EmployeeSkill { EmployeeId = 3, SkillId = 1, ProficiencyLevel = 4, AcquiredDate = new DateTime(2022, 1, 1) }, // C#
+                    new EmployeeSkill { EmployeeId = 3, SkillId = 2, ProficiencyLevel = 5, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-4) }, // JavaScript
+                    new EmployeeSkill { EmployeeId = 3, SkillId = 3, ProficiencyLevel = 4, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-2) }, // React
+                    new EmployeeSkill { EmployeeId = 3, SkillId = 6, ProficiencyLevel = 4, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-2) }, // Database Design
+                    new EmployeeSkill { EmployeeId = 3, SkillId = 7, ProficiencyLevel = 4, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-2) }, // API Development
                     
                     // David Brown (Backend Developer)
-                    new EmployeeSkill { EmployeeId = 4, SkillId = 1, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-5) }, // C#
-                    new EmployeeSkill { EmployeeId = 4, SkillId = 6, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-3) }, // Database Design
-                    new EmployeeSkill { EmployeeId = 4, SkillId = 7, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-3) }, // API Development
-                    new EmployeeSkill { EmployeeId = 4, SkillId = 8, ProficiencyLevel = 3, AcquiredDate = DateTime.UtcNow.AddYears(-1) }, // Testing
+                    new EmployeeSkill { EmployeeId = 4, SkillId = 1, ProficiencyLevel = 5, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-5) }, // C#
+                    new EmployeeSkill { EmployeeId = 4, SkillId = 6, ProficiencyLevel = 5, AcquiredDate = new DateTime(2022, 1, 1) }, // Database Design
+                    new EmployeeSkill { EmployeeId = 4, SkillId = 7, ProficiencyLevel = 5, AcquiredDate = new DateTime(2022, 1, 1) }, // API Development
+                    new EmployeeSkill { EmployeeId = 4, SkillId = 8, ProficiencyLevel = 3, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-1) }, // Testing
                     
                     // Lisa Taylor (Frontend Developer)
-                    new EmployeeSkill { EmployeeId = 5, SkillId = 2, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-3) }, // JavaScript
-                    new EmployeeSkill { EmployeeId = 5, SkillId = 3, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-2) }, // React
-                    new EmployeeSkill { EmployeeId = 5, SkillId = 4, ProficiencyLevel = 3, AcquiredDate = DateTime.UtcNow.AddYears(-1) }, // UI/UX Design
+                    new EmployeeSkill { EmployeeId = 5, SkillId = 2, ProficiencyLevel = 5, AcquiredDate = new DateTime(2022, 1, 1) }, // JavaScript
+                    new EmployeeSkill { EmployeeId = 5, SkillId = 3, ProficiencyLevel = 5, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-2) }, // React
+                    new EmployeeSkill { EmployeeId = 5, SkillId = 4, ProficiencyLevel = 3, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-1) }, // UI/UX Design
                     
                     // Mike Garcia (QA Tester)
-                    new EmployeeSkill { EmployeeId = 6, SkillId = 8, ProficiencyLevel = 5, AcquiredDate = DateTime.UtcNow.AddYears(-4) }, // Testing
-                    new EmployeeSkill { EmployeeId = 6, SkillId = 2, ProficiencyLevel = 3, AcquiredDate = DateTime.UtcNow.AddYears(-2) }, // JavaScript
-                    new EmployeeSkill { EmployeeId = 6, SkillId = 1, ProficiencyLevel = 2, AcquiredDate = DateTime.UtcNow.AddYears(-1) }  // C#
+                    new EmployeeSkill { EmployeeId = 6, SkillId = 8, ProficiencyLevel = 5, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-4) }, // Testing
+                    new EmployeeSkill { EmployeeId = 6, SkillId = 2, ProficiencyLevel = 3, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-2) }, // JavaScript
+                    new EmployeeSkill { EmployeeId = 6, SkillId = 1, ProficiencyLevel = 2, AcquiredDate = new DateTime(2025, 1, 1).AddYears(-1) }  // C#
                 };
 
                 _context.EmployeeSkills.AddRange(employeeSkills);
@@ -376,12 +370,12 @@ namespace DesignPlanner.Data.Services
                         Name = "AWS Cloud Migration Dashboard",
                         Description = "Develop a comprehensive dashboard for monitoring cloud migration processes",
                         Status = ProjectStatus.Active,
-                        StartDate = DateTime.UtcNow.AddMonths(-2),
-                        EndDate = DateTime.UtcNow.AddMonths(3),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(3),
+                        StartDate = new DateTime(2025, 1, 1).AddMonths(-2),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(3),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(3),
                         Budget = 125000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-2)
                     },
                     new Project
                     {
@@ -391,12 +385,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Serverless Analytics Platform",
                         Description = "Build serverless analytics platform using AWS Lambda and DynamoDB",
                         Status = ProjectStatus.Planning,
-                        StartDate = DateTime.UtcNow.AddDays(15),
-                        EndDate = DateTime.UtcNow.AddMonths(4),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(4),
+                        StartDate = new DateTime(2025, 1, 1).AddDays(15),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(4),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(4),
                         Budget = 85000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-7)
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-7)
                     },
                     
                     // Microsoft Projects
@@ -408,12 +402,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Teams Integration Suite",
                         Description = "Develop custom integrations for Microsoft Teams platform",
                         Status = ProjectStatus.Active,
-                        StartDate = DateTime.UtcNow.AddMonths(-1),
-                        EndDate = DateTime.UtcNow.AddMonths(2),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(2),
+                        StartDate = new DateTime(2025, 1, 1).AddMonths(-1),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(2),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(2),
                         Budget = 95000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-1)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-1)
                     },
                     new Project
                     {
@@ -423,12 +417,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Azure DevOps Extensions",
                         Description = "Create custom extensions for Azure DevOps workflows",
                         Status = ProjectStatus.Active,
-                        StartDate = DateTime.UtcNow.AddDays(-21),
-                        EndDate = DateTime.UtcNow.AddMonths(2).AddDays(10),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(2).AddDays(10),
+                        StartDate = new DateTime(2025, 1, 1).AddDays(-21),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(2).AddDays(10),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(2).AddDays(10),
                         Budget = 67000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-21)
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-21)
                     },
                     
                     // Google Projects
@@ -440,12 +434,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Firebase Real-time Chat App",
                         Description = "Develop real-time chat application using Firebase and React",
                         Status = ProjectStatus.Active,
-                        StartDate = DateTime.UtcNow.AddDays(-14),
-                        EndDate = DateTime.UtcNow.AddMonths(1).AddDays(16),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(1).AddDays(16),
+                        StartDate = new DateTime(2025, 1, 1).AddDays(-14),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(1).AddDays(16),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(1).AddDays(16),
                         Budget = 48000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-14)
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-14)
                     },
                     new Project
                     {
@@ -455,12 +449,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Google Workspace Automation",
                         Description = "Automate workflows across Google Workspace applications",
                         Status = ProjectStatus.Planning,
-                        StartDate = DateTime.UtcNow.AddDays(30),
-                        EndDate = DateTime.UtcNow.AddMonths(3),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(3),
+                        StartDate = new DateTime(2025, 1, 1).AddDays(30),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(3),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(3),
                         Budget = 72000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-3)
+                        CreatedAt = new DateTime(2023, 12, 29)
                     },
                     
                     // Equinix Projects
@@ -472,12 +466,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Data Center Monitoring System",
                         Description = "Build comprehensive monitoring system for data center operations",
                         Status = ProjectStatus.Active,
-                        StartDate = DateTime.UtcNow.AddMonths(-1).AddDays(5),
-                        EndDate = DateTime.UtcNow.AddMonths(3).AddDays(5),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(3).AddDays(5),
+                        StartDate = new DateTime(2025, 1, 1).AddMonths(-1).AddDays(5),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(3).AddDays(5),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(3).AddDays(5),
                         Budget = 156000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddMonths(-1).AddDays(5)
+                        CreatedAt = new DateTime(2025, 1, 1).AddMonths(-1).AddDays(5)
                     },
                     new Project
                     {
@@ -487,12 +481,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Network Performance Analytics",
                         Description = "Develop analytics platform for network performance monitoring",
                         Status = ProjectStatus.Active,
-                        StartDate = DateTime.UtcNow.AddDays(-28),
-                        EndDate = DateTime.UtcNow.AddMonths(2).AddDays(2),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(2).AddDays(2),
+                        StartDate = new DateTime(2025, 1, 1).AddDays(-28),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(2).AddDays(2),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(2).AddDays(2),
                         Budget = 89000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-28)
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-28)
                     },
                     
                     // Tate Projects
@@ -504,12 +498,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Digital Art Gallery Platform",
                         Description = "Create interactive digital platform for art exhibitions",
                         Status = ProjectStatus.Active,
-                        StartDate = DateTime.UtcNow.AddDays(-35),
-                        EndDate = DateTime.UtcNow.AddMonths(2).AddDays(25),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(2).AddDays(25),
+                        StartDate = new DateTime(2025, 1, 1).AddDays(-35),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(2).AddDays(25),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(2).AddDays(25),
                         Budget = 115000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-35)
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-35)
                     },
                     new Project
                     {
@@ -519,12 +513,12 @@ namespace DesignPlanner.Data.Services
                         Name = "Virtual Museum Tours",
                         Description = "Develop VR-enabled virtual tours for museum collections",
                         Status = ProjectStatus.Planning,
-                        StartDate = DateTime.UtcNow.AddDays(45),
-                        EndDate = DateTime.UtcNow.AddMonths(5),
-                        DeadlineDate = DateTime.UtcNow.AddMonths(5),
+                        StartDate = new DateTime(2025, 1, 1).AddDays(45),
+                        EndDate = new DateTime(2025, 1, 1).AddMonths(5),
+                        DeadlineDate = new DateTime(2025, 1, 1).AddMonths(5),
                         Budget = 203000.00m,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-10)
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-10)
                     }
                 };
 
@@ -555,56 +549,56 @@ namespace DesignPlanner.Data.Services
                         EstimatedHours = estimatedHours,
                         DueDate = dueDate,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 30))
+                        CreatedAt = new DateTime(2023, 12, 17)
                     });
                 }
 
                 // AWS001 - AWS Cloud Migration Dashboard
-                AddTask(1, "Design migration dashboard wireframes", 1, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.High, 8, DateTime.UtcNow.AddDays(2));
-                AddTask(1, "Implement user authentication system", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.High, 16, DateTime.UtcNow.AddDays(5));
-                AddTask(1, "Create migration progress tracking API", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 12, DateTime.UtcNow.AddDays(8));
-                AddTask(1, "Test dashboard functionality", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 6, DateTime.UtcNow.AddDays(12));
-                AddTask(1, "Review security implementation", 6, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 4, DateTime.UtcNow.AddDays(15));
+                AddTask(1, "Design migration dashboard wireframes", 1, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.High, 8, new DateTime(2025, 1, 1).AddDays(2));
+                AddTask(1, "Implement user authentication system", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.High, 16, new DateTime(2025, 1, 1).AddDays(5));
+                AddTask(1, "Create migration progress tracking API", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 12, new DateTime(2025, 1, 1).AddDays(8));
+                AddTask(1, "Test dashboard functionality", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 6, new DateTime(2025, 1, 1).AddDays(12));
+                AddTask(1, "Review security implementation", 6, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 4, new DateTime(2025, 1, 1).AddDays(15));
 
                 // MSF023 - Teams Integration Suite
                 AddTask(3, "Research Teams API capabilities", 4, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.Medium, 6);
                 AddTask(3, "Design integration architecture", 5, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.High, 10);
-                AddTask(3, "Develop bot integration module", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.High, 20, DateTime.UtcNow.AddDays(3));
-                AddTask(3, "Create webhook handlers", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.Medium, 14, DateTime.UtcNow.AddDays(6));
-                AddTask(3, "Test Teams integration", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 8, DateTime.UtcNow.AddDays(10));
+                AddTask(3, "Develop bot integration module", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.High, 20, new DateTime(2025, 1, 1).AddDays(3));
+                AddTask(3, "Create webhook handlers", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.Medium, 14, new DateTime(2025, 1, 1).AddDays(6));
+                AddTask(3, "Test Teams integration", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 8, new DateTime(2025, 1, 1).AddDays(10));
 
                 // MSF056 - Azure DevOps Extensions
                 AddTask(4, "Analyze extension requirements", 4, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.Medium, 4);
-                AddTask(4, "Design extension UI mockups", 1, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.Medium, 12, DateTime.UtcNow.AddDays(1));
-                AddTask(4, "Implement pipeline extension", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 18, DateTime.UtcNow.AddDays(7));
-                AddTask(4, "Create automated tests", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 10, DateTime.UtcNow.AddDays(14));
+                AddTask(4, "Design extension UI mockups", 1, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.Medium, 12, new DateTime(2025, 1, 1).AddDays(1));
+                AddTask(4, "Implement pipeline extension", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 18, new DateTime(2025, 1, 1).AddDays(7));
+                AddTask(4, "Create automated tests", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 10, new DateTime(2025, 1, 1).AddDays(14));
 
                 // GOO017 - Firebase Real-time Chat App
                 AddTask(5, "Design chat interface", 1, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.High, 8);
                 AddTask(5, "Set up Firebase configuration", 2, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.High, 4);
-                AddTask(5, "Implement real-time messaging", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.Critical, 16, DateTime.UtcNow.AddDays(2));
-                AddTask(5, "Add user presence indicators", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 6, DateTime.UtcNow.AddDays(5));
-                AddTask(5, "Test real-time functionality", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 8, DateTime.UtcNow.AddDays(9));
+                AddTask(5, "Implement real-time messaging", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.Critical, 16, new DateTime(2025, 1, 1).AddDays(2));
+                AddTask(5, "Add user presence indicators", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 6, new DateTime(2025, 1, 1).AddDays(5));
+                AddTask(5, "Test real-time functionality", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 8, new DateTime(2025, 1, 1).AddDays(9));
 
                 // EQX042 - Data Center Monitoring System
                 AddTask(7, "Plan monitoring architecture", 5, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.High, 12);
-                AddTask(7, "Design monitoring dashboard", 1, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.High, 16, DateTime.UtcNow.AddDays(3));
-                AddTask(7, "Develop sensor data collection", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Critical, 20, DateTime.UtcNow.AddDays(8));
-                AddTask(7, "Create alert system", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 14, DateTime.UtcNow.AddDays(12));
-                AddTask(7, "Test monitoring accuracy", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 10, DateTime.UtcNow.AddDays(18));
+                AddTask(7, "Design monitoring dashboard", 1, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.High, 16, new DateTime(2025, 1, 1).AddDays(3));
+                AddTask(7, "Develop sensor data collection", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Critical, 20, new DateTime(2025, 1, 1).AddDays(8));
+                AddTask(7, "Create alert system", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 14, new DateTime(2025, 1, 1).AddDays(12));
+                AddTask(7, "Test monitoring accuracy", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 10, new DateTime(2025, 1, 1).AddDays(18));
 
                 // EQX011 - Network Performance Analytics
                 AddTask(8, "Research analytics requirements", 4, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.Medium, 6);
-                AddTask(8, "Design analytics dashboard", 1, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.Medium, 12, DateTime.UtcNow.AddDays(4));
-                AddTask(8, "Implement data processing pipeline", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 18, DateTime.UtcNow.AddDays(9));
-                AddTask(8, "Create performance reports", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 8, DateTime.UtcNow.AddDays(15));
+                AddTask(8, "Design analytics dashboard", 1, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.Medium, 12, new DateTime(2025, 1, 1).AddDays(4));
+                AddTask(8, "Implement data processing pipeline", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 18, new DateTime(2025, 1, 1).AddDays(9));
+                AddTask(8, "Create performance reports", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 8, new DateTime(2025, 1, 1).AddDays(15));
 
                 // TAT008 - Digital Art Gallery Platform
                 AddTask(9, "Design gallery interface", 1, DesignPlanner.Core.Enums.TaskStatus.Done, TaskPriority.High, 14);
-                AddTask(9, "Develop artwork display system", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.High, 20, DateTime.UtcNow.AddDays(1));
-                AddTask(9, "Implement search functionality", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 12, DateTime.UtcNow.AddDays(6));
-                AddTask(9, "Create admin management panel", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 16, DateTime.UtcNow.AddDays(11));
-                AddTask(9, "Test platform usability", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 10, DateTime.UtcNow.AddDays(16));
+                AddTask(9, "Develop artwork display system", 2, DesignPlanner.Core.Enums.TaskStatus.InProgress, TaskPriority.High, 20, new DateTime(2025, 1, 1).AddDays(1));
+                AddTask(9, "Implement search functionality", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 12, new DateTime(2025, 1, 1).AddDays(6));
+                AddTask(9, "Create admin management panel", 2, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.Medium, 16, new DateTime(2025, 1, 1).AddDays(11));
+                AddTask(9, "Test platform usability", 3, DesignPlanner.Core.Enums.TaskStatus.NotStarted, TaskPriority.High, 10, new DateTime(2025, 1, 1).AddDays(16));
 
                 _context.ProjectTasks.AddRange(tasks);
                 await _context.SaveChangesAsync();
@@ -617,7 +611,7 @@ namespace DesignPlanner.Data.Services
             if (!await _context.Assignments.AnyAsync())
             {
                 var assignments = new List<Assignment>();
-                var random = new Random(42); // Fixed seed for consistent results
+                // Removed random number generation for consistent database values
 
                 // Get current week Monday
                 var today = DateTime.Today;
@@ -649,8 +643,8 @@ namespace DesignPlanner.Data.Services
                     var taskIndex = 0;
                     foreach (var empId in employeeAssignments.Keys.ToList())
                     {
-                        // Each employee gets 1-4 tasks per day (varied distribution)
-                        var tasksPerDay = dayOffset < 7 ? random.Next(2, 5) : random.Next(1, 4); // More tasks current week
+                        // Each employee gets consistent tasks per day
+                        var tasksPerDay = dayOffset < 7 ? 3 : 2; // More tasks current week, consistent assignment
 
                         for (int taskNum = 0; taskNum < tasksPerDay && taskIndex < availableTasks.Count; taskNum++)
                         {
@@ -674,7 +668,7 @@ namespace DesignPlanner.Data.Services
                                 Slot = slot,
                                 Notes = GenerateAssignmentNote(taskId, slot),
                                 IsActive = true,
-                                CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 7))
+                                CreatedAt = new DateTime(2023, 12, 29)
                             });
                         }
                     }
@@ -731,8 +725,8 @@ namespace DesignPlanner.Data.Services
                         Status = LeaveStatus.Approved,
                         ApprovedByUserId = 1, // Manager
                         ApprovalNotes = "Approved - enjoy your time off!",
-                        ApprovedAt = DateTime.UtcNow.AddDays(-25),
-                        CreatedAt = DateTime.UtcNow.AddDays(-30)
+                        ApprovedAt = new DateTime(2025, 1, 1).AddDays(-25),
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-30)
                     },
                     // Approved leave request (upcoming)
                     new LeaveRequest
@@ -747,8 +741,8 @@ namespace DesignPlanner.Data.Services
                         Status = LeaveStatus.Approved,
                         ApprovedByUserId = 1, // Manager
                         ApprovalNotes = "Great opportunity for skill development. Approved.",
-                        ApprovedAt = DateTime.UtcNow.AddDays(-5),
-                        CreatedAt = DateTime.UtcNow.AddDays(-7)
+                        ApprovedAt = new DateTime(2025, 1, 1).AddDays(-5),
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-7)
                     },
                     // Pending leave request
                     new LeaveRequest
@@ -761,7 +755,7 @@ namespace DesignPlanner.Data.Services
                         LeaveDaysRequested = 5,
                         Reason = "Summer holiday trip to Europe",
                         Status = LeaveStatus.Pending,
-                        CreatedAt = DateTime.UtcNow.AddDays(-2)
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-2)
                     },
                     // Pending sick leave
                     new LeaveRequest
@@ -774,7 +768,7 @@ namespace DesignPlanner.Data.Services
                         LeaveDaysRequested = 1,
                         Reason = "Doctor appointment and recovery time",
                         Status = LeaveStatus.Pending,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = new DateTime(2025, 1, 1)
                     },
                     // Half-day leave request (approved)
                     new LeaveRequest
@@ -791,8 +785,8 @@ namespace DesignPlanner.Data.Services
                         Status = LeaveStatus.Approved,
                         ApprovedByUserId = 1, // Manager
                         ApprovalNotes = "Half-day approved for afternoon appointment.",
-                        ApprovedAt = DateTime.UtcNow.AddDays(-3),
-                        CreatedAt = DateTime.UtcNow.AddDays(-5)
+                        ApprovedAt = new DateTime(2023, 12, 29),
+                        CreatedAt = new DateTime(2025, 1, 1).AddDays(-5)
                     },
                     // Manager's own leave request (approved by another manager or admin)
                     new LeaveRequest
@@ -807,8 +801,8 @@ namespace DesignPlanner.Data.Services
                         Status = LeaveStatus.Approved,
                         ApprovedByUserId = 1, // Self-approved (or another admin would approve)
                         ApprovalNotes = "Management coverage arranged with regional manager.",
-                        ApprovedAt = DateTime.UtcNow.AddDays(-10),
-                        CreatedAt = DateTime.UtcNow.AddDays(-15)
+                        ApprovedAt = new DateTime(2025, 1, 1).AddDays(-10),
+                        CreatedAt = new DateTime(2023, 12, 17)
                     }
                 };
 

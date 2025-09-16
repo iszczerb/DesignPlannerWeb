@@ -84,7 +84,7 @@ class ApiService {
     }
 
     this.refreshTokenPromise = this.performTokenRefresh(refreshToken);
-    
+
     try {
       return await this.refreshTokenPromise;
     } finally {
@@ -104,7 +104,7 @@ class ApiService {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', newRefreshToken);
     localStorage.setItem('expiresAt', expiresAt);
-    
+
     return accessToken;
   }
 
@@ -161,7 +161,7 @@ class ApiService {
   isTokenExpired(): boolean {
     const expiresAt = localStorage.getItem('expiresAt');
     if (!expiresAt) return true;
-    
+
     return new Date(expiresAt) <= new Date();
   }
 

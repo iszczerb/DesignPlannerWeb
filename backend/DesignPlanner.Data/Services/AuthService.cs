@@ -76,17 +76,11 @@ namespace DesignPlanner.Data.Services
                 throw new ArgumentException("Username is already taken");
             }
 
-            // Check if email already exists
-            if (!await IsEmailAvailableAsync(request.Email))
-            {
-                throw new ArgumentException("Email is already registered");
-            }
 
             // Create user
             var user = new User
             {
                 Username = request.Username,
-                Email = request.Email,
                 PasswordHash = HashPassword(request.Password),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
@@ -224,15 +218,6 @@ namespace DesignPlanner.Data.Services
             return user != null ? MapToUserDto(user) : null;
         }
 
-        public async Task<UserDto?> GetUserByEmailAsync(string email)
-        {
-            var user = await _context.Users
-                .Include(u => u.Employee)
-                    .ThenInclude(e => e!.Team)
-                .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
-
-            return user != null ? MapToUserDto(user) : null;
-        }
 
         public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
         {
@@ -253,10 +238,6 @@ namespace DesignPlanner.Data.Services
             return !await _context.Users.AnyAsync(u => u.Username == username);
         }
 
-        public async Task<bool> IsEmailAvailableAsync(string email)
-        {
-            return !await _context.Users.AnyAsync(u => u.Email == email);
-        }
 
         private static string HashPassword(string password)
         {
@@ -282,7 +263,6 @@ namespace DesignPlanner.Data.Services
             {
                 Id = user.Id,
                 Username = user.Username,
-                Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Role = user.Role,

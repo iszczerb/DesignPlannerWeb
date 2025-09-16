@@ -30,8 +30,8 @@ class ScheduleService {
   }
 
   async getEmployeeSchedule(
-    employeeId: number, 
-    startDate: string, 
+    employeeId: number,
+    startDate: string,
     viewType: CalendarViewType = CalendarViewType.Week
   ): Promise<CalendarViewDto> {
     const params = new URLSearchParams({
@@ -41,6 +41,7 @@ class ScheduleService {
 
     return apiService.get<CalendarViewDto>(`${this.baseUrl}/employee/${employeeId}?${params}`);
   }
+
 
   // Assignment operations
   async createAssignment(assignment: CreateAssignmentDto): Promise<AssignmentTaskDto> {

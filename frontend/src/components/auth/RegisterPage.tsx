@@ -39,7 +39,6 @@ const RegisterPage: React.FC = () => {
 
   const [formData, setFormData] = useState<RegisterRequest>({
     username: '',
-    email: '',
     password: '',
     confirmPassword: '',
     firstName: '',
@@ -73,11 +72,6 @@ const RegisterPage: React.FC = () => {
       errors.username = 'Username must be at least 3 characters';
     }
 
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
 
     if (!formData.firstName.trim()) {
       errors.firstName = 'First name is required';
@@ -247,25 +241,6 @@ const RegisterPage: React.FC = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    error={!!validationErrors.email}
-                    helperText={validationErrors.email}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Email color="action" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
 
                 <Grid item xs={12}>
                   <TextField

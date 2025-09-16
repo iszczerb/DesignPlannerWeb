@@ -42,6 +42,13 @@ interface DayBasedCalendarGridProps {
   onSlotFocus?: (date: Date, slot: Slot, employeeId: number, event?: React.MouseEvent) => void;
   selectedDays?: string[]; // Array of date strings (toDateString() format)
   onDayClick?: (date: Date, event?: React.MouseEvent) => void;
+  // Team management props
+  onAddNewMember?: (teamId: number) => void;
+  onManageTeam?: () => void;
+  // Individual employee management props
+  onEmployeeView?: (employee: any) => void;
+  onEmployeeEdit?: (employee: any) => void;
+  onEmployeeDelete?: (employeeId: number) => void;
 }
 
 const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
@@ -72,7 +79,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   selectedSlots = [],
   onSlotFocus,
   selectedDays = [],
-  onDayClick
+  onDayClick,
+  onAddNewMember,
+  onManageTeam,
+  onEmployeeView,
+  onEmployeeEdit,
+  onEmployeeDelete
 }) => {
   // State management for hover and context menus
   const [hoveredSlot, setHoveredSlot] = useState<{
@@ -83,6 +95,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   const [hoveredTask, setHoveredTask] = useState<number | null>(null);
   const [contextMenus, setContextMenus] = useState<NodeListOf<Element> | null>(null);
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  const [teamHeaderHovered, setTeamHeaderHovered] = useState(false);
 
   // Cleanup context menus
   useEffect(() => {
@@ -161,6 +174,102 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
 
       menuItem.addEventListener('mouseenter', () => {
         menuItem.style.backgroundColor = '#f1f5f9';
+      });
+      menuItem.addEventListener('mouseleave', () => {
+        menuItem.style.backgroundColor = 'transparent';
+      });
+      menuItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.action();
+        if (document.body.contains(contextMenu)) {
+          document.body.removeChild(contextMenu);
+        }
+      });
+
+      contextMenu.appendChild(menuItem);
+    });
+
+    document.body.appendChild(contextMenu);
+  };
+
+  // Helper function to create team header context menu
+  const createTeamHeaderContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Remove existing context menus
+    document.querySelectorAll('[data-context-menu]').forEach(menu => {
+      if (document.body.contains(menu)) {
+        document.body.removeChild(menu);
+      }
+    });
+
+    if (isReadOnly) return;
+
+    const contextMenu = document.createElement('div');
+    contextMenu.setAttribute('data-context-menu', 'true');
+    contextMenu.style.position = 'fixed';
+    contextMenu.style.left = e.clientX + 'px';
+    contextMenu.style.top = e.clientY + 'px';
+    contextMenu.style.backgroundColor = 'white';
+    contextMenu.style.border = '1px solid #e5e7eb';
+    contextMenu.style.borderRadius = '8px';
+    contextMenu.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+    contextMenu.style.zIndex = '10000';
+    contextMenu.style.padding = '8px 0';
+    contextMenu.style.fontSize = '14px';
+    contextMenu.style.minWidth = '200px';
+
+    // Header
+    const header = document.createElement('div');
+    header.textContent = 'Team Management';
+    header.style.padding = '8px 16px';
+    header.style.fontSize = '0.75rem';
+    header.style.fontWeight = '600';
+    header.style.color = '#6b7280';
+    header.style.textTransform = 'uppercase';
+    header.style.letterSpacing = '0.05em';
+    header.style.borderBottom = '1px solid #f3f4f6';
+    header.style.backgroundColor = '#f9fafb';
+    contextMenu.appendChild(header);
+
+    const menuItems = [
+      {
+        label: '➕ Add New Member',
+        action: () => onAddNewMember?.(employees[0]?.teamId || 1),
+        icon: '➕'
+      },
+      {
+        label: '⚙️ Manage Team',
+        action: () => onManageTeam?.(),
+        icon: '⚙️'
+      }
+    ];
+
+    menuItems.forEach((item, index) => {
+      const menuItem = document.createElement('div');
+      menuItem.style.padding = '12px 16px';
+      menuItem.style.cursor = 'pointer';
+      menuItem.style.transition = 'background-color 0.2s';
+      menuItem.style.display = 'flex';
+      menuItem.style.alignItems = 'center';
+      menuItem.style.gap = '12px';
+      menuItem.style.fontSize = '0.875rem';
+      menuItem.style.color = '#374151';
+
+      // Icon
+      const iconSpan = document.createElement('span');
+      iconSpan.textContent = item.icon;
+      iconSpan.style.fontSize = '1rem';
+      menuItem.appendChild(iconSpan);
+
+      // Label
+      const labelSpan = document.createElement('span');
+      labelSpan.textContent = item.label.substring(2); // Remove emoji from label
+      menuItem.appendChild(labelSpan);
+
+      menuItem.addEventListener('mouseenter', () => {
+        menuItem.style.backgroundColor = '#f9fafb';
       });
       menuItem.addEventListener('mouseleave', () => {
         menuItem.style.backgroundColor = 'transparent';
@@ -1251,7 +1360,51 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     <div style={getMainContainerStyle()}>
       {/* Header Row */}
       <div style={getHeaderStyle()}>
-        <div style={getTeamHeaderStyle()}>Team</div>
+        <div
+          style={{
+            ...getTeamHeaderStyle(),
+            cursor: isReadOnly ? 'default' : 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: teamHeaderHovered ? '#e2e8f0' : '#f1f5f9',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+          }}
+          onMouseEnter={() => !isReadOnly && setTeamHeaderHovered(true)}
+          onMouseLeave={() => setTeamHeaderHovered(false)}
+          onContextMenu={createTeamHeaderContextMenu}
+          title={isReadOnly ? 'Team' : 'Right-click for team management options'}
+        >
+          <span>Team</span>
+          {!isReadOnly && teamHeaderHovered && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2px',
+              fontSize: '0.75rem',
+              color: '#6b7280',
+            }}>
+              <span style={{ fontSize: '0.6875rem' }}>⚙️</span>
+            </div>
+          )}
+          {!isReadOnly && (
+            <div style={{
+              fontSize: '0.6875rem',
+              color: '#9ca3af',
+              marginLeft: 'auto',
+              position: 'absolute',
+              right: '8px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              opacity: teamHeaderHovered ? 1 : 0.5,
+              transition: 'opacity 0.2s ease',
+            }}>
+              ⋯
+            </div>
+          )}
+        </div>
         <div style={getAmPmHeaderStyle()}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-2c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>

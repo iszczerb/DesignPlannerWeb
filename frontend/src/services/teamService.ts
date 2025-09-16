@@ -45,6 +45,13 @@ class TeamService {
    */
   async getAllTeamsWithManagedStatus(): Promise<TeamInfo[]> {
     try {
+      console.log('🔍 TeamService: Before API call - checking tokens:', {
+        accessToken: localStorage.getItem('accessToken') ? 'EXISTS' : 'MISSING',
+        refreshToken: localStorage.getItem('refreshToken') ? 'EXISTS' : 'MISSING',
+        expiresAt: localStorage.getItem('expiresAt'),
+        allKeys: Object.keys(localStorage)
+      });
+
       const response = await apiService.get<TeamInfo[]>('/schedule/teams/all');
       return response;
     } catch (error) {
