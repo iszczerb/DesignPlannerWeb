@@ -1568,7 +1568,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             <div key={employee.employeeId} style={getEmployeeRowStyle()}>
               {/* Employee Info */}
               <div style={getEmployeeCellStyle()}>
-                <SimplifiedEmployeeRow employee={employee} />
+                <SimplifiedEmployeeRow
+                  employee={employee}
+                  onEmployeeView={onEmployeeView}
+                  onEmployeeEdit={onEmployeeEdit}
+                  onEmployeeDelete={onEmployeeDelete}
+                />
               </div>
 
               {/* AM/PM Labels */}

@@ -1,11 +1,29 @@
-import React from 'react';
-import { EmployeeCalendarDto } from '../../types/schedule';
+import React, { useState } from 'react';
+import { EmployeeCalendarDto, TEAM_TYPE_LABELS } from '../../types/schedule';
 
 interface SimplifiedEmployeeRowProps {
   employee: EmployeeCalendarDto;
+  onEmployeeView?: (employee: EmployeeCalendarDto) => void;
+  onEmployeeEdit?: (employee: EmployeeCalendarDto) => void;
+  onEmployeeDelete?: (employeeId: number) => void;
 }
 
-const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({ employee }) => {
+const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
+  employee,
+  onEmployeeView,
+  onEmployeeEdit,
+  onEmployeeDelete
+}) => {
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0
+  });
   // Calculate filled slots for progress bar (x/total available)
   const getFilledSlots = () => {
     let filledSlots = 0;
@@ -113,6 +131,15 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({ employee 
     margin: 0,
   });
 
+  const getTeamStyle = (): React.CSSProperties => ({
+    fontSize: '0.75rem',
+    fontWeight: '600',
+    color: '#3b82f6',
+    lineHeight: '1.1',
+    margin: 0,
+    marginTop: '4px',
+  });
+
   const getProgressContainerStyle = (): React.CSSProperties => ({
     display: 'flex',
     alignItems: 'center',
@@ -141,6 +168,43 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({ employee 
     fontWeight: '500',
   });
 
+  const handleEmployeeContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setContextMenu({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  };
+
+  const handleEmployeeViewEdit = () => {
+    onEmployeeView?.(employee);
+    handleCloseContextMenu();
+  };
+
+  const handleEmployeeDelete = () => {
+    const confirmMessage = `Are you sure you want to delete ${employee.employeeName}?\n\n` +
+      `Role: ${employee.role}\n` +
+      `Team: ${employee.teamType ? TEAM_TYPE_LABELS[employee.teamType] : 'Unassigned'}\n` +
+      `Status: ${employee.isActive ? 'Active' : 'Inactive'}\n\n` +
+      `This action cannot be undone and will:\n` +
+      `• Remove the member from all teams and assignments\n` +
+      `• Delete all associated schedule data\n` +
+      `• Remove access to all systems and projects\n\n` +
+      `Are you absolutely sure you want to proceed?`;
+
+    if (window.confirm(confirmMessage)) {
+      onEmployeeDelete?.(employee.employeeId);
+    }
+    handleCloseContextMenu();
+  };
+
   // Split employee name into first and last name
   const nameParts = employee.employeeName.split(' ');
   const firstName = nameParts[0] || '';
@@ -148,21 +212,50 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({ employee 
 
   return (
     <div style={getEmployeeRowStyle()}>
-      {/* Employee Info - Grouped at Top */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      {/* Employee Info - Grouped at Top - Clickable */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '2px',
+          cursor: onEmployeeView ? 'pointer' : 'default',
+          padding: '4px',
+          borderRadius: '6px',
+          transition: 'background-color 0.2s ease'
+        }}
+        onClick={() => onEmployeeView?.(employee)}
+        onMouseEnter={(e) => {
+          if (onEmployeeView) {
+            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (onEmployeeView) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
+        onContextMenu={handleEmployeeContextMenu}
+        title={onEmployeeView ? "Click to view details, right-click for options" : ""}
+      >
         {/* First Name */}
         <div style={getFirstNameStyle()}>
           {firstName}
         </div>
-        
+
         {/* Last Name */}
         <div style={getLastNameStyle()}>
           {lastName}
         </div>
-        
+
         {/* Role */}
         <div style={getRoleStyle()}>
-          Design Engineer
+          {employee.role || 'Design Engineer'}
+        </div>
+
+        {/* Team */}
+        <div style={getTeamStyle()}>
+          {employee.teamType ? TEAM_TYPE_LABELS[employee.teamType] : 'Unassigned'}
         </div>
       </div>
       
@@ -180,6 +273,93 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({ employee 
           {filledSlots}/{totalSlots} ({Math.round(progressPercentage)}%)
         </div>
       </div>
+
+      {/* Employee Context Menu */}
+      {contextMenu.visible && (
+        <>
+          {/* Backdrop to close menu */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999998,
+            }}
+            onClick={handleCloseContextMenu}
+          />
+
+          {/* Context Menu */}
+          <div
+            style={{
+              position: 'fixed',
+              left: Math.max(10, Math.min(contextMenu.x, window.innerWidth - 200)),
+              top: Math.max(10, Math.min(contextMenu.y, window.innerHeight - 200)),
+              zIndex: 999999,
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              overflow: 'hidden',
+              minWidth: '180px',
+            }}
+          >
+            <div style={{
+              padding: '8px 16px',
+              borderBottom: '1px solid #f3f4f6',
+              backgroundColor: '#f9fafb',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              color: '#6b7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>
+              {employee.employeeName}
+            </div>
+
+            <div
+              onClick={handleEmployeeViewEdit}
+              style={{
+                padding: '12px 16px',
+                fontSize: '0.875rem',
+                color: '#374151',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <span style={{ fontSize: '1rem' }}>👁️</span>
+              View / Edit Member
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '4px 0' }} />
+
+            <div
+              onClick={handleEmployeeDelete}
+              style={{
+                padding: '12px 16px',
+                fontSize: '0.875rem',
+                color: '#dc2626',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <span style={{ fontSize: '1rem' }}>🗑️</span>
+              Delete Member
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

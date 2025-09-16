@@ -273,36 +273,70 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
         onContextMenu={handleEmployeeContextMenu}
         title="Right-click to view employee options"
       >
-        <div style={getEmployeeNameStyle()}>
-          {employee.employeeName}
-          {!isTeamManaged && (
-            <span style={{
-              fontSize: '0.6875rem',
-              padding: '2px 6px',
-              backgroundColor: '#fef3c7',
-              color: '#92400e',
-              borderRadius: '10px',
-              fontWeight: '500',
-            }}>
-              🔒
-            </span>
-          )}
-          {showTeamIndicator && teamColor && (
-            <span style={{
-              width: '12px',
-              height: '12px',
-              backgroundColor: teamColor,
-              borderRadius: '50%',
-              border: '2px solid #ffffff',
-              boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1)',
-            }} />
-          )}
-        </div>
-        
-        <div style={getEmployeeInfoStyle()}>
-          <div>{employee.role}</div>
-          <div style={{ fontWeight: '600', color: '#4f46e5' }}>
-            {employee.team || (employee.teamType ? TEAM_TYPE_LABELS[employee.teamType] : 'Unassigned')}
+        {/* Clickable Employee Info Section */}
+        <div
+          onClick={() => onEmployeeView?.(employee)}
+          style={{
+            cursor: onEmployeeView ? 'pointer' : 'default',
+            padding: '4px',
+            borderRadius: '6px',
+            transition: 'background-color 0.2s ease',
+            ...( onEmployeeView && {
+              ':hover': {
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              }
+            })
+          }}
+          onMouseEnter={(e) => {
+            if (onEmployeeView) {
+              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onEmployeeView) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
+          {/* Employee Name */}
+          <div style={getEmployeeNameStyle()}>
+            {employee.firstName && employee.lastName
+              ? `${employee.firstName} ${employee.lastName}`
+              : employee.employeeName}
+            {!isTeamManaged && (
+              <span style={{
+                fontSize: '0.6875rem',
+                padding: '2px 6px',
+                backgroundColor: '#fef3c7',
+                color: '#92400e',
+                borderRadius: '10px',
+                fontWeight: '500',
+              }}>
+                🔒
+              </span>
+            )}
+            {showTeamIndicator && teamColor && (
+              <span style={{
+                width: '12px',
+                height: '12px',
+                backgroundColor: teamColor,
+                borderRadius: '50%',
+                border: '2px solid #ffffff',
+                boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1)',
+              }} />
+            )}
+          </div>
+
+          {/* Role */}
+          <div style={getEmployeeInfoStyle()}>
+            <div>{employee.role}</div>
+          </div>
+
+          {/* Team Name */}
+          <div style={getEmployeeInfoStyle()}>
+            <div style={{ fontWeight: '600', color: '#4f46e5', fontSize: '0.8125rem' }}>
+              {employee.team || (employee.teamType ? TEAM_TYPE_LABELS[employee.teamType] : 'Unassigned')}
+            </div>
           </div>
         </div>
 

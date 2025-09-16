@@ -39,6 +39,8 @@ import { enhanceScheduleEmployeeWithTeamData, createTeamMember, updateTeamMember
 import { employeeService } from '../services/employeeService';
 import { CreateEmployeeRequest } from '../types/employee';
 import { UserRole } from '../types/auth';
+import { useAppDispatch } from '../store/hooks';
+import { logout } from '../store/slices/authSlice';
 import { storeUpdatedMember, applyStoredTeamMemberChanges, storeDeletedMember, clearAllStoredChanges } from '../services/teamMemberPersistence';
 
 // Mock user context (in real app, this would come from auth context)
@@ -345,6 +347,9 @@ const addMockLeaveData = (data: CalendarViewDto): CalendarViewDto => {
 };
 
 const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => void }> = ({ showNotification }) => {
+  // Redux hooks
+  const dispatch = useAppDispatch();
+
   // State management
   const [currentDate, setCurrentDate] = useState(new Date());
   const [windowStartDate, setWindowStartDate] = useState(new Date()); // Track window start for day navigation
@@ -620,9 +625,29 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     // TODO: Implement settings functionality
   };
 
-  const handleLogout = () => {
-    console.log('Logout');
-    // TODO: Implement logout functionality
+  const handleLogout = async () => {
+    try {
+      console.log('🚪 Logging out user...');
+      await dispatch(logout()).unwrap();
+      console.log('✅ Logout successful');
+
+      // Optionally show a success notification
+      showNotification({
+        type: 'success',
+        title: 'Logged Out',
+        message: 'You have been logged out successfully.'
+      });
+
+      // The AuthProvider will handle redirecting to login page
+      // when isAuthenticated becomes false
+    } catch (error) {
+      console.error('❌ Logout failed:', error);
+      showNotification({
+        type: 'error',
+        title: 'Logout Error',
+        message: 'An error occurred while logging out. Please try again.'
+      });
+    }
   };
 
   // Derived state
