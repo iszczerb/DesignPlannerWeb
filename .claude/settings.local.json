@@ -27,7 +27,10 @@
       "Bash(npm run:*)",
       "Bash(dotnet clean:*)",
       "Bash(git checkout:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(cat:*)",
+      "Bash(timeout:*)",
+      "Bash(del designplanner.db*)"
     ],
     "deny": [],
     "ask": []

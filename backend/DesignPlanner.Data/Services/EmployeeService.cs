@@ -50,7 +50,7 @@ namespace DesignPlanner.Data.Services
                     TeamId = request.TeamId.Value,
                     EmployeeId = request.EmployeeId,
                     Position = request.Position,
-                    HireDate = request.HireDate ?? DateTime.UtcNow,
+                    HireDate = request.HireDate.HasValue ? request.HireDate.Value : DateTime.UtcNow,
                     TotalAnnualLeaveDays = 25, // Default
                     UsedLeaveDays = 0,
                     IsActive = true,

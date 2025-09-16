@@ -2823,6 +2823,8 @@ ${dateInfo}`;
         }}
         onSave={async (memberData) => {
           console.log('Save team member:', memberData);
+          console.log('🔍 Modal mode:', teamMemberEditModal.mode);
+          console.log('🔍 Modal member:', teamMemberEditModal.member);
 
           try {
             if (teamMemberEditModal.mode === 'create') {
@@ -2855,30 +2857,8 @@ ${dateInfo}`;
               try {
                 const newEmployee = await employeeService.createEmployee(createEmployeeRequest);
 
-                // Add the new employee to local calendar data instead of reloading from server
-                if (calendarData && newEmployee) {
-                  const newEmployeeData = {
-                    employeeId: newEmployee.employee?.id || newEmployee.id,
-                    employeeName: `${newEmployee.firstName} ${newEmployee.lastName}`,
-                    firstName: newEmployee.firstName,
-                    lastName: newEmployee.lastName,
-                    role: newEmployee.employee?.position || createData.role,
-                    team: 'Design & Development Team',
-                    teamType: createData.teamType,
-                    skills: createData.skills || [],
-                    startDate: createData.startDate,
-                    isActive: newEmployee.isActive ?? true,
-                    notes: createData.notes || '',
-                    dayAssignments: []
-                  };
-
-                  const updatedCalendarData = {
-                    ...calendarData,
-                    employees: [...calendarData.employees, newEmployeeData]
-                  };
-                  setCalendarData(updatedCalendarData);
-                  console.log('🔍 Added new employee to local calendar data without server reload');
-                }
+                // Reload calendar data to reflect the new employee
+                await loadCalendarData();
 
                 // Show success notification
                 showNotification('Team member created successfully!', 'success');

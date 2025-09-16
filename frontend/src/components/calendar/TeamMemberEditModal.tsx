@@ -54,7 +54,7 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
           role: '',
           teamType: TeamType.Structural,
           skills: [],
-          startDate: new Date().toISOString().split('T')[0],
+          startDate: '',
           notes: '',
           isActive: true
         });
@@ -75,9 +75,6 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
     if (!formData.role.trim()) {
       newErrors.role = 'Role is required';
     }
-    if (!formData.startDate) {
-      newErrors.startDate = 'Start date is required';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -97,7 +94,7 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
         employeeId: autoEmployeeId,
         teamType: formData.teamType,
         skills: formData.skills,
-        startDate: formData.startDate,
+        startDate: formData.startDate || undefined,
         notes: formData.notes.trim() || undefined
       };
       onSave(createDto);
@@ -109,7 +106,7 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
         role: formData.role.trim(),
         teamType: formData.teamType,
         skills: formData.skills,
-        startDate: formData.startDate,
+        startDate: formData.startDate || undefined,
         notes: formData.notes.trim() || undefined,
         isActive: formData.isActive
       };
@@ -324,7 +321,7 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
                     color: '#374151',
                     marginBottom: '4px',
                   }}>
-                    Start Date *
+                    Start Date
                   </label>
                   <input
                     type="date"
