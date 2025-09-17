@@ -13,6 +13,8 @@ namespace DesignPlanner.Core.Entities
         [Required]
         public int ClientId { get; set; }
 
+        public int? CategoryId { get; set; }
+
         [Required]
         [MaxLength(10)]
         public string Code { get; set; } = string.Empty; // Format: ABC123 (e.g., AWS001, MSF023)
@@ -45,6 +47,9 @@ namespace DesignPlanner.Core.Entities
         // Navigation properties
         [ForeignKey("ClientId")]
         public virtual Client Client { get; set; } = null!;
+
+        [ForeignKey("CategoryId")]
+        public virtual Category? Category { get; set; }
 
         public virtual ICollection<ProjectTask> Tasks { get; set; } = new List<ProjectTask>();
     }

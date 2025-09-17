@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Card,
   CardContent,
   TextField,
   Button,
@@ -13,7 +12,7 @@ import {
   Container,
   Paper,
   CircularProgress,
-  Grid,
+  Stack,
   MenuItem,
 } from '@mui/material';
 import {
@@ -21,8 +20,6 @@ import {
   VisibilityOff,
   Person,
   Lock,
-  Email,
-  Business,
   ArrowBack,
   PersonAdd,
 } from '@mui/icons-material';
@@ -197,8 +194,8 @@ const RegisterPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+              <Stack spacing={3}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   <TextField
                     fullWidth
                     label="First Name"
@@ -215,9 +212,6 @@ const RegisterPage: React.FC = () => {
                       ),
                     }}
                   />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Last Name"
@@ -227,52 +221,47 @@ const RegisterPage: React.FC = () => {
                     error={!!validationErrors.lastName}
                     helperText={validationErrors.lastName}
                   />
-                </Grid>
+                </Stack>
 
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    error={!!validationErrors.username}
-                    helperText={validationErrors.username}
-                  />
-                </Grid>
+                <TextField
+                  fullWidth
+                  label="Username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  error={!!validationErrors.username}
+                  helperText={validationErrors.username}
+                />
 
+                <TextField
+                  fullWidth
+                  select
+                  label="Role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                >
+                  {Object.values(UserRole)
+                    .filter(value => typeof value === 'number')
+                    .filter(role => {
+                      // Only admins can create other admins
+                      if (role === UserRole.Admin && user?.role !== UserRole.Admin) {
+                        return false;
+                      }
+                      // Only admins can create managers unless the current user is admin
+                      if (role === UserRole.Manager && user?.role !== UserRole.Admin) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .map((role) => (
+                      <MenuItem key={role} value={role}>
+                        {getRoleDisplayName(role as UserRole)}
+                      </MenuItem>
+                    ))}
+                </TextField>
 
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    select
-                    label="Role"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                  >
-                    {Object.values(UserRole)
-                      .filter(value => typeof value === 'number')
-                      .filter(role => {
-                        // Only admins can create other admins
-                        if (role === UserRole.Admin && user?.role !== UserRole.Admin) {
-                          return false;
-                        }
-                        // Only admins can create managers unless the current user is admin
-                        if (role === UserRole.Manager && user?.role !== UserRole.Admin) {
-                          return false;
-                        }
-                        return true;
-                      })
-                      .map((role) => (
-                        <MenuItem key={role} value={role}>
-                          {getRoleDisplayName(role as UserRole)}
-                        </MenuItem>
-                      ))}
-                  </TextField>
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   <TextField
                     fullWidth
                     label="Password"
@@ -301,9 +290,6 @@ const RegisterPage: React.FC = () => {
                       ),
                     }}
                   />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Confirm Password"
@@ -332,8 +318,8 @@ const RegisterPage: React.FC = () => {
                       ),
                     }}
                   />
-                </Grid>
-              </Grid>
+                </Stack>
+              </Stack>
 
               <Button
                 type="submit"

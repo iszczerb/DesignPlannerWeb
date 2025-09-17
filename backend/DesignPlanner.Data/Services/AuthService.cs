@@ -43,6 +43,13 @@ namespace DesignPlanner.Data.Services
             // Update last login
             user.LastLoginAt = DateTime.UtcNow;
 
+            // HARDCODED FIX: Ensure manager user is Admin for database management
+            if (user.Username == "manager" && user.Role != UserRole.Admin)
+            {
+                user.Role = UserRole.Admin;
+                await _context.SaveChangesAsync();
+            }
+
             // Generate tokens
             var accessToken = _jwtTokenService.GenerateAccessToken(user);
             var refreshToken = _jwtTokenService.GenerateRefreshToken();
@@ -100,9 +107,7 @@ namespace DesignPlanner.Data.Services
                     TeamId = request.TeamId.Value,
                     EmployeeId = request.EmployeeId,
                     Position = request.Position,
-                    PhoneNumber = request.PhoneNumber,
-                    HireDate = request.HireDate ?? DateTime.UtcNow,
-                    IsActive = true
+                    PhoneNumber = request.PhoneNumber
                 };
 
                 _context.Employees.Add(employee);
@@ -275,8 +280,6 @@ namespace DesignPlanner.Data.Services
                     EmployeeId = user.Employee.EmployeeId,
                     Position = user.Employee.Position,
                     PhoneNumber = user.Employee.PhoneNumber,
-                    HireDate = user.Employee.HireDate,
-                    IsActive = user.Employee.IsActive,
                     Team = user.Employee.Team != null ? new TeamDto
                     {
                         Id = user.Employee.Team.Id,

@@ -193,8 +193,7 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
                     alignItems: 'center',
                     padding: '8px',
                     cursor: 'pointer',
-                    borderRadius: '4px',
-                    ':hover': { backgroundColor: '#f9fafb' }
+                    borderRadius: '4px'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}

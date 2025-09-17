@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { AuthState, LoginRequest, RegisterRequest, ChangePasswordRequest, User, ApiError } from '../../types/auth';
+import { AuthState, LoginRequest, RegisterRequest, ChangePasswordRequest, ApiError } from '../../types/auth';
 import apiService from '../../services/api';
 
 // Initial state
@@ -42,7 +42,7 @@ export const register = createAsyncThunk(
 
 export const logout = createAsyncThunk(
   'auth/logout',
-  async (_, { rejectWithValue }) => {
+  async (_) => {
     try {
       await apiService.logout();
     } catch (error: any) {

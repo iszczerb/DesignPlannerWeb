@@ -5,7 +5,8 @@ import {
   Slot,
   AssignmentTaskDto,
   CalendarDayDto,
-  TEAM_TYPE_LABELS
+  TEAM_TYPE_LABELS,
+  EmployeeScheduleDto
 } from '../../types/schedule';
 import { DragItem } from '../../types/dragDrop';
 

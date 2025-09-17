@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using DesignPlanner.Core.Entities;
+using DesignPlanner.Core.Enums;
 
 namespace DesignPlanner.Core.Services
 {

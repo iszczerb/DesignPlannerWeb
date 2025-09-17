@@ -62,6 +62,7 @@ export interface CalendarViewDto {
   viewType: CalendarViewType;
   days: CalendarDayDto[];
   employees: EmployeeScheduleDto[];
+  taskTypes?: any[]; // Optional task types for UI components
 }
 
 export interface CalendarDayDto {
@@ -75,8 +76,10 @@ export interface CalendarDayDto {
 export interface EmployeeScheduleDto {
   employeeId: number;
   employeeName: string;
+  fullName?: string; // Alias for employeeName
   role: string;
   team: string;
+  teamId?: number;
   isActive: boolean;
   dayAssignments: DayAssignmentDto[];
   // New fields for enhanced team member management
@@ -121,6 +124,7 @@ export interface AssignmentTaskDto {
   assignmentId: number;
   taskId: number;
   taskTitle: string;
+  taskName?: string; // Alias for taskTitle for backward compatibility
   taskTypeName: string;
   projectCode: string;
   projectName: string;
@@ -144,6 +148,7 @@ export interface ScheduleRequestDto {
   startDate: string;
   viewType: CalendarViewType;
   employeeId?: number;
+  teamId?: number;
   includeInactive?: boolean;
 }
 
@@ -153,6 +158,13 @@ export interface CreateAssignmentDto {
   assignedDate: string;
   slot: Slot;
   notes?: string;
+  estimatedHours?: number;
+  projectId?: number;
+  taskTypeId?: number;
+  priority?: TaskPriority;
+  status?: TaskStatus;
+  title?: string;
+  description?: string;
 }
 
 export interface UpdateAssignmentDto {
@@ -208,6 +220,13 @@ export interface DateRangeDto {
   employeeId?: number;
 }
 
+// Team DTOs
+export interface TeamDto {
+  id: number;
+  name: string;
+  description?: string;
+}
+
 // Team Member Management DTOs
 export interface TeamMemberDto {
   employeeId: number;
@@ -217,6 +236,7 @@ export interface TeamMemberDto {
   role: string;
   team: string;
   teamType: TeamType;
+  teamId: number;
   skills: SkillType[];
   startDate: string;
   isActive: boolean;
@@ -228,7 +248,7 @@ export interface CreateTeamMemberDto {
   lastName: string;
   role: string;
   employeeId: string;
-  teamType: TeamType;
+  teamId: number;
   skills: SkillType[];
   startDate: string;
   notes?: string;
@@ -239,7 +259,7 @@ export interface UpdateTeamMemberDto {
   firstName?: string;
   lastName?: string;
   role?: string;
-  teamType?: TeamType;
+  teamId?: number;
   skills?: SkillType[];
   startDate?: string;
   isActive?: boolean;
@@ -434,3 +454,8 @@ export const SKILL_TYPE_COLORS = {
 };
 
 export const MAX_TASKS_PER_SLOT = 4;
+
+// Type aliases for backward compatibility and convenience
+export type TaskType = number; // For task type ID references
+export type Priority = TaskPriority; // Alias for TaskPriority enum
+export type EmployeeCalendarDto = EmployeeScheduleDto; // Alias for EmployeeScheduleDto

@@ -18,15 +18,19 @@ namespace DesignPlanner.Core.Entities
         [MaxLength(20)]
         public string EmployeeId { get; set; } = string.Empty; // e.g., "EMP001"
 
+        [Required]
+        [MaxLength(50)]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(50)]
+        public string LastName { get; set; } = string.Empty;
+
         [MaxLength(100)]
         public string? Position { get; set; }
 
         [MaxLength(20)]
         public string? PhoneNumber { get; set; }
-
-        public DateTime HireDate { get; set; }
-
-        public bool IsActive { get; set; } = true;
 
         // Leave Management Properties
         public int TotalAnnualLeaveDays { get; set; } = 25; // Default annual leave allocation

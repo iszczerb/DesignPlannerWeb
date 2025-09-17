@@ -313,7 +313,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 </Typography>
                 
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="body2" color="text.secondary">
                       Client
                     </Typography>
@@ -349,7 +349,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                     )}
                   </Grid>
                   
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="body2" color="text.secondary">
                       Project
                     </Typography>
@@ -395,7 +395,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                     )}
                   </Grid>
                   
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Typography variant="body2" color="text.secondary">
                       Task Details
                     </Typography>
@@ -435,7 +435,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                     )}
                   </Grid>
                   
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="body2" color="text.secondary">
                       Assigned Employee
                     </Typography>
@@ -444,7 +444,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                     </Typography>
                   </Grid>
                   
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="body2" color="text.secondary">
                       Task Hours (Auto-calculated)
                     </Typography>
@@ -534,7 +534,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
               </Typography>
 
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                     Due Date
                   </Typography>
@@ -558,7 +558,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   )}
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                     Schedule
                   </Typography>
@@ -584,7 +584,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                     Task Hours (Auto-calculated)
                   </Typography>

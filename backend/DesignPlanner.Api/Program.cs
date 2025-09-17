@@ -9,6 +9,13 @@ using AuthService = DesignPlanner.Data.Services.AuthService;
 using EmployeeService = DesignPlanner.Data.Services.EmployeeService;
 using LeaveService = DesignPlanner.Data.Services.LeaveService;
 using ScheduleService = DesignPlanner.Data.Services.ScheduleService;
+using ClientService = DesignPlanner.Data.Services.ClientService;
+using ProjectService = DesignPlanner.Data.Services.ProjectService;
+using TeamManagementService = DesignPlanner.Data.Services.TeamManagementService;
+using SkillService = DesignPlanner.Data.Services.SkillService;
+using TaskTypeService = DesignPlanner.Data.Services.TaskTypeService;
+using HolidayService = DesignPlanner.Data.Services.HolidayService;
+using DesignPlanner.Data.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,7 +85,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", builder =>
     {
-        builder.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:3000") // Vite dev server and common React ports
+        builder.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178", "http://localhost:5179", "http://localhost:5180", "http://localhost:5181", "http://localhost:5182", "http://localhost:5183", "http://localhost:5184", "http://localhost:5185", "http://localhost:3000") // Vite dev server and common React ports
                .AllowAnyMethod()
                .AllowAnyHeader();
     });
@@ -92,8 +99,16 @@ builder.Services.AddScoped<ILeaveService, LeaveService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
-// Register database seeder
-builder.Services.AddDatabaseSeeder();
+// Register database management services
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<ITeamManagementService, TeamManagementService>();
+builder.Services.AddScoped<ISkillService, SkillService>();
+builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
+builder.Services.AddScoped<IHolidayService, HolidayService>();
+
+// Minimal initialization service for essential setup only
+builder.Services.AddScoped<IMinimalInitializer, MinimalInitializer>();
 
 var app = builder.Build();
 
@@ -108,6 +123,10 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Ensuring database exists and applying migrations...");
         await context.Database.MigrateAsync();
         logger.LogInformation("Database ready.");
+
+        // Initialize essential data (manager user and default team)
+        var initializer = scope.ServiceProvider.GetRequiredService<IMinimalInitializer>();
+        await initializer.InitializeAsync();
     }
     catch (Exception ex)
     {
@@ -122,38 +141,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseDeveloperExceptionPage();
     
-    // Development-only database seeding endpoint
-    app.MapMethods("/api/dev/seed-database", new[] { "GET", "POST" }, async (IServiceProvider serviceProvider, bool forceRecreate = false) =>
-    {
-        using var scope = serviceProvider.CreateScope();
-        var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        
-        try
-        {
-            await seeder.SeedAsync(forceRecreate);
-            logger.LogInformation("Database seeded successfully via API endpoint");
-            return Results.Ok(new { 
-                success = true, 
-                message = "Database seeded successfully",
-                loginCredentials = new {
-                    manager = new { username = "manager", password = "password123" },
-                    teamMembers = new[] {
-                        new { username = "alex.smith", password = "password123" },
-                        new { username = "emma.wilson", password = "password123" },
-                        new { username = "david.brown", password = "password123" },
-                        new { username = "lisa.taylor", password = "password123" },
-                        new { username = "mike.garcia", password = "password123" }
-                    }
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to seed database");
-            return Results.Problem($"Failed to seed database: {ex.Message}");
-        }
-    }).WithTags("Development");
+    // Database seeding endpoints disabled - manual data creation only
 
     // Development-only fix manager role endpoint
     app.MapPost("/api/dev/fix-manager-role", async (IServiceProvider serviceProvider) =>

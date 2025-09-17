@@ -25,7 +25,8 @@ namespace DesignPlanner.Core.DTOs
         public UserRole Role { get; set; } = UserRole.TeamMember;
 
         // Employee fields
-        public int? TeamId { get; set; }
+        [Required(ErrorMessage = "Team is required")]
+        public int TeamId { get; set; }
         
         [StringLength(50, ErrorMessage = "Employee ID cannot exceed 50 characters")]
         public string? EmployeeId { get; set; }
@@ -35,8 +36,6 @@ namespace DesignPlanner.Core.DTOs
         
         [StringLength(20, ErrorMessage = "Phone number cannot exceed 20 characters")]
         public string? PhoneNumber { get; set; }
-        
-        public DateTime? HireDate { get; set; }
     }
 
     public class UpdateEmployeeRequestDto
@@ -53,7 +52,8 @@ namespace DesignPlanner.Core.DTOs
         public UserRole Role { get; set; }
 
         // Employee fields
-        public int? TeamId { get; set; }
+        [Required(ErrorMessage = "Team is required")]
+        public int TeamId { get; set; }
         
         [StringLength(50, ErrorMessage = "Employee ID cannot exceed 50 characters")]
         public string? EmployeeId { get; set; }
@@ -63,10 +63,6 @@ namespace DesignPlanner.Core.DTOs
         
         [StringLength(20, ErrorMessage = "Phone number cannot exceed 20 characters")]
         public string? PhoneNumber { get; set; }
-        
-        public DateTime? HireDate { get; set; }
-        
-        public bool IsActive { get; set; } = true;
     }
 
     public class EmployeeListResponseDto
@@ -87,7 +83,6 @@ namespace DesignPlanner.Core.DTOs
         public string LastName { get; set; } = string.Empty;
         public string FullName => $"{FirstName} {LastName}";
         public UserRole Role { get; set; }
-        public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
         
@@ -95,7 +90,6 @@ namespace DesignPlanner.Core.DTOs
         public string? EmployeeId { get; set; }
         public string? Position { get; set; }
         public string? PhoneNumber { get; set; }
-        public DateTime? HireDate { get; set; }
         public string? TeamName { get; set; }
     }
 
@@ -106,7 +100,6 @@ namespace DesignPlanner.Core.DTOs
         public string? SearchTerm { get; set; }
         public UserRole? Role { get; set; }
         public int? TeamId { get; set; }
-        public bool? IsActive { get; set; }
         public string SortBy { get; set; } = "LastName";
         public string SortDirection { get; set; } = "asc";
     }

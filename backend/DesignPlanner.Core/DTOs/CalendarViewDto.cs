@@ -71,28 +71,6 @@ namespace DesignPlanner.Core.DTOs
         public double? Hours { get; set; }
     }
 
-    public class ClientDto
-    {
-        public int Id { get; set; }
-        public string Code { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class ProjectDto
-    {
-        public int Id { get; set; }
-        public string Code { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string ClientName { get; set; } = string.Empty;
-        public int ClientId { get; set; }
-    }
-
-    public class TaskTypeDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
     public class ProjectTaskDto
     {
         public int Id { get; set; }

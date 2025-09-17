@@ -4,13 +4,12 @@ import {
   TeamMemberEditModalProps,
   CreateTeamMemberDto,
   UpdateTeamMemberDto,
-  TeamType,
+  TeamDto,
   SkillType,
-  TEAM_TYPE_LABELS,
   SKILL_TYPE_LABELS,
-  TEAM_TYPE_COLORS,
   SKILL_TYPE_COLORS
 } from '../../types/schedule';
+import teamService from '../../services/teamService';
 
 const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
   isOpen,
@@ -23,7 +22,7 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
     firstName: '',
     lastName: '',
     role: '',
-    teamType: TeamType.Structural,
+    teamId: 1, // Default to first team
     skills: [] as SkillType[],
     startDate: '',
     notes: '',
@@ -31,34 +30,56 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [availableTeams, setAvailableTeams] = useState<TeamDto[]>([]);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      if (member && !isCreating) {
-        // Editing existing member
-        setFormData({
-          firstName: member.firstName || '',
-          lastName: member.lastName || '',
-          role: member.role || '',
-          teamType: member.teamType || TeamType.Structural,
-          skills: member.skills || [],
-          startDate: member.startDate || new Date().toISOString().split('T')[0],
-          notes: member.notes || '',
-          isActive: member.isActive ?? true
-        });
-      } else {
-        // Creating new member
-        setFormData({
-          firstName: '',
-          lastName: '',
-          role: '',
-          teamType: TeamType.Structural,
-          skills: [],
-          startDate: '',
-          notes: '',
-          isActive: true
-        });
-      }
+      // Load available teams
+      const loadTeams = async () => {
+        setIsLoadingTeams(true);
+        try {
+          const teams = await teamService.getAvailableTeams();
+          setAvailableTeams(teams);
+
+          if (member && !isCreating) {
+            // Editing existing member
+            setFormData({
+              firstName: member.firstName || '',
+              lastName: member.lastName || '',
+              role: member.role || '',
+              teamId: member.teamId || teams[0]?.id || 1,
+              skills: member.skills || [],
+              startDate: member.startDate || new Date().toISOString().split('T')[0],
+              notes: member.notes || '',
+              isActive: member.isActive ?? true
+            });
+          } else {
+            // Creating new member
+            setFormData({
+              firstName: '',
+              lastName: '',
+              role: '',
+              teamId: teams[0]?.id || 1,
+              skills: [],
+              startDate: '',
+              notes: '',
+              isActive: true
+            });
+          }
+        } catch (error) {
+          console.error('Failed to load teams:', error);
+          // Set default values if team loading fails
+          setFormData(prev => ({
+            ...prev,
+            teamId: 1
+          }));
+        } finally {
+          setIsLoadingTeams(false);
+        }
+      };
+
+      loadTeams();
       setErrors({});
     }
   }, [isOpen, member, isCreating]);
@@ -92,7 +113,7 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
         lastName: formData.lastName.trim(),
         role: formData.role.trim(),
         employeeId: autoEmployeeId,
-        teamType: formData.teamType,
+        teamId: formData.teamId,
         skills: formData.skills,
         startDate: formData.startDate || undefined,
         notes: formData.notes.trim() || undefined
@@ -104,7 +125,7 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         role: formData.role.trim(),
-        teamType: formData.teamType,
+        teamId: formData.teamId,
         skills: formData.skills,
         startDate: formData.startDate || undefined,
         notes: formData.notes.trim() || undefined,
@@ -355,45 +376,66 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
               }}>
                 Team Assignment
               </h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                gap: '8px',
-              }}>
-                {Object.values(TeamType).filter(t => typeof t === 'number').map(teamType => (
-                  <motion.div
-                    key={teamType}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setFormData(prev => ({ ...prev, teamType: teamType as TeamType }))}
-                    style={{
-                      padding: '12px 16px',
-                      border: formData.teamType === teamType ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      backgroundColor: formData.teamType === teamType ? '#eff6ff' : 'white',
-                      transition: 'all 0.2s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      backgroundColor: TEAM_TYPE_COLORS[teamType as TeamType],
-                    }} />
-                    <span style={{
+              {isLoadingTeams ? (
+                <div style={{
+                  padding: '20px',
+                  textAlign: 'center',
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                }}>
+                  Loading teams...
+                </div>
+              ) : (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: '8px',
+                }}>
+                  {availableTeams.map(team => (
+                    <motion.div
+                      key={team.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setFormData(prev => ({ ...prev, teamId: team.id }))}
+                      style={{
+                        padding: '12px 16px',
+                        border: formData.teamId === team.id ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        backgroundColor: formData.teamId === team.id ? '#eff6ff' : 'white',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        backgroundColor: '#3b82f6',
+                      }} />
+                      <span style={{
+                        fontSize: '0.875rem',
+                        fontWeight: formData.teamId === team.id ? '600' : '500',
+                        color: formData.teamId === team.id ? '#1d4ed8' : '#374151',
+                      }}>
+                        {team.name}
+                      </span>
+                    </motion.div>
+                  ))}
+                  {availableTeams.length === 0 && !isLoadingTeams && (
+                    <div style={{
+                      padding: '20px',
+                      textAlign: 'center',
+                      color: '#ef4444',
                       fontSize: '0.875rem',
-                      fontWeight: formData.teamType === teamType ? '600' : '500',
-                      color: formData.teamType === teamType ? '#1d4ed8' : '#374151',
                     }}>
-                      {TEAM_TYPE_LABELS[teamType as TeamType]}
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
+                      No teams available. Please contact your administrator.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Skills Selection */}

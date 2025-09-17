@@ -6,7 +6,6 @@ import {
   Typography,
   TextField,
   Button,
-  Grid,
   Alert,
   CircularProgress,
   MenuItem,
@@ -14,6 +13,7 @@ import {
   Switch,
   Divider,
 } from '@mui/material';
+import { Stack } from '@mui/material';
 import {
   ArrowBack,
   Save,
@@ -44,7 +44,6 @@ const EditEmployee: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState<UpdateEmployeeRequest>({
-    email: '',
     firstName: '',
     lastName: '',
     role: UserRole.TeamMember,
@@ -73,8 +72,7 @@ const EditEmployee: React.FC = () => {
         
         // Populate form
         setFormData({
-          email: employeeData.email,
-          firstName: employeeData.firstName,
+            firstName: employeeData.firstName,
           lastName: employeeData.lastName,
           role: employeeData.role,
           teamId: employeeData.employee?.team?.id,
@@ -100,11 +98,6 @@ const EditEmployee: React.FC = () => {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
 
     if (!formData.firstName.trim()) {
       errors.firstName = 'First name is required';
@@ -229,31 +222,32 @@ const EditEmployee: React.FC = () => {
 
       <Paper sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
+          <Stack spacing={3}>
             {/* Personal Information */}
-            <Grid item xs={12}>
+            <Box>
               <Typography variant="h6" gutterBottom>
                 Personal Information
               </Typography>
               <Divider sx={{ mb: 2 }} />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="First Name"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                error={!!validationErrors.firstName}
-                helperText={validationErrors.firstName}
-                InputProps={{
-                  startAdornment: <Person sx={{ mr: 1, color: 'action.active' }} />,
-                }}
-              />
-            </Grid>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Box flex={1}>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  error={!!validationErrors.firstName}
+                  helperText={validationErrors.firstName}
+                  InputProps={{
+                    startAdornment: <Person sx={{ mr: 1, color: 'action.active' }} />,
+                  }}
+                />
+              </Box>
 
-            <Grid item xs={12} sm={6}>
+              <Box flex={1}>
               <TextField
                 fullWidth
                 label="Last Name"
@@ -263,33 +257,19 @@ const EditEmployee: React.FC = () => {
                 error={!!validationErrors.lastName}
                 helperText={validationErrors.lastName}
               />
-            </Grid>
+            </Box>
+            </Stack>
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                error={!!validationErrors.email}
-                helperText={validationErrors.email}
-                InputProps={{
-                  startAdornment: <Email sx={{ mr: 1, color: 'action.active' }} />,
-                }}
-              />
-            </Grid>
 
             {/* Role and Status */}
-            <Grid item xs={12}>
+            <Box >
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                 Role and Status
               </Typography>
               <Divider sx={{ mb: 2 }} />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6}>
+            <Box >
               <TextField
                 fullWidth
                 select
@@ -307,9 +287,9 @@ const EditEmployee: React.FC = () => {
                     </MenuItem>
                   ))}
               </TextField>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6}>
+            <Box >
               <FormControlLabel
                 control={
                   <Switch
@@ -320,17 +300,17 @@ const EditEmployee: React.FC = () => {
                 }
                 label={formData.isActive ? "Active" : "Inactive"}
               />
-            </Grid>
+            </Box>
 
             {/* Employee Details */}
-            <Grid item xs={12}>
+            <Box >
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                 Employee Details
               </Typography>
               <Divider sx={{ mb: 2 }} />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6}>
+            <Box >
               <TextField
                 fullWidth
                 label="Employee ID"
@@ -338,9 +318,9 @@ const EditEmployee: React.FC = () => {
                 value={formData.employeeId}
                 onChange={handleInputChange}
               />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6}>
+            <Box >
               <TextField
                 fullWidth
                 label="Position"
@@ -351,9 +331,9 @@ const EditEmployee: React.FC = () => {
                   startAdornment: <Work sx={{ mr: 1, color: 'action.active' }} />,
                 }}
               />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6}>
+            <Box >
               <TextField
                 fullWidth
                 label="Phone Number"
@@ -364,9 +344,9 @@ const EditEmployee: React.FC = () => {
                   startAdornment: <Phone sx={{ mr: 1, color: 'action.active' }} />,
                 }}
               />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6}>
+            <Box >
               <TextField
                 fullWidth
                 select
@@ -385,9 +365,9 @@ const EditEmployee: React.FC = () => {
                   </MenuItem>
                 ))}
               </TextField>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6}>
+            <Box >
               <TextField
                 fullWidth
                 label="Hire Date"
@@ -402,10 +382,10 @@ const EditEmployee: React.FC = () => {
                   startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
                 }}
               />
-            </Grid>
+            </Box>
 
             {/* Actions */}
-            <Grid item xs={12}>
+            <Box >
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
                 <Button
                   variant="outlined"
@@ -429,8 +409,8 @@ const EditEmployee: React.FC = () => {
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </Box>
-            </Grid>
-          </Grid>
+            </Box>
+          </Stack>
         </form>
       </Paper>
       </Box>

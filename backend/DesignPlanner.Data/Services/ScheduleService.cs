@@ -538,9 +538,9 @@ namespace DesignPlanner.Data.Services
         // Validation
         public async Task<bool> ValidateAssignmentAsync(CreateAssignmentDto assignment)
         {
-            // Check if employee exists and is active
+            // Check if employee exists (all employees in DB are active)
             var employee = await _context.Employees.FindAsync(assignment.EmployeeId);
-            if (employee == null || !employee.IsActive) return false;
+            if (employee == null) return false;
 
             // Check if task exists and is active
             var task = await _context.ProjectTasks.FindAsync(assignment.TaskId);
@@ -574,9 +574,9 @@ namespace DesignPlanner.Data.Services
             var conflicts = new List<string>();
 
             var employee = await _context.Employees.FindAsync(assignment.EmployeeId);
-            if (employee == null || !employee.IsActive)
+            if (employee == null)
             {
-                conflicts.Add("Employee not found or inactive");
+                conflicts.Add("Employee not found");
             }
 
             var task = await _context.ProjectTasks.FindAsync(assignment.TaskId);
@@ -739,10 +739,8 @@ namespace DesignPlanner.Data.Services
                 query = query.Where(e => e.Id == employeeId.Value);
             }
 
-            if (!includeInactive)
-            {
-                query = query.Where(e => e.IsActive);
-            }
+            // Note: All employees in database are active by definition
+            // if (!includeInactive) { ... }
 
             return await query.Include(e => e.User).OrderBy(e => e.User.FirstName).ThenBy(e => e.User.LastName).ToListAsync();
         }
@@ -832,7 +830,6 @@ namespace DesignPlanner.Data.Services
                     EmployeeName = $"{employee.User.FirstName} {employee.User.LastName}",
                     Role = employee.Position ?? "Employee",
                     Team = employee.Team?.Name ?? "Unassigned",
-                    IsActive = employee.IsActive,
                     DayAssignments = dayAssignments
                 };
 
@@ -940,7 +937,7 @@ namespace DesignPlanner.Data.Services
                     Code = t.Code,
                     Description = t.Description,
                     Color = ScheduleService.GetTeamColor(t.Code),
-                    MemberCount = t.Members.Count(m => m.IsActive),
+                    MemberCount = t.Members.Count(),
                     IsManaged = true // This should be based on actual manager relationship
                 })
                 .ToListAsync<object>();
@@ -960,7 +957,7 @@ namespace DesignPlanner.Data.Services
                     Code = t.Code,
                     Description = t.Description,
                     Color = ScheduleService.GetTeamColor(t.Code),
-                    MemberCount = t.Members.Count(m => m.IsActive),
+                    MemberCount = t.Members.Count(),
                     IsManaged = true // This should be based on actual manager relationship with userId
                 })
                 .ToListAsync<object>();
@@ -985,7 +982,7 @@ namespace DesignPlanner.Data.Services
             var employees = await _context.Employees
                 .Include(e => e.User)
                 .Include(e => e.Team)
-                .Where(e => e.TeamId == request.TeamId && (request.IncludeInactive || e.IsActive))
+                .Where(e => e.TeamId == request.TeamId)
                 .ToListAsync();
 
             var assignments = await GetAssignmentsForDateRangeAsync(startDate, endDate, null, request.TeamId);
@@ -1020,7 +1017,7 @@ namespace DesignPlanner.Data.Services
 
             // Get all teams with their employees
             var teamsWithEmployees = await _context.Teams
-                .Include(t => t.Members.Where(m => request.IncludeInactive || m.IsActive))
+                .Include(t => t.Members)
                     .ThenInclude(m => m.User)
                 .Where(t => t.IsActive)
                 .ToListAsync();

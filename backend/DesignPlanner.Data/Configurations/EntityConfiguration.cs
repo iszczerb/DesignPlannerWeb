@@ -168,4 +168,18 @@ namespace DesignPlanner.Data.Configurations
             builder.HasIndex(es => new { es.EmployeeId, es.SkillId }).IsUnique();
         }
     }
+
+    public class CategoryConfiguration : IEntityTypeConfiguration<Category>
+    {
+        public void Configure(EntityTypeBuilder<Category> builder)
+        {
+            builder.HasIndex(e => e.Name).IsUnique();
+
+            // Configure relationship with Projects
+            builder.HasMany(c => c.Projects)
+                .WithOne(p => p.Category)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+        }
+    }
 }

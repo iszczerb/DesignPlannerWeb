@@ -37,6 +37,5 @@ namespace DesignPlanner.Core.DTOs
         public string? EmployeeId { get; set; }
         public string? Position { get; set; }
         public string? PhoneNumber { get; set; }
-        public DateTime? HireDate { get; set; }
     }
 }

@@ -16,6 +16,7 @@ import QuickEditNotes from '../components/calendar/QuickEditNotes';
 import ConfirmationDialog from '../components/calendar/ConfirmationDialog';
 import NotificationManager from '../components/common/NotificationManager';
 import ConfirmDialog from '../components/common/ConfirmDialog';
+import DatabaseManagementModal from '../components/database/DatabaseManagementModal';
 import { TeamViewMode } from '../components/calendar/TeamToggle';
 import {
   CalendarViewType,
@@ -30,7 +31,8 @@ import {
   TaskPriority,
   TaskStatus,
   CreateTeamMemberDto,
-  UpdateTeamMemberDto
+  UpdateTeamMemberDto,
+  TeamMemberDto
 } from '../types/schedule';
 import { DragItem } from '../types/dragDrop';
 import teamService, { TeamInfo } from '../services/teamService';
@@ -516,6 +518,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const [quickEditDueDateOpen, setQuickEditDueDateOpen] = useState(false);
   const [quickEditNotesOpen, setQuickEditNotesOpen] = useState(false);
   const [currentQuickEditTask, setCurrentQuickEditTask] = useState<AssignmentTaskDto | null>(null);
+  const [showDatabaseModal, setShowDatabaseModal] = useState(false);
 
   // Captured tasks for quick edit (to preserve selection when modal opens)
   const [capturedQuickEditTasks, setCapturedQuickEditTasks] = useState<AssignmentTaskDto[]>([]);
@@ -607,7 +610,12 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   // Navigation and user menu handlers
   const handleNavigation = (page: string) => {
     console.log('Navigate to:', page);
-    // TODO: Implement navigation logic
+
+    if (page === 'database') {
+      setShowDatabaseModal(true);
+    } else {
+      // TODO: Implement other navigation logic
+    }
   };
 
   const handleSearch = (query: string) => {
@@ -660,7 +668,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
    */
   const getSlotTasks = useCallback((task: AssignmentTaskDto): AssignmentTaskDto[] => {
     if (!calendarData) return [];
-    
+
     const targetEmployee = calendarData.employees.find(emp => emp.employeeId === task.employeeId);
     if (!targetEmployee) return [];
     
@@ -707,7 +715,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       setError(null);
 
       const request: ScheduleRequestDto = {
-        startDate: windowStartDate, // Use window start instead of current date
+        startDate: windowStartDate.toISOString().split('T')[0], // Use window start instead of current date
         viewType: viewType,
         includeInactive: false
       };
@@ -827,10 +835,10 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       // Reload calendar data to reflect changes
       await loadCalendarData();
 
-      showNotification('Team member deleted successfully!', 'success');
+      showNotification({ type: 'success', title: 'Success', message: 'Team member deleted successfully!' });
     } catch (error) {
       console.error('Error deleting team member:', error);
-      showNotification('Failed to delete team member. Please try again.', 'error');
+      showNotification({ type: 'error', title: 'Error', message: 'Failed to delete team member. Please try again.' });
     }
   }, [loadCalendarData, showNotification]);
 
@@ -1198,10 +1206,10 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         bulkUpdate.updates.taskId = updates.taskType?.id;
       }
       if (updates.priority !== undefined) {
-        bulkUpdate.updates.priority = updates.priority;
+        bulkUpdate.updates.priority = updates.priority || undefined;
       }
       if (updates.status !== undefined) {
-        bulkUpdate.updates.taskStatus = updates.status;
+        bulkUpdate.updates.taskStatus = updates.status || undefined;
       }
       if (updates.dueDate !== undefined) {
         bulkUpdate.updates.dueDate = updates.dueDate;
@@ -2653,7 +2661,7 @@ ${dateInfo}`;
             onEmployeeEdit={handleEmployeeEdit}
             onEmployeeDelete={handleEmployeeDelete}
             onAddNewMember={handleTeamAddMember}
-            onManageTeam={handleTeamManage}
+            onManageTeam={() => handleTeamManage(1)}
           />
         ) : (
           <div style={{ 
@@ -2784,7 +2792,6 @@ ${dateInfo}`;
             setCapturedMultiDays([]);
           }}
           selectedDate={selectedLeaveDate}
-          selectedDates={capturedMultiDays}
           employees={calendarData?.employees || []}
           onSubmit={handleLeaveSubmit}
         />
@@ -2861,7 +2868,7 @@ ${dateInfo}`;
                 await loadCalendarData();
 
                 // Show success notification
-                showNotification('Team member created successfully!', 'success');
+                showNotification({ type: 'success', title: 'Success', message: 'Team member created successfully!' });
 
                 // Close edit modal and reopen manage modal on success
                 setTeamMemberEditModal({ isOpen: false, member: null, mode: 'create', teamId: undefined });
@@ -2873,7 +2880,7 @@ ${dateInfo}`;
                 if (error.response?.data?.errors) {
                   console.error('🔍 Detailed validation errors:', JSON.stringify(error.response.data.errors, null, 2));
                 }
-                showNotification(`Failed to create team member: ${error.response?.data?.message || error.message}`, 'error');
+                showNotification({ type: 'error', title: 'Error', message: `Failed to create team member: ${error.response?.data?.message || error.message}` });
                 return; // Don't close modal on error
               }
             } else if (teamMemberEditModal.mode === 'edit' && teamMemberEditModal.member) {
@@ -2891,10 +2898,10 @@ ${dateInfo}`;
               console.log('🔍 Found current employee:', currentEmployee);
 
               const updateRequest = {
-                firstName: updateData.firstName,
-                lastName: updateData.lastName,
+                firstName: updateData.firstName || currentEmployee.firstName || 'Unknown',
+                lastName: updateData.lastName || currentEmployee.lastName || 'Employee',
                 role: UserRole.TeamMember,
-                teamId: teamMemberEditModal.teamId || 1,
+                teamId: updateData.teamId || 1,
                 position: updateData.role,
                 hireDate: updateData.startDate,
                 isActive: updateData.isActive ?? true
@@ -2917,11 +2924,12 @@ ${dateInfo}`;
                   employeeName: `${result.firstName} ${result.lastName}`,
                   firstName: result.firstName,
                   lastName: result.lastName,
-                  role: result.employee?.position || updateData.role,
-                  team: updateData.team, // Keep current team name
-                  teamType: updateData.teamType,
-                  skills: updateData.skills,
-                  startDate: updateData.startDate,
+                  role: result.employee?.position || updateData.role || 'Team Member',
+                  team: currentEmployee.team, // Keep current team name
+                  teamType: currentEmployee.teamType || 1,
+                  teamId: updateData.teamId || currentEmployee.teamId || 1,
+                  skills: updateData.skills || [],
+                  startDate: updateData.startDate || currentEmployee.startDate || new Date().toISOString().split('T')[0],
                   isActive: true,
                   notes: updateData.notes
                 };
@@ -2939,10 +2947,10 @@ ${dateInfo}`;
                             firstName: result.firstName,
                             lastName: result.lastName,
                             employeeName: `${result.firstName} ${result.lastName}`,
-                            role: result.employee?.position || updateData.role,
-                            startDate: updateData.startDate,
-                            teamType: updateData.teamType,
-                            skills: updateData.skills,
+                            role: result.employee?.position || updateData.role || 'Team Member',
+                            startDate: updateData.startDate || emp.startDate,
+                            teamType: emp.teamType,
+                            skills: updateData.skills || emp.skills,
                             notes: updateData.notes
                           }
                         : emp
@@ -2953,7 +2961,7 @@ ${dateInfo}`;
                 }
 
                 // Show success notification
-                showNotification('Team member updated successfully!', 'success');
+                showNotification({ type: 'success', title: 'Success', message: 'Team member updated successfully!' });
 
                 // Close edit modal and reopen manage modal on success
                 setTeamMemberEditModal({ isOpen: false, member: null, mode: 'create', teamId: undefined });
@@ -2965,13 +2973,13 @@ ${dateInfo}`;
                 if (error.response?.data?.errors) {
                   console.error('🔍 Update Detailed validation errors:', JSON.stringify(error.response.data.errors, null, 2));
                 }
-                showNotification(`Failed to update team member: ${error.response?.data?.message || error.message}`, 'error');
+                showNotification({ type: 'error', title: 'Error', message: `Failed to update team member: ${error.response?.data?.message || error.message}` });
                 return; // Don't close modal on error
               }
             }
           } catch (error) {
             console.error('Error saving team member:', error);
-            showNotification('Failed to save team member. Please try again.', 'error');
+            showNotification({ type: 'error', title: 'Error', message: 'Failed to save team member. Please try again.' });
           }
         }}
       />
@@ -3010,6 +3018,12 @@ ${dateInfo}`;
         onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
         confirmText="Proceed"
         cancelText="Cancel"
+      />
+
+      {/* Database Management Modal */}
+      <DatabaseManagementModal
+        isOpen={showDatabaseModal}
+        onClose={() => setShowDatabaseModal(false)}
       />
     </div>
   );

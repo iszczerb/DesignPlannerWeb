@@ -8,6 +8,8 @@ const LOCAL_ASSIGNMENT_COUNTER_KEY = 'localAssignmentCounter';
 // Storage interfaces
 interface LocalAssignment extends AssignmentTaskDto {
   isLocal: true;
+  estimatedHours: number;
+  actualHours: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,17 +55,18 @@ export const storeLocalAssignment = (assignment: CreateAssignmentDto): LocalAssi
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     // Default task properties for local assignments
-    projectId: assignment.projectId || 1,
-    taskTypeId: assignment.taskTypeId || 1,
     priority: assignment.priority || 2,
-    status: assignment.status || 1,
-    title: assignment.title || 'Local Task',
-    description: assignment.description || '',
-    startDate: assignment.assignedDate,
+    taskTitle: assignment.title || 'Local Task',
     dueDate: assignment.assignedDate,
-    completedDate: null,
+    projectCode: 'LOCAL',
     projectName: 'Local Project',
-    taskTypeName: 'Local Task Type'
+    clientCode: 'LOCAL',
+    clientName: 'Local Client',
+    clientColor: '#ccc',
+    taskTypeName: 'Local Task Type',
+    taskStatus: 1, // NotStarted
+    isActive: true,
+    employeeName: 'Local Employee'
   };
 
   assignments.push(newAssignment);

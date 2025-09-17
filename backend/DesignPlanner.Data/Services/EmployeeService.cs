@@ -26,7 +26,7 @@ namespace DesignPlanner.Data.Services
                 throw new ArgumentException("Username is already taken");
             }
 
-// Create user
+            // Create user
             var user = new User
             {
                 Username = request.Username,
@@ -41,31 +41,27 @@ namespace DesignPlanner.Data.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // Create employee if team info provided
-            if (request.TeamId.HasValue)
+            // Create employee with required team
+            var employee = new Employee
             {
-                var employee = new Employee
-                {
-                    UserId = user.Id,
-                    TeamId = request.TeamId.Value,
-                    EmployeeId = request.EmployeeId,
-                    Position = request.Position,
-                    HireDate = request.HireDate.HasValue ? request.HireDate.Value : DateTime.UtcNow,
-                    TotalAnnualLeaveDays = 25, // Default
-                    UsedLeaveDays = 0,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                UserId = user.Id,
+                TeamId = request.TeamId,
+                EmployeeId = request.EmployeeId,
+                Position = request.Position,
+                PhoneNumber = request.PhoneNumber,
+                TotalAnnualLeaveDays = 25, // Default
+                UsedLeaveDays = 0,
+                CreatedAt = DateTime.UtcNow
                 };
 
-                _context.Employees.Add(employee);
-                await _context.SaveChangesAsync();
+            _context.Employees.Add(employee);
+            await _context.SaveChangesAsync();
 
-                // Reload user with employee data
-                user = await _context.Users
-                    .Include(u => u.Employee)
-                        .ThenInclude(e => e!.Team)
-                    .FirstAsync(u => u.Id == user.Id);
-            }
+            // Reload user with employee data
+            user = await _context.Users
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e!.Team)
+                .FirstAsync(u => u.Id == user.Id);
 
             return MapToUserDto(user);
         }
@@ -87,16 +83,11 @@ namespace DesignPlanner.Data.Services
             // employee.User.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
             // Update employee
-            if (request.TeamId.HasValue)
-                employee.TeamId = request.TeamId.Value;
+            employee.TeamId = request.TeamId;
             
             employee.EmployeeId = request.EmployeeId ?? employee.EmployeeId;
             employee.Position = request.Position;
             
-            if (request.HireDate.HasValue)
-                employee.HireDate = request.HireDate.Value;
-                
-            employee.IsActive = request.IsActive;
             // employee.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
             await _context.SaveChangesAsync();
@@ -119,9 +110,8 @@ namespace DesignPlanner.Data.Services
             if (employee == null)
                 return false;
 
-            // Soft delete - deactivate user and employee
+            // Soft delete - deactivate user only (all employees in DB are active)
             employee.User.IsActive = false;
-            employee.IsActive = false;
             // employee.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
             // employee.User.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
@@ -171,10 +161,7 @@ namespace DesignPlanner.Data.Services
                 queryable = queryable.Where(u => u.Employee!.TeamId == query.TeamId.Value);
             }
 
-            if (query.IsActive.HasValue)
-            {
-                queryable = queryable.Where(u => u.IsActive == query.IsActive.Value);
-            }
+            // Note: All employees in database are active by definition
 
             // Apply sorting
             queryable = query.SortBy.ToLower() switch
@@ -210,12 +197,10 @@ namespace DesignPlanner.Data.Services
                     FirstName = u.FirstName,
                     LastName = u.LastName,
                     Role = u.Role,
-                    IsActive = u.IsActive,
                     CreatedAt = u.CreatedAt,
                     LastLoginAt = u.LastLoginAt,
                     EmployeeId = u.Employee!.EmployeeId,
                     Position = u.Employee.Position,
-                    HireDate = u.Employee.HireDate,
                     TeamName = u.Employee.Team != null ? u.Employee.Team.Name : null
                 })
                 .ToListAsync();
@@ -256,7 +241,7 @@ namespace DesignPlanner.Data.Services
                 return false;
 
             employee.User.IsActive = isActive;
-            employee.IsActive = isActive;
+            // Note: All employees in database are active by definition
             // employee.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
             // employee.User.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
@@ -320,8 +305,6 @@ namespace DesignPlanner.Data.Services
                     Id = user.Employee.Id,
                     EmployeeId = user.Employee.EmployeeId,
                     Position = user.Employee.Position,
-                    HireDate = user.Employee.HireDate,
-                    IsActive = user.Employee.IsActive,
                     Team = user.Employee.Team != null ? new TeamDto
                     {
                         Id = user.Employee.Team.Id,

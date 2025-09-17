@@ -381,7 +381,7 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
               <DatePicker
                 label="Due Date"
                 value={formData.dueDate}
-                onChange={(newValue) => setFormData({ ...formData, dueDate: newValue || dayjs() })}
+                onChange={(newValue) => setFormData({ ...formData, dueDate: newValue ? (dayjs.isDayjs(newValue) ? newValue : dayjs(newValue)) : null })}
                 sx={{ flex: 1 }}
                 minDate={dayjs()}
               />

@@ -563,10 +563,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
               const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
               if (dragData && dragData.type === 'task') {
-                onTaskDrop?.({
-                  type: 'task',
-                  task: dragData.task
-                }, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+                onTaskDrop?.(dragData, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
               }
             }
           }}
@@ -691,10 +688,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
               const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
               if (dragData && dragData.type === 'task') {
-                onTaskDrop?.({
-                  type: 'task',
-                  task: dragData.task
-                }, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+                onTaskDrop?.(dragData, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
               }
             }
           }}
@@ -821,10 +815,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
             const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
             if (dragData && dragData.type === 'task') {
-              onTaskDrop?.({
-                type: 'task',
-                task: dragData.task
-              }, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+              onTaskDrop?.(dragData, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
             }
           }
         }}>
@@ -837,7 +828,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               if (!isReadOnly) {
                 const dragData = {
                   type: 'task',
-                  task: task
+                  task: task,
+                  sourceSlot: {
+                    date: dateObj,
+                    slot: isAM ? Slot.Morning : Slot.Afternoon,
+                    employeeId: employee.employeeId
+                  }
                 };
                 e.dataTransfer.setData('application/json', JSON.stringify(dragData));
               }

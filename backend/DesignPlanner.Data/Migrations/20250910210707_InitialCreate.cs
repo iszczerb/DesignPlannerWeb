@@ -333,45 +333,6 @@ namespace DesignPlanner.Data.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.InsertData(
-                table: "Clients",
-                columns: new[] { "Id", "Address", "Code", "ContactEmail", "ContactPhone", "CreatedAt", "Description", "IsActive", "Name" },
-                values: new object[,]
-                {
-                    { 1, null, "AWS", null, null, new DateTime(2025, 9, 10, 21, 7, 7, 249, DateTimeKind.Utc).AddTicks(6895), null, true, "Amazon Web Services" },
-                    { 2, null, "MSFT", null, null, new DateTime(2025, 9, 10, 21, 7, 7, 249, DateTimeKind.Utc).AddTicks(7234), null, true, "Microsoft" },
-                    { 3, null, "GOOGLE", null, null, new DateTime(2025, 9, 10, 21, 7, 7, 249, DateTimeKind.Utc).AddTicks(7237), null, true, "Google" },
-                    { 4, null, "EQX", null, null, new DateTime(2025, 9, 10, 21, 7, 7, 249, DateTimeKind.Utc).AddTicks(7239), null, true, "Equinix" },
-                    { 5, null, "TATE", null, null, new DateTime(2025, 9, 10, 21, 7, 7, 249, DateTimeKind.Utc).AddTicks(7252), null, true, "Tate" }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Skills",
-                columns: new[] { "Id", "Category", "CreatedAt", "Description", "IsActive", "Name" },
-                values: new object[,]
-                {
-                    { 1, "Technical", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(6912), null, true, "C#" },
-                    { 2, "Technical", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(7129), null, true, "JavaScript" },
-                    { 3, "Technical", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(7131), null, true, "React" },
-                    { 4, "Design", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(7132), null, true, "UI/UX Design" },
-                    { 5, "Management", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(7133), null, true, "Project Management" },
-                    { 6, "Technical", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(7134), null, true, "Database Design" },
-                    { 7, "Technical", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(7135), null, true, "API Development" },
-                    { 8, "Technical", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(7137), null, true, "Testing" }
-                });
-
-            migrationBuilder.InsertData(
-                table: "TaskTypes",
-                columns: new[] { "Id", "Color", "CreatedAt", "Description", "IsActive", "Name" },
-                values: new object[,]
-                {
-                    { 1, "#FF6B6B", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(4740), "UI/UX Design tasks", true, "Design" },
-                    { 2, "#4ECDC4", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(4959), "Software development tasks", true, "Development" },
-                    { 3, "#45B7D1", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(4960), "Quality assurance and testing", true, "Testing" },
-                    { 4, "#96CEB4", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(4962), "Research and analysis tasks", true, "Research" },
-                    { 5, "#FECA57", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(4977), "Project planning and management", true, "Planning" },
-                    { 6, "#FF9FF3", new DateTime(2025, 9, 10, 21, 7, 7, 250, DateTimeKind.Utc).AddTicks(4978), "Code review and documentation", true, "Review" }
-                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assignments_AssignedDate_Slot",

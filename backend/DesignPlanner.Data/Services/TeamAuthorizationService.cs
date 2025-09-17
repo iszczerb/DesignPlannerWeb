@@ -45,9 +45,9 @@ namespace DesignPlanner.Data.Services
                 return await _context.Teams.AnyAsync(t => t.Id == teamId && t.IsActive);
             }
 
-            // Team members can view their own team
+            // Team members can view their own team (all employees in DB are active)
             var userEmployee = await _context.Employees
-                .FirstOrDefaultAsync(e => e.UserId == userId && e.IsActive);
+                .FirstOrDefaultAsync(e => e.UserId == userId);
             
             if (userEmployee != null)
             {
@@ -69,7 +69,7 @@ namespace DesignPlanner.Data.Services
             if (user.Role == UserRole.Manager)
             {
                 var targetEmployee = await _context.Employees
-                    .FirstOrDefaultAsync(e => e.Id == employeeId && e.IsActive);
+                    .FirstOrDefaultAsync(e => e.Id == employeeId);
                 
                 if (targetEmployee != null)
                 {
@@ -87,7 +87,7 @@ namespace DesignPlanner.Data.Services
 
             // Users can always view their own profile
             var currentUserEmployee = await _context.Employees
-                .FirstOrDefaultAsync(e => e.UserId == userId && e.IsActive);
+                .FirstOrDefaultAsync(e => e.UserId == userId);
             
             if (currentUserEmployee?.Id == employeeId) return true;
 
@@ -98,7 +98,7 @@ namespace DesignPlanner.Data.Services
             if (currentUserEmployee != null)
             {
                 var targetEmployee = await _context.Employees
-                    .FirstOrDefaultAsync(e => e.Id == employeeId && e.IsActive);
+                    .FirstOrDefaultAsync(e => e.Id == employeeId);
                 
                 return targetEmployee != null && currentUserEmployee.TeamId == targetEmployee.TeamId;
             }
@@ -148,7 +148,7 @@ namespace DesignPlanner.Data.Services
             // Team members can view their own team
             var userEmployee = await _context.Employees
                 .Include(e => e.Team)
-                .FirstOrDefaultAsync(e => e.UserId == userId && e.IsActive);
+                .FirstOrDefaultAsync(e => e.UserId == userId);
 
             if (userEmployee?.Team != null)
             {
@@ -166,7 +166,7 @@ namespace DesignPlanner.Data.Services
             return await _context.Employees
                 .Include(e => e.User)
                 .Include(e => e.Team)
-                .Where(e => teamIds.Contains(e.TeamId) && e.IsActive)
+                .Where(e => teamIds.Contains(e.TeamId))
                 .ToListAsync();
         }
 
@@ -178,7 +178,7 @@ namespace DesignPlanner.Data.Services
             return await _context.Employees
                 .Include(e => e.User)
                 .Include(e => e.Team)
-                .Where(e => teamIds.Contains(e.TeamId) && e.IsActive)
+                .Where(e => teamIds.Contains(e.TeamId))
                 .ToListAsync();
         }
 

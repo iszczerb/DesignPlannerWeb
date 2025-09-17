@@ -4,9 +4,7 @@ import {
   CreateTeamMemberDto,
   UpdateTeamMemberDto,
   TeamType,
-  SkillType,
-  TEAM_TYPE_LABELS,
-  SKILL_TYPE_LABELS
+  TEAM_TYPE_LABELS
 } from '../types/schedule';
 import { EmployeeListItem } from '../types/employee';
 
@@ -32,6 +30,7 @@ export const enhanceEmployeeWithTeamData = (employee: EmployeeListItem): TeamMem
     role: employee.position || '',
     team: employee.teamName || '',
     teamType: TeamType.Structural, // Default - should come from database
+    teamId: employee.teamId || 1, // Default to first team
     skills: [], // Should come from database
     startDate: employee.hireDate || '',
     isActive: employee.isActive,
@@ -56,6 +55,7 @@ export const enhanceScheduleEmployeeWithTeamData = (employee: EmployeeScheduleDt
     role: employee.role || '',
     team: employee.team || '',
     teamType: employee.teamType || TeamType.Structural,
+    teamId: 1, // Default to first team - should come from database
     skills: employee.skills || [],
     startDate: employee.startDate || '',
     isActive: employee.isActive ?? true,
@@ -80,12 +80,13 @@ export const createTeamMember = (data: CreateTeamMemberDto): TeamMemberDto => {
     firstName: data.firstName,
     lastName: data.lastName,
     role: data.role,
-    team: TEAM_TYPE_LABELS[data.teamType],
-    teamType: data.teamType,
+    team: '', // Will be set based on teamId
+    teamType: TeamType.Structural, // Default
+    teamId: data.teamId,
     skills: data.skills,
     startDate: data.startDate,
     isActive: true,
-    notes: data.notes || `New team member in ${TEAM_TYPE_LABELS[data.teamType]} team`
+    notes: data.notes || `New team member`
   };
 };
 
@@ -98,10 +99,7 @@ export const updateTeamMember = (existing: TeamMemberDto, updates: UpdateTeamMem
     ...(updates.firstName && { firstName: updates.firstName }),
     ...(updates.lastName && { lastName: updates.lastName }),
     ...(updates.role && { role: updates.role }),
-    ...(updates.teamType && {
-      teamType: updates.teamType,
-      team: TEAM_TYPE_LABELS[updates.teamType]
-    }),
+    ...(updates.teamId && { teamId: updates.teamId }),
     ...(updates.skills && { skills: updates.skills }),
     ...(updates.startDate && { startDate: updates.startDate }),
     ...(updates.isActive !== undefined && { isActive: updates.isActive }),

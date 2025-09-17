@@ -179,5 +179,46 @@ namespace DesignPlanner.Api.Controllers
                 return StatusCode(500, new { message = "An error occurred while changing password" });
             }
         }
+
+        [HttpGet("debug-manager")]
+        public async Task<ActionResult> DebugManager()
+        {
+            try
+            {
+                var managerUser = await _authService.GetUserByUsernameAsync("manager");
+
+                if (managerUser == null)
+                {
+                    return Ok(new {
+                        message = "Manager user not found in database",
+                        found = false
+                    });
+                }
+
+                var allClaims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                return Ok(new {
+                    message = "Manager user debug info",
+                    databaseUser = new {
+                        id = managerUser.Id,
+                        username = managerUser.Username,
+                        role = managerUser.Role.ToString(),
+                        isActive = managerUser.IsActive,
+                        firstName = managerUser.FirstName,
+                        lastName = managerUser.LastName
+                    },
+                    currentTokenClaims = allClaims,
+                    currentUserRole = userRole,
+                    isAuthenticated = User.Identity?.IsAuthenticated,
+                    authType = User.Identity?.AuthenticationType
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in debug endpoint");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
     }
 }

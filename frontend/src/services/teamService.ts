@@ -1,4 +1,4 @@
-import { CalendarViewDto, ScheduleRequestDto } from '../types/schedule';
+import { CalendarViewDto, ScheduleRequestDto, TeamDto } from '../types/schedule';
 import apiService from './api';
 
 export interface TeamInfo {
@@ -154,7 +154,7 @@ class TeamService {
   /**
    * Check if user has view permissions for team
    */
-  canViewTeam(team: TeamInfo, userRole: string): boolean {
+  canViewTeam(_team: TeamInfo, userRole: string): boolean {
     return userRole === 'Manager' || userRole === 'Admin';
   }
 
@@ -195,6 +195,19 @@ class TeamService {
    */
   filterViewOnlyTeams(teams: TeamInfo[]): TeamInfo[] {
     return teams.filter(team => !team.isManaged);
+  }
+
+  /**
+   * Get available teams for member creation/editing
+   */
+  async getAvailableTeams(): Promise<TeamDto[]> {
+    try {
+      const response = await apiService.get<TeamDto[]>('/employee/teams');
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch available teams:', error);
+      throw new Error('Failed to fetch available teams');
+    }
   }
 }
 

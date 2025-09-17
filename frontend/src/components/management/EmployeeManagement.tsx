@@ -60,7 +60,7 @@ const EmployeeManagement: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<number | ''>('');
-  const [statusFilter, setStatusFilter] = useState<boolean | ''>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   
   // Menu state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -82,7 +82,7 @@ const EmployeeManagement: React.FC = () => {
         pageSize: rowsPerPage,
         searchTerm: searchTerm || undefined,
         role: roleFilter || undefined,
-        isActive: statusFilter !== '' ? statusFilter : undefined,
+        isActive: statusFilter !== '' ? statusFilter === 'true' : undefined,
         sortBy: 'lastName',
         sortDirection: 'asc',
       };
@@ -277,13 +277,13 @@ const EmployeeManagement: React.FC = () => {
               value={statusFilter}
               label="Status"
               onChange={(e) => {
-                setStatusFilter(e.target.value as boolean);
+                setStatusFilter(e.target.value as string);
                 setPage(0);
               }}
             >
               <MenuItem value="">All Status</MenuItem>
-              <MenuItem value={true}>Active</MenuItem>
-              <MenuItem value={false}>Inactive</MenuItem>
+              <MenuItem value="true">Active</MenuItem>
+              <MenuItem value="false">Inactive</MenuItem>
             </Select>
           </FormControl>
           

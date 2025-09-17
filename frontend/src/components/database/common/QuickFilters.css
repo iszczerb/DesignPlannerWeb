@@ -1,0 +1,259 @@
+.quick-filters {
+  position: relative;
+}
+
+.quick-filters-list {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quick-filter {
+  position: relative;
+}
+
+.quick-filter-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.quick-filter-button:hover {
+  border-color: #9ca3af;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.quick-filter-button.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.filter-label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.quick-filter-button.active .filter-label {
+  color: #1e40af;
+}
+
+.filter-value {
+  font-weight: 600;
+  color: #374151;
+}
+
+.quick-filter-button.active .filter-value {
+  color: #1e40af;
+}
+
+.filter-arrow {
+  font-size: 10px;
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.quick-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  z-index: 1000;
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.filter-option-group {
+  padding: 8px 0;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 13px;
+}
+
+.filter-option:hover {
+  background: #f9fafb;
+}
+
+.filter-option.selected {
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.filter-count {
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.filter-option.selected .filter-count {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.clear-filters-button {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.clear-filters-button:hover {
+  background: #fecaca;
+  border-color: #f87171;
+}
+
+.quick-filters-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+/* Scrollbar styling for dropdown */
+.quick-filter-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.quick-filter-dropdown::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.quick-filter-dropdown::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.quick-filter-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .quick-filter-button {
+    background: #374151;
+    border-color: #4b5563;
+    color: white;
+  }
+
+  .quick-filter-button:hover {
+    border-color: #6b7280;
+  }
+
+  .quick-filter-button.active {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+  }
+
+  .filter-label {
+    color: #d1d5db;
+  }
+
+  .quick-filter-button.active .filter-label {
+    color: #93c5fd;
+  }
+
+  .filter-value {
+    color: white;
+  }
+
+  .quick-filter-button.active .filter-value {
+    color: #93c5fd;
+  }
+
+  .filter-arrow {
+    color: #9ca3af;
+  }
+
+  .quick-filter-dropdown {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  .filter-option {
+    color: #d1d5db;
+  }
+
+  .filter-option:hover {
+    background: #4b5563;
+  }
+
+  .filter-option.selected {
+    background: #1e3a8a;
+    color: #93c5fd;
+  }
+
+  .filter-count {
+    background: #4b5563;
+    color: #d1d5db;
+  }
+
+  .filter-option.selected .filter-count {
+    background: #1e40af;
+    color: #93c5fd;
+  }
+
+  .clear-filters-button {
+    background: #7f1d1d;
+    color: #fca5a5;
+    border-color: #991b1b;
+  }
+
+  .clear-filters-button:hover {
+    background: #991b1b;
+    border-color: #b91c1c;
+  }
+
+  .quick-filter-dropdown::-webkit-scrollbar-track {
+    background: #4b5563;
+  }
+
+  .quick-filter-dropdown::-webkit-scrollbar-thumb {
+    background: #6b7280;
+  }
+
+  .quick-filter-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+}

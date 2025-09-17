@@ -10,19 +10,21 @@ import {
   Button,
   Box,
 } from '@mui/material';
-import { 
-  AccountCircle, 
-  Logout, 
-  Settings, 
+import {
+  AccountCircle,
+  Logout,
+  Settings,
   Dashboard as DashboardIcon,
   People,
-  AdminPanelSettings 
+  AdminPanelSettings,
+  Storage
 } from '@mui/icons-material';
 import { AbsenceButton } from '../leave';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
 import { UserRole } from '../../types/auth';
+import DatabaseManagementModal from '../database/DatabaseManagementModal';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -31,6 +33,7 @@ const Navbar: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [databaseModalOpen, setDatabaseModalOpen] = React.useState(false);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -93,18 +96,32 @@ const Navbar: React.FC = () => {
           )}
           
           {canAccessAdmin && (
-            <Button
-              color="inherit"
-              startIcon={<AdminPanelSettings />}
-              onClick={() => navigate('/admin')}
-              variant={location.pathname.startsWith('/admin') ? 'outlined' : 'text'}
-              sx={{ 
-                borderColor: location.pathname.startsWith('/admin') ? 'white' : 'transparent',
-                color: 'white'
-              }}
-            >
-              Admin
-            </Button>
+            <>
+              <Button
+                color="inherit"
+                startIcon={<AdminPanelSettings />}
+                onClick={() => navigate('/admin')}
+                variant={location.pathname.startsWith('/admin') ? 'outlined' : 'text'}
+                sx={{
+                  borderColor: location.pathname.startsWith('/admin') ? 'white' : 'transparent',
+                  color: 'white'
+                }}
+              >
+                Admin
+              </Button>
+              <Button
+                color="inherit"
+                startIcon={<Storage />}
+                onClick={() => setDatabaseModalOpen(true)}
+                variant={databaseModalOpen ? 'outlined' : 'text'}
+                sx={{
+                  borderColor: databaseModalOpen ? 'white' : 'transparent',
+                  color: 'white'
+                }}
+              >
+                Database
+              </Button>
+            </>
           )}
           
           {/* Absence Button */}
@@ -158,6 +175,12 @@ const Navbar: React.FC = () => {
           </Menu>
         </div>
       </Toolbar>
+
+      {/* Database Management Modal */}
+      <DatabaseManagementModal
+        isOpen={databaseModalOpen}
+        onClose={() => setDatabaseModalOpen(false)}
+      />
     </AppBar>
   );
 };

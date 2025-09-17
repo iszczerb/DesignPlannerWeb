@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AssignmentTaskDto, TaskType, Priority, TaskStatus } from '../../types/schedule';
+import { AssignmentTaskDto, Priority, TaskStatus } from '../../types/schedule';
+import { TaskType } from '../../types/database';
 
 interface BulkEditModalProps {
   isOpen: boolean;
@@ -50,7 +51,8 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({
     // Only send fields that were actually changed
     const updates: BulkEditData = {};
     changesMade.forEach(field => {
-      updates[field as keyof BulkEditData] = formData[field as keyof BulkEditData];
+      const value = formData[field as keyof BulkEditData];
+      (updates as any)[field] = value;
     });
 
     onSave(updates);

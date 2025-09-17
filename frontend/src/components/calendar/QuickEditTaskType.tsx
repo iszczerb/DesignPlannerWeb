@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AssignmentTaskDto, TaskType } from '../../types/schedule';
+import { AssignmentTaskDto } from '../../types/schedule';
+import { TaskType } from '../../types/database';
 
 interface QuickEditTaskTypeProps {
   isOpen: boolean;

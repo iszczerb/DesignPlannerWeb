@@ -39,6 +39,7 @@ export interface EmployeeListItem {
   phoneNumber?: string;
   hireDate?: string;
   teamName?: string;
+  teamId?: number;
 }
 
 export interface EmployeeListResponse {
