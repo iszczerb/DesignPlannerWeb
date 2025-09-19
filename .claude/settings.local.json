@@ -23,7 +23,14 @@
       "Bash(timeout:*)",
       "Bash(dir:*)",
       "Bash(dotnet ef database:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm install:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(xxd:*)",
+      "Bash(dotnet add package:*)",
+      "Bash(rg:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

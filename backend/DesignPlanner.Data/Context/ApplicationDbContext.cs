@@ -60,15 +60,6 @@ namespace DesignPlanner.Data.Context
                 new Client { Id = 5, Code = "TATE", Name = "Tate", IsActive = true, CreatedAt = seedDate }
             );
 
-            // Seed data for default task types
-            modelBuilder.Entity<TaskType>().HasData(
-                new TaskType { Id = 1, Name = "Design", Description = "UI/UX Design tasks", Color = "#FF6B6B", IsActive = true, CreatedAt = seedDate },
-                new TaskType { Id = 2, Name = "Development", Description = "Software development tasks", Color = "#4ECDC4", IsActive = true, CreatedAt = seedDate },
-                new TaskType { Id = 3, Name = "Testing", Description = "Quality assurance and testing", Color = "#45B7D1", IsActive = true, CreatedAt = seedDate },
-                new TaskType { Id = 4, Name = "Research", Description = "Research and analysis tasks", Color = "#96CEB4", IsActive = true, CreatedAt = seedDate },
-                new TaskType { Id = 5, Name = "Planning", Description = "Project planning and management", Color = "#FECA57", IsActive = true, CreatedAt = seedDate },
-                new TaskType { Id = 6, Name = "Review", Description = "Code review and documentation", Color = "#FF9FF3", IsActive = true, CreatedAt = seedDate }
-            );
 
             // Seed data for default skills
             modelBuilder.Entity<Skill>().HasData(

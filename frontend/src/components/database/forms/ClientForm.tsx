@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { HexColorPicker } from 'react-colorful';
 import {
   Client,
   CreateClientDto,
@@ -20,14 +21,20 @@ const ClientForm: React.FC<EntityFormProps<Client, CreateClientDto, UpdateClient
     code: '',
     name: '',
     description: '',
-    contactEmail: '',
-    contactPhone: '',
-    address: '',
+    color: '#0066CC',
     isActive: true
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // Predefined colors for quick selection (12 colors including greys)
+  const presetColors = [
+    '#0066CC', '#FF6B6B', '#4ECDC4', '#52B788',
+    '#F8B739', '#BB8FCE', '#FF6F61', '#6C5CE7',
+    '#6B7280', '#9CA3AF', '#374151', '#1F2937'
+  ];
 
   useEffect(() => {
     if (isOpen) {
@@ -36,24 +43,21 @@ const ClientForm: React.FC<EntityFormProps<Client, CreateClientDto, UpdateClient
           code: client.code || '',
           name: client.name || '',
           description: client.description || '',
-          contactEmail: client.contactEmail || '',
-          contactPhone: client.contactPhone || '',
-          address: client.address || '',
-          isActive: client.isActive ?? true
+          color: client.color || '#0066CC',
+          isActive: true
         });
       } else {
         setFormData({
           code: '',
           name: '',
           description: '',
-          contactEmail: '',
-          contactPhone: '',
-          address: '',
+          color: '#0066CC',
           isActive: true
         });
       }
       setErrors({});
       setIsDirty(false);
+      setShowColorPicker(false);
     }
   }, [isOpen, client, isCreating]);
 
@@ -84,26 +88,12 @@ const ClientForm: React.FC<EntityFormProps<Client, CreateClientDto, UpdateClient
       newErrors.name = 'Client name must be at least 2 characters';
     }
 
-    if (formData.contactEmail && !isValidEmail(formData.contactEmail)) {
-      newErrors.contactEmail = 'Please enter a valid email address';
-    }
-
-    if (formData.contactPhone && !isValidPhone(formData.contactPhone)) {
-      newErrors.contactPhone = 'Please enter a valid phone number';
+    if (!formData.color || !/^#[0-9A-Fa-f]{6}$/.test(formData.color)) {
+      newErrors.color = 'Please select a valid color';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const isValidEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const isValidPhone = (phone: string): boolean => {
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,8 +105,16 @@ const ClientForm: React.FC<EntityFormProps<Client, CreateClientDto, UpdateClient
 
     try {
       const submitData = isCreating
-        ? formData as CreateClientDto
-        : { ...formData, id: client!.id! } as UpdateClientDto;
+        ? {
+            code: formData.code,
+            name: formData.name,
+            description: formData.description || undefined,
+            color: formData.color
+          } as CreateClientDto
+        : {
+            ...formData,
+            id: client!.id!
+          } as UpdateClientDto;
 
       await onSave(submitData);
     } catch (error) {
@@ -170,23 +168,6 @@ const ClientForm: React.FC<EntityFormProps<Client, CreateClientDto, UpdateClient
           <form onSubmit={handleSubmit} className="entity-form-content">
             <div className="form-grid">
               <div className="form-group">
-                <label htmlFor="code" className="form-label required">
-                  Client Code
-                </label>
-                <input
-                  id="code"
-                  type="text"
-                  className={`form-input ${errors.code ? 'error' : ''}`}
-                  value={formData.code}
-                  onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
-                  placeholder="e.g., ACME, TECH"
-                  disabled={loading}
-                  maxLength={10}
-                />
-                {errors.code && <span className="form-error">{errors.code}</span>}
-              </div>
-
-              <div className="form-group">
                 <label htmlFor="name" className="form-label required">
                   Client Name
                 </label>
@@ -201,6 +182,23 @@ const ClientForm: React.FC<EntityFormProps<Client, CreateClientDto, UpdateClient
                   maxLength={100}
                 />
                 {errors.name && <span className="form-error">{errors.name}</span>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="code" className="form-label required">
+                  Client Code
+                </label>
+                <input
+                  id="code"
+                  type="text"
+                  className={`form-input ${errors.code ? 'error' : ''}`}
+                  value={formData.code}
+                  onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
+                  placeholder="e.g., ACME, TECH"
+                  disabled={loading}
+                  maxLength={10}
+                />
+                {errors.code && <span className="form-error">{errors.code}</span>}
               </div>
 
               <div className="form-group form-group-full">
@@ -219,67 +217,71 @@ const ClientForm: React.FC<EntityFormProps<Client, CreateClientDto, UpdateClient
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="contactEmail" className="form-label">
-                  Contact Email
-                </label>
-                <input
-                  id="contactEmail"
-                  type="email"
-                  className={`form-input ${errors.contactEmail ? 'error' : ''}`}
-                  value={formData.contactEmail}
-                  onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                  placeholder="contact@client.com"
-                  disabled={loading}
-                />
-                {errors.contactEmail && <span className="form-error">{errors.contactEmail}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="contactPhone" className="form-label">
-                  Contact Phone
-                </label>
-                <input
-                  id="contactPhone"
-                  type="tel"
-                  className={`form-input ${errors.contactPhone ? 'error' : ''}`}
-                  value={formData.contactPhone}
-                  onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-                  placeholder="+1 (555) 123-4567"
-                  disabled={loading}
-                />
-                {errors.contactPhone && <span className="form-error">{errors.contactPhone}</span>}
-              </div>
-
               <div className="form-group form-group-full">
-                <label htmlFor="address" className="form-label">
-                  Address
+                <label className="form-label required">
+                  Client Color
                 </label>
-                <textarea
-                  id="address"
-                  className="form-textarea"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Client's business address"
-                  disabled={loading}
-                  rows={2}
-                  maxLength={200}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
-                    disabled={loading}
-                  />
-                  <span className="form-checkbox-label">Active Client</span>
-                </label>
-                <div className="form-help">
-                  Inactive clients won't appear in new project creation
+                <div className="color-picker-container">
+                  <div className="color-preview-section">
+                    <button
+                      type="button"
+                      className="color-preview-button"
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                      disabled={loading}
+                      style={{ backgroundColor: formData.color }}
+                    >
+                      <span className="color-code">{formData.color}</span>
+                    </button>
+                    <div className="preset-colors">
+                      {presetColors.map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={`preset-color ${formData.color === color ? 'selected' : ''}`}
+                          onClick={() => {
+                            handleInputChange('color', color);
+                            setShowColorPicker(false);
+                          }}
+                          style={{ backgroundColor: color }}
+                          disabled={loading}
+                          aria-label={`Select color ${color}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {showColorPicker && (
+                    <div className="color-picker-popover">
+                      <div
+                        className="color-picker-backdrop"
+                        onClick={() => setShowColorPicker(false)}
+                      />
+                      <div className="color-picker-content">
+                        <HexColorPicker
+                          color={formData.color}
+                          onChange={(color) => handleInputChange('color', color)}
+                        />
+                        <div className="color-picker-footer">
+                          <input
+                            type="text"
+                            value={formData.color}
+                            onChange={(e) => handleInputChange('color', e.target.value)}
+                            className="color-hex-input"
+                            placeholder="#000000"
+                            maxLength={7}
+                          />
+                          <button
+                            type="button"
+                            className="color-picker-close"
+                            onClick={() => setShowColorPicker(false)}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+                {errors.color && <span className="form-error">{errors.color}</span>}
               </div>
             </div>
 

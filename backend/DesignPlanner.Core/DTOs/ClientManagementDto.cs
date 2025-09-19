@@ -45,6 +45,13 @@ namespace DesignPlanner.Core.DTOs
         /// </summary>
         [StringLength(200, ErrorMessage = "Address cannot exceed 200 characters")]
         public string? Address { get; set; }
+
+        /// <summary>
+        /// Client color for visual identification
+        /// </summary>
+        [Required(ErrorMessage = "Client color is required")]
+        [RegularExpression("^#[0-9A-Fa-f]{6}$", ErrorMessage = "Color must be a valid hex color code (e.g., #0066CC)")]
+        public string Color { get; set; } = "#0066CC";
     }
 
     /// <summary>
@@ -100,6 +107,13 @@ namespace DesignPlanner.Core.DTOs
         /// Whether the client is active
         /// </summary>
         public bool IsActive { get; set; } = true;
+
+        /// <summary>
+        /// Client color for visual identification
+        /// </summary>
+        [Required(ErrorMessage = "Client color is required")]
+        [RegularExpression("^#[0-9A-Fa-f]{6}$", ErrorMessage = "Color must be a valid hex color code (e.g., #0066CC)")]
+        public string Color { get; set; } = "#0066CC";
     }
 
     /// <summary>

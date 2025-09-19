@@ -5,8 +5,7 @@ import {
   CreateTaskTypeDto,
   UpdateTaskTypeDto,
   EntityFormProps,
-  Skill,
-  DEFAULT_TASK_TYPE_COLORS
+  Skill
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
 import './EntityForm.css';
@@ -22,10 +21,7 @@ const TaskTypeForm: React.FC<EntityFormProps<TaskType, CreateTaskTypeDto, Update
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: DEFAULT_TASK_TYPE_COLORS[0],
-    requiredSkills: [] as number[],
-    estimatedHours: '',
-    isActive: true
+    skills: [] as number[]
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,19 +36,13 @@ const TaskTypeForm: React.FC<EntityFormProps<TaskType, CreateTaskTypeDto, Update
         setFormData({
           name: taskType.name || '',
           description: taskType.description || '',
-          color: taskType.color || DEFAULT_TASK_TYPE_COLORS[0],
-          requiredSkills: taskType.requiredSkills || [],
-          estimatedHours: taskType.estimatedHours?.toString() || '',
-          isActive: taskType.isActive ?? true
+          skills: taskType.skills || []
         });
       } else {
         setFormData({
           name: '',
           description: '',
-          color: DEFAULT_TASK_TYPE_COLORS[0],
-          requiredSkills: [],
-          estimatedHours: '',
-          isActive: true
+          skills: []
         });
       }
       setErrors({});
@@ -64,9 +54,10 @@ const TaskTypeForm: React.FC<EntityFormProps<TaskType, CreateTaskTypeDto, Update
     try {
       setLoadingSkills(true);
       const skillsData = await databaseService.getSkills();
-      setSkills(skillsData.filter(s => s.isActive));
+      setSkills(Array.isArray(skillsData) ? skillsData : []);
     } catch (err) {
       console.error('Failed to load skills:', err);
+      setSkills([]);
     } finally {
       setLoadingSkills(false);
     }
@@ -75,16 +66,18 @@ const TaskTypeForm: React.FC<EntityFormProps<TaskType, CreateTaskTypeDto, Update
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setIsDirty(true);
+
+    // Clear error for this field
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
   const handleSkillToggle = (skillId: number) => {
-    const newSkills = formData.requiredSkills.includes(skillId)
-      ? formData.requiredSkills.filter(id => id !== skillId)
-      : [...formData.requiredSkills, skillId];
-    handleInputChange('requiredSkills', newSkills);
+    const newSkills = formData.skills.includes(skillId)
+      ? formData.skills.filter(id => id !== skillId)
+      : [...formData.skills, skillId];
+    handleInputChange('skills', newSkills);
   };
 
   const validateForm = (): boolean => {
@@ -92,14 +85,8 @@ const TaskTypeForm: React.FC<EntityFormProps<TaskType, CreateTaskTypeDto, Update
 
     if (!formData.name.trim()) {
       newErrors.name = 'Task type name is required';
-    }
-
-    if (!formData.color) {
-      newErrors.color = 'Please select a color';
-    }
-
-    if (formData.estimatedHours && isNaN(parseFloat(formData.estimatedHours))) {
-      newErrors.estimatedHours = 'Please enter a valid number of hours';
+    } else if (formData.name.length < 2) {
+      newErrors.name = 'Task type name must be at least 2 characters';
     }
 
     setErrors(newErrors);
@@ -108,19 +95,24 @@ const TaskTypeForm: React.FC<EntityFormProps<TaskType, CreateTaskTypeDto, Update
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+
+    if (!validateForm()) {
+      return;
+    }
 
     try {
-      const submitData = {
-        ...formData,
-        estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : undefined
-      };
+      const submitData = isCreating
+        ? {
+            name: formData.name,
+            description: formData.description || undefined,
+            skills: formData.skills
+          } as CreateTaskTypeDto
+        : {
+            ...formData,
+            id: taskType!.id!
+          } as UpdateTaskTypeDto;
 
-      const finalData = isCreating
-        ? submitData as CreateTaskTypeDto
-        : { ...submitData, id: taskType!.id! } as UpdateTaskTypeDto;
-
-      await onSave(finalData);
+      await onSave(submitData);
     } catch (error) {
       if (error instanceof Error) {
         setErrors({ submit: error.message });
@@ -138,109 +130,87 @@ const TaskTypeForm: React.FC<EntityFormProps<TaskType, CreateTaskTypeDto, Update
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && !loading) {
+      handleClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="entity-form-overlay" onClick={handleClose}>
+      <div className="entity-form-overlay" onClick={handleClose} onKeyDown={handleKeyDown} tabIndex={-1}>
         <motion.div
           className="entity-form-modal"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ duration: 0.2 }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="entity-form-header">
             <h2>{isCreating ? 'Add New Task Type' : 'Edit Task Type'}</h2>
-            <button className="entity-form-close" onClick={handleClose} disabled={loading}>✕</button>
+            <button
+              className="entity-form-close"
+              onClick={handleClose}
+              disabled={loading}
+              aria-label="Close form"
+            >
+              ✕
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="entity-form-content">
             <div className="form-grid">
               <div className="form-group">
-                <label htmlFor="name" className="form-label required">Task Type Name</label>
+                <label htmlFor="name" className="form-label required">
+                  Task Type Name
+                </label>
                 <input
                   id="name"
                   type="text"
                   className={`form-input ${errors.name ? 'error' : ''}`}
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="e.g., Design Review, Modeling"
+                  placeholder="e.g., Design Review, Modeling, Analysis"
                   disabled={loading}
+                  maxLength={100}
                 />
                 {errors.name && <span className="form-error">{errors.name}</span>}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="estimatedHours" className="form-label">Estimated Hours</label>
-                <input
-                  id="estimatedHours"
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  className={`form-input ${errors.estimatedHours ? 'error' : ''}`}
-                  value={formData.estimatedHours}
-                  onChange={(e) => handleInputChange('estimatedHours', e.target.value)}
-                  placeholder="0"
-                  disabled={loading}
-                />
-                {errors.estimatedHours && <span className="form-error">{errors.estimatedHours}</span>}
-              </div>
-
               <div className="form-group form-group-full">
-                <label htmlFor="description" className="form-label">Description</label>
+                <label htmlFor="description" className="form-label">
+                  Description
+                </label>
                 <textarea
                   id="description"
                   className="form-textarea"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Task type description"
+                  placeholder="Brief description of this task type"
                   disabled={loading}
                   rows={3}
+                  maxLength={500}
                 />
               </div>
 
               <div className="form-group form-group-full">
-                <label className="form-label required">Color</label>
-                <div className="color-picker-container">
-                  <div
-                    className="color-picker-preview"
-                    style={{ backgroundColor: formData.color }}
-                    onClick={() => {/* Color picker logic */}}
-                  />
-                  <input
-                    type="text"
-                    className={`form-input color-picker-input ${errors.color ? 'error' : ''}`}
-                    value={formData.color}
-                    onChange={(e) => handleInputChange('color', e.target.value)}
-                    placeholder="#FF0000"
-                    disabled={loading}
-                  />
-                </div>
-                <div className="color-palette">
-                  {DEFAULT_TASK_TYPE_COLORS.map(color => (
-                    <div
-                      key={color}
-                      className={`color-palette-item ${formData.color === color ? 'selected' : ''}`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => handleInputChange('color', color)}
-                    />
-                  ))}
-                </div>
-                {errors.color && <span className="form-error">{errors.color}</span>}
-              </div>
-
-              <div className="form-group form-group-full">
-                <label className="form-label">Required Skills</label>
+                <label className="form-label">
+                  Skills
+                </label>
                 {loadingSkills ? (
                   <div className="form-help">Loading skills...</div>
+                ) : skills.length === 0 ? (
+                  <div className="form-help">No skills available. Create skills first to assign them to task types.</div>
                 ) : (
                   <div className="multiselect-options">
                     {skills.map(skill => (
                       <label key={skill.id} className="multiselect-option">
                         <input
                           type="checkbox"
-                          checked={formData.requiredSkills.includes(skill.id!)}
+                          checked={formData.skills.includes(skill.id!)}
                           onChange={() => handleSkillToggle(skill.id!)}
                           disabled={loading}
                         />
@@ -249,37 +219,41 @@ const TaskTypeForm: React.FC<EntityFormProps<TaskType, CreateTaskTypeDto, Update
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div className="form-group">
-                <label className="form-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
-                    disabled={loading}
-                  />
-                  <span className="form-checkbox-label">Active Task Type</span>
-                </label>
+                <div className="form-help">
+                  Select the skills required for this task type. Multiple skills can be selected.
+                </div>
               </div>
             </div>
 
             {errors.submit && (
-              <div className="form-error form-error-submit">{errors.submit}</div>
+              <div className="form-error form-error-submit">
+                {errors.submit}
+              </div>
             )}
 
             <div className="entity-form-actions">
-              <button type="button" className="database-btn database-btn-secondary" onClick={handleClose} disabled={loading}>
+              <button
+                type="button"
+                className="database-btn database-btn-secondary"
+                onClick={handleClose}
+                disabled={loading}
+              >
                 Cancel
               </button>
-              <button type="submit" className="database-btn database-btn-primary" disabled={loading || !isDirty}>
+              <button
+                type="submit"
+                className="database-btn database-btn-primary"
+                disabled={loading || !isDirty}
+              >
                 {loading ? (
                   <>
                     <span className="loading-spinner"></span>
                     {isCreating ? 'Creating...' : 'Saving...'}
                   </>
                 ) : (
-                  isCreating ? '+ Create Task Type' : '💾 Save Changes'
+                  <>
+                    {isCreating ? '+ Create Task Type' : '💾 Save Changes'}
+                  </>
                 )}
               </button>
             </div>

@@ -3,6 +3,7 @@ using System;
 using DesignPlanner.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DesignPlanner.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250918183650_AddColorToClient")]
+    partial class AddColorToClient
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -450,11 +453,19 @@ namespace DesignPlanner.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal?>("Budget")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int?>("CategoryId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ClientId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -469,12 +480,15 @@ namespace DesignPlanner.Data.Migrations
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("StartDate")
+                    b.Property<DateTime>("StartDate")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
@@ -488,6 +502,9 @@ namespace DesignPlanner.Data.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("ClientId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
 
                     b.ToTable("Projects");
                 });
@@ -697,12 +714,19 @@ namespace DesignPlanner.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Color")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -715,6 +739,62 @@ namespace DesignPlanner.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("TaskTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Color = "#FF6B6B",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "UI/UX Design tasks",
+                            IsActive = true,
+                            Name = "Design"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Color = "#4ECDC4",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Software development tasks",
+                            IsActive = true,
+                            Name = "Development"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Color = "#45B7D1",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Quality assurance and testing",
+                            IsActive = true,
+                            Name = "Testing"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Color = "#96CEB4",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Research and analysis tasks",
+                            IsActive = true,
+                            Name = "Research"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Color = "#FECA57",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Project planning and management",
+                            IsActive = true,
+                            Name = "Planning"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Color = "#FF9FF3",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Code review and documentation",
+                            IsActive = true,
+                            Name = "Review"
+                        });
                 });
 
             modelBuilder.Entity("DesignPlanner.Core.Entities.Team", b =>

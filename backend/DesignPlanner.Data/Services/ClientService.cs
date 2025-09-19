@@ -40,6 +40,7 @@ namespace DesignPlanner.Data.Services
                 ContactEmail = request.ContactEmail,
                 ContactPhone = request.ContactPhone,
                 Address = request.Address,
+                Color = request.Color,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -75,7 +76,7 @@ namespace DesignPlanner.Data.Services
             client.ContactEmail = request.ContactEmail;
             client.ContactPhone = request.ContactPhone;
             client.Address = request.Address;
-            client.IsActive = request.IsActive;
+            client.Color = request.Color;
 
             await _context.SaveChangesAsync();
 
@@ -83,7 +84,7 @@ namespace DesignPlanner.Data.Services
         }
 
         /// <summary>
-        /// Soft deletes a client by setting IsActive to false
+        /// Hard deletes a client from the database
         /// </summary>
         /// <param name="clientId">ID of the client to delete</param>
         /// <param name="deletedByUserId">ID of the user deleting the client</param>
@@ -94,14 +95,14 @@ namespace DesignPlanner.Data.Services
             if (client == null)
                 return false;
 
-            // Check if client has active projects
-            var hasActiveProjects = await _context.Projects
-                .AnyAsync(p => p.ClientId == clientId && p.IsActive);
+            // Check if client has projects
+            var hasProjects = await _context.Projects
+                .AnyAsync(p => p.ClientId == clientId);
 
-            if (hasActiveProjects)
-                throw new InvalidOperationException("Cannot delete client with active projects. Please deactivate or reassign projects first.");
+            if (hasProjects)
+                throw new InvalidOperationException("Cannot delete client with projects. Please delete or reassign projects first.");
 
-            client.IsActive = false;
+            _context.Clients.Remove(client);
             await _context.SaveChangesAsync();
 
             return true;
@@ -139,10 +140,6 @@ namespace DesignPlanner.Data.Services
                     (c.Description != null && c.Description.ToLower().Contains(searchTerm)));
             }
 
-            if (query.IsActive.HasValue)
-            {
-                queryable = queryable.Where(c => c.IsActive == query.IsActive.Value);
-            }
 
             // Apply sorting
             queryable = query.SortBy.ToLower() switch
@@ -194,11 +191,11 @@ namespace DesignPlanner.Data.Services
             // If deactivating, check for active projects
             if (!isActive && client.IsActive)
             {
-                var hasActiveProjects = await _context.Projects
-                    .AnyAsync(p => p.ClientId == clientId && p.IsActive);
+                var hasProjects = await _context.Projects
+                    .AnyAsync(p => p.ClientId == clientId);
 
-                if (hasActiveProjects)
-                    throw new InvalidOperationException("Cannot deactivate client with active projects. Please deactivate or reassign projects first.");
+                if (hasProjects)
+                    throw new InvalidOperationException("Cannot deactivate client with existing projects. Please reassign projects first.");
             }
 
             client.IsActive = isActive;
@@ -215,7 +212,6 @@ namespace DesignPlanner.Data.Services
         public async Task<List<ClientDto>> GetActiveClientsAsync(int requestingUserId)
         {
             var clients = await _context.Clients
-                .Where(c => c.IsActive)
                 .OrderBy(c => c.Name)
                 .Select(c => MapToClientDto(c))
                 .ToListAsync();
@@ -257,6 +253,7 @@ namespace DesignPlanner.Data.Services
                 ContactEmail = client.ContactEmail,
                 ContactPhone = client.ContactPhone,
                 Address = client.Address,
+                Color = client.Color,
                 IsActive = client.IsActive,
                 CreatedAt = client.CreatedAt
             };

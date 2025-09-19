@@ -1,5 +1,184 @@
 /* Entity Form Styles */
 
+/* Color Picker Styles */
+.color-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.color-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.color-preview-button {
+  width: 100%;
+  height: 50px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.color-preview-button:hover {
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.color-preview-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.color-code {
+  background: rgba(0,0,0,0.2);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 14px;
+}
+
+.preset-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.preset-color {
+  width: 42px;
+  height: 42px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.preset-color:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.preset-color.selected {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79,70,229,0.2);
+}
+
+.preset-color.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.preset-color:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.color-picker-popover {
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+}
+
+.color-picker-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1100;
+}
+
+.color-picker-content {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  padding: 16px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+}
+
+.react-colorful {
+  width: 280px !important;
+  height: 200px !important;
+}
+
+.react-colorful__saturation {
+  border-radius: 8px 8px 0 0;
+}
+
+.react-colorful__hue {
+  height: 28px !important;
+  border-radius: 0 0 8px 8px;
+}
+
+.react-colorful__pointer {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.color-picker-footer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-hex-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.color-hex-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+}
+
+.color-picker-close {
+  padding: 8px 16px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.color-picker-close:hover {
+  background: #4338ca;
+}
+
 .entity-form-overlay {
   position: fixed;
   top: 0;
@@ -102,6 +281,40 @@
   grid-column: span 1;
 }
 
+.form-group-center {
+  grid-column: 1 / -1;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* Project Form Specific Layout */
+.project-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px 20px;
+  align-items: start;
+}
+
+.project-form-grid .form-group-full {
+  grid-column: 1 / -1;
+  margin-bottom: 8px;
+}
+
+.project-form-grid .form-group-center {
+  grid-column: 1 / -1;
+  max-width: 300px;
+  margin: 8px auto 0;
+}
+
+/* First row: Client and Category (span 1.5 columns each) */
+.project-form-grid .form-group:nth-child(1) {
+  grid-column: span 1;
+}
+
+.project-form-grid .form-group:nth-child(2) {
+  grid-column: span 2;
+}
+
 /* Form Labels */
 .form-label {
   font-size: 14px;
@@ -168,6 +381,27 @@
   background-repeat: no-repeat;
   background-size: 16px;
   padding-right: 40px;
+}
+
+.form-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.form-select-wrapper .form-select {
+  width: 100%;
+  padding-right: 40px;
+  background-image: none;
+}
+
+.form-select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #6b7280;
+  font-size: 12px;
 }
 
 /* Checkbox Styles */
@@ -545,5 +779,96 @@
   .loading-spinner {
     border-color: rgba(0, 0, 0, 0.3);
     border-top-color: white;
+  }
+}
+
+/* User form specific styles */
+.user-form-modal {
+  max-width: 800px;
+}
+
+.skills-container {
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--background-light, #f9fafb);
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.skill-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.skill-checkbox:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.skill-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+  margin-bottom: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.skill-label {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.no-skills {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 16px;
+}
+
+.form-help {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Dark mode for user form */
+@media (prefers-color-scheme: dark) {
+  .skills-container {
+    background: #111827;
+    border-color: #4b5563;
+  }
+
+  .skill-checkbox {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  .skill-checkbox:hover {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+  }
+
+  .skill-label {
+    color: #f9fafb;
+  }
+
+  .no-skills {
+    color: #9ca3af;
+  }
+
+  .form-help {
+    color: #9ca3af;
   }
 }

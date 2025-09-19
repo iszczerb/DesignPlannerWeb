@@ -15,75 +15,9 @@ namespace DesignPlanner.Core.DTOs
         public int ClientId { get; set; }
 
         /// <summary>
-        /// Project code (e.g., AWS001, MSF023)
+        /// Category identifier for the project
         /// </summary>
-        [Required(ErrorMessage = "Project code is required")]
-        [StringLength(10, MinimumLength = 3, ErrorMessage = "Project code must be between 3 and 10 characters")]
-        public string Code { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Project name
-        /// </summary>
-        [Required(ErrorMessage = "Project name is required")]
-        [StringLength(200, MinimumLength = 3, ErrorMessage = "Project name must be between 3 and 200 characters")]
-        public string Name { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Project description
-        /// </summary>
-        [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
-        public string? Description { get; set; }
-
-        /// <summary>
-        /// Project status
-        /// </summary>
-        public ProjectStatus Status { get; set; } = ProjectStatus.Planning;
-
-        /// <summary>
-        /// Project start date
-        /// </summary>
-        [Required(ErrorMessage = "Start date is required")]
-        public DateTime StartDate { get; set; }
-
-        /// <summary>
-        /// Project end date (optional)
-        /// </summary>
-        public DateTime? EndDate { get; set; }
-
-        /// <summary>
-        /// Project deadline date (optional)
-        /// </summary>
-        public DateTime? DeadlineDate { get; set; }
-
-        /// <summary>
-        /// Project budget (optional)
-        /// </summary>
-        [Range(0, double.MaxValue, ErrorMessage = "Budget must be a positive number")]
-        public decimal? Budget { get; set; }
-    }
-
-    /// <summary>
-    /// Data transfer object for updating an existing project
-    /// </summary>
-    public class UpdateProjectDto
-    {
-        /// <summary>
-        /// Project unique identifier
-        /// </summary>
-        public int Id { get; set; }
-
-        /// <summary>
-        /// Client identifier for the project
-        /// </summary>
-        [Required(ErrorMessage = "Client is required")]
-        public int ClientId { get; set; }
-
-        /// <summary>
-        /// Project code (e.g., AWS001, MSF023)
-        /// </summary>
-        [Required(ErrorMessage = "Project code is required")]
-        [StringLength(10, MinimumLength = 3, ErrorMessage = "Project code must be between 3 and 10 characters")]
-        public string Code { get; set; } = string.Empty;
+        public int? CategoryId { get; set; }
 
         /// <summary>
         /// Project name
@@ -104,10 +38,9 @@ namespace DesignPlanner.Core.DTOs
         public ProjectStatus Status { get; set; }
 
         /// <summary>
-        /// Project start date
+        /// Project start date (optional)
         /// </summary>
-        [Required(ErrorMessage = "Start date is required")]
-        public DateTime StartDate { get; set; }
+        public DateTime? StartDate { get; set; }
 
         /// <summary>
         /// Project end date (optional)
@@ -119,11 +52,62 @@ namespace DesignPlanner.Core.DTOs
         /// </summary>
         public DateTime? DeadlineDate { get; set; }
 
+    }
+
+    /// <summary>
+    /// Data transfer object for updating an existing project
+    /// </summary>
+    public class UpdateProjectDto
+    {
         /// <summary>
-        /// Project budget (optional)
+        /// Project unique identifier
         /// </summary>
-        [Range(0, double.MaxValue, ErrorMessage = "Budget must be a positive number")]
-        public decimal? Budget { get; set; }
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Client identifier for the project
+        /// </summary>
+        [Required(ErrorMessage = "Client is required")]
+        public int ClientId { get; set; }
+
+        /// <summary>
+        /// Category identifier for the project
+        /// </summary>
+        public int? CategoryId { get; set; }
+
+        /// <summary>
+        /// Project name
+        /// </summary>
+        [Required(ErrorMessage = "Project name is required")]
+        [StringLength(200, MinimumLength = 3, ErrorMessage = "Project name must be between 3 and 200 characters")]
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Project description
+        /// </summary>
+        [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
+        public string? Description { get; set; }
+
+        /// <summary>
+        /// Project status
+        /// </summary>
+        public ProjectStatus Status { get; set; }
+
+        /// <summary>
+        /// Project start date (optional)
+        /// </summary>
+        public DateTime? StartDate { get; set; }
+
+        /// <summary>
+        /// Project end date (optional)
+        /// </summary>
+        public DateTime? EndDate { get; set; }
+
+        /// <summary>
+        /// Project deadline date (optional)
+        /// </summary>
+        public DateTime? DeadlineDate { get; set; }
+
 
         /// <summary>
         /// Whether the project is active
@@ -152,14 +136,14 @@ namespace DesignPlanner.Core.DTOs
         public string ClientName { get; set; } = string.Empty;
 
         /// <summary>
-        /// Client code
+        /// Category identifier
         /// </summary>
-        public string ClientCode { get; set; } = string.Empty;
+        public int? CategoryId { get; set; }
 
         /// <summary>
-        /// Project code (e.g., AWS001, MSF023)
+        /// Category name
         /// </summary>
-        public string Code { get; set; } = string.Empty;
+        public string CategoryName { get; set; } = string.Empty;
 
         /// <summary>
         /// Project name
@@ -184,7 +168,7 @@ namespace DesignPlanner.Core.DTOs
         /// <summary>
         /// Project start date
         /// </summary>
-        public DateTime StartDate { get; set; }
+        public DateTime? StartDate { get; set; }
 
         /// <summary>
         /// Project end date
@@ -195,16 +179,6 @@ namespace DesignPlanner.Core.DTOs
         /// Project deadline date
         /// </summary>
         public DateTime? DeadlineDate { get; set; }
-
-        /// <summary>
-        /// Project budget
-        /// </summary>
-        public decimal? Budget { get; set; }
-
-        /// <summary>
-        /// Whether the project is active
-        /// </summary>
-        public bool IsActive { get; set; }
 
         /// <summary>
         /// When the project was created
@@ -224,7 +198,7 @@ namespace DesignPlanner.Core.DTOs
         /// <summary>
         /// Project duration in days
         /// </summary>
-        public int? DurationInDays => EndDate?.Subtract(StartDate).Days;
+        public int? DurationInDays => StartDate.HasValue && EndDate.HasValue ? EndDate.Value.Subtract(StartDate.Value).Days : null;
 
         /// <summary>
         /// Whether the project is overdue

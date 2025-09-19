@@ -57,7 +57,6 @@ namespace DesignPlanner.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Project> builder)
         {
-            builder.HasIndex(e => e.Code).IsUnique();
             builder.Property(e => e.Status).HasConversion<int>();
             
             builder.HasOne(p => p.Client)

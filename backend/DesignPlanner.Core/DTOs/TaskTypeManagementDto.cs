@@ -21,16 +21,9 @@ namespace DesignPlanner.Core.DTOs
         public string? Description { get; set; }
 
         /// <summary>
-        /// Hex color for UI display (e.g., #FF5733)
+        /// List of skill IDs for this task type
         /// </summary>
-        [StringLength(20, ErrorMessage = "Color cannot exceed 20 characters")]
-        [RegularExpression(@"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$", ErrorMessage = "Color must be a valid hex color (e.g., #FF5733)")]
-        public string? Color { get; set; }
-
-        /// <summary>
-        /// List of required skill IDs for this task type
-        /// </summary>
-        public List<int> RequiredSkillIds { get; set; } = new();
+        public List<int> Skills { get; set; } = new();
     }
 
     /// <summary>
@@ -38,6 +31,11 @@ namespace DesignPlanner.Core.DTOs
     /// </summary>
     public class UpdateTaskTypeDto
     {
+        /// <summary>
+        /// Task type ID
+        /// </summary>
+        public int Id { get; set; }
+
         /// <summary>
         /// Task type name
         /// </summary>
@@ -52,21 +50,9 @@ namespace DesignPlanner.Core.DTOs
         public string? Description { get; set; }
 
         /// <summary>
-        /// Hex color for UI display (e.g., #FF5733)
+        /// List of skill IDs for this task type
         /// </summary>
-        [StringLength(20, ErrorMessage = "Color cannot exceed 20 characters")]
-        [RegularExpression(@"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$", ErrorMessage = "Color must be a valid hex color (e.g., #FF5733)")]
-        public string? Color { get; set; }
-
-        /// <summary>
-        /// List of required skill IDs for this task type
-        /// </summary>
-        public List<int> RequiredSkillIds { get; set; } = new();
-
-        /// <summary>
-        /// Whether the task type is active
-        /// </summary>
-        public bool IsActive { get; set; } = true;
+        public List<int> Skills { get; set; } = new();
     }
 
     /// <summary>
@@ -88,16 +74,6 @@ namespace DesignPlanner.Core.DTOs
         /// Task type description
         /// </summary>
         public string? Description { get; set; }
-
-        /// <summary>
-        /// Hex color for UI display
-        /// </summary>
-        public string? Color { get; set; }
-
-        /// <summary>
-        /// Whether the task type is active
-        /// </summary>
-        public bool IsActive { get; set; }
 
         /// <summary>
         /// When the task type was created
@@ -155,16 +131,6 @@ namespace DesignPlanner.Core.DTOs
         /// Task type name
         /// </summary>
         public string Name { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Hex color for UI display
-        /// </summary>
-        public string? Color { get; set; }
-
-        /// <summary>
-        /// Whether the task type is active
-        /// </summary>
-        public bool IsActive { get; set; }
     }
 
     /// <summary>

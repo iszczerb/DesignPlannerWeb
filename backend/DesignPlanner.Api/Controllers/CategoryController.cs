@@ -50,7 +50,6 @@ namespace DesignPlanner.Api.Controllers
                 }
 
                 var categories = await _context.Categories
-                    .Where(c => c.IsActive)
                     .OrderBy(c => c.Name)
                     .ToListAsync();
 

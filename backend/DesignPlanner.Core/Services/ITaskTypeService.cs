@@ -25,7 +25,7 @@ namespace DesignPlanner.Core.Services
         Task<TaskTypeResponseDto?> UpdateTaskTypeAsync(int taskTypeId, UpdateTaskTypeRequestDto request, int updatedByUserId);
 
         /// <summary>
-        /// Soft deletes a task type by setting IsActive to false
+        /// Deletes a task type permanently
         /// </summary>
         /// <param name="taskTypeId">ID of the task type to delete</param>
         /// <param name="deletedByUserId">ID of the user deleting the task type</param>
@@ -48,20 +48,12 @@ namespace DesignPlanner.Core.Services
         /// <returns>Paginated task type list response</returns>
         Task<TaskTypeListResponseDto> GetTaskTypesAsync(TaskTypeQueryDto query, int requestingUserId);
 
-        /// <summary>
-        /// Toggles the active status of a task type
-        /// </summary>
-        /// <param name="taskTypeId">ID of the task type to toggle</param>
-        /// <param name="isActive">New active status</param>
-        /// <param name="updatedByUserId">ID of the user updating the status</param>
-        /// <returns>True if status was successfully updated</returns>
-        Task<bool> ToggleTaskTypeStatusAsync(int taskTypeId, bool isActive, int updatedByUserId);
 
         /// <summary>
-        /// Gets all active task types for dropdown/selection purposes
+        /// Gets all task types for dropdown/selection purposes
         /// </summary>
         /// <param name="requestingUserId">ID of the user requesting the task types</param>
-        /// <returns>List of active task type DTOs</returns>
+        /// <returns>List of task type DTOs</returns>
         Task<List<TaskTypeResponseDto>> GetActiveTaskTypesAsync(int requestingUserId);
 
         /// <summary>

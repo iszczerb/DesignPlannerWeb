@@ -14,10 +14,6 @@ namespace DesignPlanner.Core.Entities
         [MaxLength(500)]
         public string? Description { get; set; }
 
-        [MaxLength(20)]
-        public string? Color { get; set; } // Hex color for UI display
-
-        public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

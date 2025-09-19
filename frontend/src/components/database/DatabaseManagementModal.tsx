@@ -5,6 +5,7 @@ import {
   EntityType,
   Client,
   Project,
+  User,
   Team,
   Skill,
   TaskType,
@@ -13,6 +14,7 @@ import {
 import { apiService } from '../../services/api';
 import ClientsTab from './tabs/ClientsTab';
 import ProjectsTab from './tabs/ProjectsTab';
+import UsersTab from './tabs/UsersTab';
 import TeamsTab from './tabs/TeamsTab';
 import SkillsTab from './tabs/SkillsTab';
 import TaskTypesTab from './tabs/TaskTypesTab';
@@ -36,6 +38,7 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
   const [entityCounts, setEntityCounts] = useState<Record<EntityType, number>>({
     [EntityType.Clients]: 0,
     [EntityType.Projects]: 0,
+    [EntityType.Users]: 0,
     [EntityType.Teams]: 0,
     [EntityType.Skills]: 0,
     [EntityType.TaskTypes]: 0,
@@ -56,6 +59,24 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
       count: entityCounts[EntityType.Projects]
     },
     {
+      id: EntityType.Categories,
+      label: 'Categories',
+      icon: '🏷️',
+      count: entityCounts[EntityType.Categories]
+    },
+    {
+      id: EntityType.TaskTypes,
+      label: 'Task Types',
+      icon: '📝',
+      count: entityCounts[EntityType.TaskTypes]
+    },
+    {
+      id: EntityType.Users,
+      label: 'Users',
+      icon: '👤',
+      count: entityCounts[EntityType.Users]
+    },
+    {
       id: EntityType.Teams,
       label: 'Teams',
       icon: '👥',
@@ -66,18 +87,6 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
       label: 'Skills',
       icon: '🛠️',
       count: entityCounts[EntityType.Skills]
-    },
-    {
-      id: EntityType.TaskTypes,
-      label: 'Task Types',
-      icon: '📝',
-      count: entityCounts[EntityType.TaskTypes]
-    },
-    {
-      id: EntityType.Categories,
-      label: 'Categories',
-      icon: '🏷️',
-      count: entityCounts[EntityType.Categories]
     }
   ];
 
@@ -93,9 +102,10 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
       setIsLoading(true);
 
       // Make parallel API calls to get actual counts from clean database using apiService
-      const [clients, projects, teams, skills, taskTypes, categories] = await Promise.allSettled([
+      const [clients, projects, users, teams, skills, taskTypes, categories] = await Promise.allSettled([
         apiService.get<any[]>('/client').catch(() => []),
-        apiService.get<any[]>('/project').catch(() => []),
+        apiService.get<{projects: any[], totalCount: number}>('/project').catch(() => ({projects: [], totalCount: 0})),
+        apiService.get<{users: any[], totalCount: number}>('/user').catch(() => ({users: [], totalCount: 0})),
         apiService.get<any[]>('/team').catch(() => []),
         apiService.get<any[]>('/skill').catch(() => []),
         apiService.get<any[]>('/tasktype').catch(() => []),
@@ -104,7 +114,8 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
 
       setEntityCounts({
         [EntityType.Clients]: clients.status === 'fulfilled' ? (Array.isArray(clients.value) ? clients.value.length : 0) : 0,
-        [EntityType.Projects]: projects.status === 'fulfilled' ? (Array.isArray(projects.value) ? projects.value.length : 0) : 0,
+        [EntityType.Projects]: projects.status === 'fulfilled' ? (projects.value?.totalCount || projects.value?.projects?.length || 0) : 0,
+        [EntityType.Users]: users.status === 'fulfilled' ? (users.value?.totalCount || users.value?.users?.length || 0) : 0,
         [EntityType.Teams]: teams.status === 'fulfilled' ? (Array.isArray(teams.value) ? teams.value.length : 0) : 0,
         [EntityType.Skills]: skills.status === 'fulfilled' ? (Array.isArray(skills.value) ? skills.value.length : 0) : 0,
         [EntityType.TaskTypes]: taskTypes.status === 'fulfilled' ? (Array.isArray(taskTypes.value) ? taskTypes.value.length : 0) : 0,
@@ -116,6 +127,7 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
       setEntityCounts({
         [EntityType.Clients]: 0,
         [EntityType.Projects]: 0,
+        [EntityType.Users]: 0,
         [EntityType.Teams]: 0,
         [EntityType.Skills]: 0,
         [EntityType.TaskTypes]: 0,
@@ -165,6 +177,10 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
     handleEntityCountChange(EntityType.TaskTypes, count);
   }, [handleEntityCountChange]);
 
+  const handleUsersCountChange = useCallback((count: number) => {
+    handleEntityCountChange(EntityType.Users, count);
+  }, [handleEntityCountChange]);
+
   const handleCategoriesCountChange = useCallback((count: number) => {
     handleEntityCountChange(EntityType.Categories, count);
   }, [handleEntityCountChange]);
@@ -175,6 +191,8 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
         return <ClientsTab onEntityCountChange={handleClientsCountChange} />;
       case EntityType.Projects:
         return <ProjectsTab onEntityCountChange={handleProjectsCountChange} />;
+      case EntityType.Users:
+        return <UsersTab onEntityCountChange={handleUsersCountChange} />;
       case EntityType.Teams:
         return <TeamsTab onEntityCountChange={handleTeamsCountChange} />;
       case EntityType.Skills:

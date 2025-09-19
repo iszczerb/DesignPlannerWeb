@@ -20,6 +20,10 @@ import {
   Holiday,
   CreateHolidayDto,
   UpdateHolidayDto,
+  User,
+  CreateUserDto,
+  UpdateUserDto,
+  UserListResponse,
   BulkActionResult
 } from '../types/database';
 import { apiService } from './api';
@@ -45,7 +49,10 @@ class DatabaseService {
   }
 
   async deleteClient(id: number): Promise<void> {
-    return apiService.delete<void>(`/client/${id}`);
+    console.log('DatabaseService: Calling apiService.delete with URL:', `/client/${id}`);
+    const result = await apiService.delete<void>(`/client/${id}`);
+    console.log('DatabaseService: API call completed with result:', result);
+    return result;
   }
 
   async bulkUpdateClients(clients: UpdateClientDto[]): Promise<BulkActionResult> {
@@ -66,8 +73,14 @@ class DatabaseService {
 
   // Project CRUD Operations
   async getProjects(): Promise<Project[]> {
-    const response = await apiService.get<{Projects: Project[]}>('/project');
-    return response.Projects;
+    console.log('🔄 DATABASE SERVICE - getProjects called');
+    console.log('🚀 DATABASE SERVICE - calling apiService.get(/project)...');
+    const response = await apiService.get<{projects: Project[]}>('/project');
+    console.log('📊 DATABASE SERVICE - apiService.get returned:', response);
+    console.log('📊 DATABASE SERVICE - response.projects:', response.projects);
+    console.log('📊 DATABASE SERVICE - projects is array:', Array.isArray(response.projects));
+    console.log('📊 DATABASE SERVICE - projects length:', response.projects?.length);
+    return response.projects;
   }
 
   async getProject(id: number): Promise<Project> {
@@ -75,7 +88,11 @@ class DatabaseService {
   }
 
   async createProject(data: CreateProjectDto): Promise<Project> {
-    return apiService.post<Project>('/project', data);
+    console.log('🟢 DATABASE SERVICE - createProject called with data:', data);
+    console.log('🚀 DATABASE SERVICE - calling apiService.post...');
+    const result = await apiService.post<Project>('/project', data);
+    console.log('✅ DATABASE SERVICE - apiService.post returned:', result);
+    return result;
   }
 
   async updateProject(data: UpdateProjectDto): Promise<Project> {
@@ -104,8 +121,8 @@ class DatabaseService {
 
   // Team CRUD Operations
   async getTeams(): Promise<Team[]> {
-    const response = await apiService.get<{Teams: Team[]}>('/team');
-    return response.Teams;
+    const response = await apiService.get<{teams: Team[]}>('/team');
+    return response.teams;
   }
 
   async getTeam(id: number): Promise<Team> {
@@ -142,8 +159,8 @@ class DatabaseService {
 
   // Skill CRUD Operations
   async getSkills(): Promise<Skill[]> {
-    const response = await apiService.get<{Skills: Skill[]}>('/skill');
-    return response.Skills;
+    const response = await apiService.get<{skills: Skill[]}>('/skill');
+    return response.skills;
   }
 
   async getSkill(id: number): Promise<Skill> {
@@ -180,8 +197,8 @@ class DatabaseService {
 
   // Task Type CRUD Operations
   async getTaskTypes(): Promise<TaskType[]> {
-    const response = await apiService.get<{TaskTypes: TaskType[]}>('/tasktype');
-    return response.TaskTypes;
+    const response = await apiService.get<{taskTypes: TaskType[]}>('/tasktype');
+    return response.taskTypes;
   }
 
   async getTaskType(id: number): Promise<TaskType> {
@@ -255,8 +272,8 @@ class DatabaseService {
 
   // Holiday CRUD Operations
   async getHolidays(): Promise<Holiday[]> {
-    const response = await apiService.get<{Holidays: Holiday[]}>('/holiday');
-    return response.Holidays;
+    const response = await apiService.get<{holidays: Holiday[]}>('/holiday');
+    return response.holidays;
   }
 
   async getHoliday(id: number): Promise<Holiday> {
@@ -291,6 +308,59 @@ class DatabaseService {
     return apiService.post<BulkActionResult>(endpoint, ids || undefined);
   }
 
+  // User CRUD Operations
+  async getUsers(): Promise<UserListResponse> {
+    return apiService.get<UserListResponse>('/user');
+  }
+
+  async getUser(id: number): Promise<User> {
+    return apiService.get<User>(`/user/${id}`);
+  }
+
+  async createUser(data: CreateUserDto): Promise<User> {
+    return apiService.post<User>('/user', data);
+  }
+
+  async updateUser(data: UpdateUserDto): Promise<User> {
+    return apiService.put<User>(`/user/${data.id}`, data);
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    return apiService.delete<void>(`/user/${id}`);
+  }
+
+  async getActiveUsers(): Promise<User[]> {
+    return apiService.get<User[]>('/user/active');
+  }
+
+  async getUsersByTeam(teamId: number): Promise<User[]> {
+    return apiService.get<User[]>(`/user/team/${teamId}`);
+  }
+
+  async getUsersByRole(role: number): Promise<User[]> {
+    return apiService.get<User[]>(`/user/role/${role}`);
+  }
+
+  async searchUsers(searchTerm: string): Promise<User[]> {
+    return apiService.get<User[]>(`/user/search?searchTerm=${encodeURIComponent(searchTerm)}`);
+  }
+
+  async toggleUserStatus(id: number, isActive: boolean): Promise<{ message: string }> {
+    return apiService.patch<{ message: string }>(`/user/${id}/status`, isActive);
+  }
+
+  async changeUserPassword(id: number, newPassword: string): Promise<{ message: string }> {
+    return apiService.post<{ message: string }>(`/user/${id}/change-password`, { newPassword });
+  }
+
+  async checkUsernameExists(username: string, excludeUserId?: number): Promise<boolean> {
+    const params = new URLSearchParams({ username });
+    if (excludeUserId) {
+      params.append('excludeUserId', excludeUserId.toString());
+    }
+    return apiService.get<boolean>(`/user/check-username?${params.toString()}`);
+  }
+
   // Analytics and Reports
   async getEntityCounts(): Promise<{
     clients: number;
@@ -299,6 +369,7 @@ class DatabaseService {
     skills: number;
     taskTypes: number;
     holidays: number;
+    users: number;
   }> {
     return apiService.get<any>('/analytics/entity-counts');
   }

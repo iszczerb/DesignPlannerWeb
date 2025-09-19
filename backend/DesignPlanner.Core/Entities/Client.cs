@@ -29,6 +29,9 @@ namespace DesignPlanner.Core.Entities
 
         public bool IsActive { get; set; } = true;
 
+        [MaxLength(7)]
+        public string Color { get; set; } = "#0066CC"; // Hex color code for client identification
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties

@@ -106,6 +106,7 @@ builder.Services.AddScoped<ITeamManagementService, TeamManagementService>();
 builder.Services.AddScoped<ISkillService, SkillService>();
 builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // Minimal initialization service for essential setup only
 builder.Services.AddScoped<IMinimalInitializer, MinimalInitializer>();

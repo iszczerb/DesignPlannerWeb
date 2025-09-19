@@ -8,7 +8,8 @@ import {
   UpdateCategory,
   TableColumn,
   BulkActionType,
-  BulkActionResult
+  BulkActionResult,
+  Project
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
 
@@ -18,6 +19,7 @@ interface CategoriesTabProps {
 
 const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -28,11 +30,40 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
 
   useEffect(() => {
     loadCategories();
+    loadProjects();
   }, []);
 
   useEffect(() => {
     onEntityCountChange(Array.isArray(categories) ? categories.length : 0);
   }, [categories]);
+
+  // Recalculate project counts when both categories and projects are loaded
+  useEffect(() => {
+    if (Array.isArray(categories) && categories.length > 0 && Array.isArray(projects)) {
+      const categoriesWithCount = categories.map(category => ({
+        ...category,
+        projectCount: projects.filter(p => p.categoryId === category.id).length
+      }));
+
+      // Only update if counts actually changed
+      const countsChanged = categoriesWithCount.some((cat, index) =>
+        cat.projectCount !== categories[index]?.projectCount
+      );
+
+      if (countsChanged) {
+        setCategories(categoriesWithCount);
+      }
+    }
+  }, [projects]);
+
+  const loadProjects = async () => {
+    try {
+      const data = await databaseService.getProjects();
+      setProjects(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load projects:', err);
+    }
+  };
 
   const loadCategories = async () => {
     try {
@@ -73,6 +104,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
       setShowForm(false);
       setEditingCategory(undefined);
       await loadCategories();
+      await loadProjects(); // Reload projects to trigger project count recalculation
     } catch (err) {
       throw err; // Let the form handle the error
     } finally {
@@ -88,66 +120,14 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
       setShowDeleteConfirm(false);
       setDeletingCategory(undefined);
       await loadCategories();
+      await loadProjects(); // Reload projects to trigger project count recalculation
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete category');
     }
   };
 
-  const handleBulkAction = async (action: BulkActionType, items: Category[]): Promise<BulkActionResult> => {
-    try {
-      let result: BulkActionResult;
 
-      switch (action) {
-        case BulkActionType.Activate:
-          result = await databaseService.bulkUpdateCategories(
-            items.map(item => ({ ...item, isActive: true }))
-          );
-          break;
-        case BulkActionType.Deactivate:
-          result = await databaseService.bulkUpdateCategories(
-            items.map(item => ({ ...item, isActive: false }))
-          );
-          break;
-        case BulkActionType.Delete:
-          result = await databaseService.bulkDeleteCategories(items.map(item => item.id!));
-          break;
-        case BulkActionType.Export:
-          result = await databaseService.exportCategories(items.map(item => item.id!));
-          break;
-        default:
-          throw new Error('Unsupported bulk action');
-      }
 
-      if (result.success) {
-        await loadCategories();
-      }
-
-      return result;
-    } catch (err) {
-      return {
-        success: false,
-        message: err instanceof Error ? err.message : 'Bulk action failed',
-        affectedCount: 0
-      };
-    }
-  };
-
-  const getStatusBadge = (isActive: boolean) => (
-    <span className={`status-badge ${isActive ? 'active' : 'inactive'}`}>
-      {isActive ? 'Active' : 'Inactive'}
-    </span>
-  );
-
-  const getColorIndicator = (color: string) => (
-    <div className="color-indicator-container">
-      <div
-        className="color-indicator"
-        style={{ backgroundColor: color }}
-        title={color}
-      />
-      <span className="color-code">{color}</span>
-    </div>
-  );
 
   const getProjectsCount = (count: number) => (
     <span className="count-badge">
@@ -157,70 +137,46 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
 
   const columns: TableColumn<Category>[] = [
     {
+      key: 'color',
+      label: 'Color',
+      sortable: false,
+      width: '80px',
+      render: (value) => (
+        <div
+          style={{
+            width: '32px',
+            height: '32px',
+            backgroundColor: value || '#0066CC',
+            borderRadius: '6px',
+            border: '2px solid #e5e7eb'
+          }}
+          title={value || '#0066CC'}
+        />
+      )
+    },
+    {
       key: 'name',
-      title: 'Name',
+      label: 'Category',
       sortable: true,
       width: '200px'
     },
     {
-      key: 'color',
-      title: 'Color',
-      sortable: false,
-      width: '150px',
-      render: (value) => getColorIndicator(value)
-    },
-    {
       key: 'description',
-      title: 'Description',
-      sortable: false,
+      label: 'Description',
+      sortable: true,
       width: '300px',
-      render: (value) => {
-        if (!value) return '-';
-        return value.length > 60 ? `${value.substring(0, 60)}...` : value;
-      }
+      render: (value) => value || '-'
     },
     {
       key: 'projectCount',
-      title: 'Projects',
-      sortable: true,
-      width: '120px',
-      render: (value) => getProjectsCount(value || 0)
-    },
-    {
-      key: 'isActive',
-      title: 'Status',
+      label: 'Projects',
       sortable: true,
       width: '100px',
-      render: (value) => getStatusBadge(value)
-    }
+      render: (value) => getProjectsCount(value || 0)
+    },
   ];
 
-  const quickFilters = useMemo(() => [
-    {
-      key: 'isActive',
-      label: 'Status',
-      options: [
-        { label: 'Active', value: true, count: Array.isArray(categories) ? categories.filter(c => c.isActive).length : 0 },
-        { label: 'Inactive', value: false, count: Array.isArray(categories) ? categories.filter(c => !c.isActive).length : 0 }
-      ]
-    },
-    {
-      key: 'hasProjects',
-      label: 'Usage',
-      options: [
-        {
-          label: 'In Use',
-          value: true,
-          count: Array.isArray(categories) ? categories.filter(c => (c.projectCount || 0) > 0).length : 0
-        },
-        {
-          label: 'Unused',
-          value: false,
-          count: Array.isArray(categories) ? categories.filter(c => (c.projectCount || 0) === 0).length : 0
-        }
-      ]
-    }
-  ], [categories]);
+  const quickFilters = useMemo(() => [], [categories]);
 
   const searchFields: (keyof Category)[] = ['name', 'description'];
 
@@ -235,33 +191,14 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onBulkAction={handleBulkAction}
         searchFields={searchFields}
         quickFilters={quickFilters}
+        enableSelection={false}
+        enableBulkActions={false}
         getItemKey={(item) => item.id!}
         emptyMessage="No categories found. Create your first category to get started."
         createButtonText="Add Category"
-        actions={[
-          {
-            label: 'View Projects',
-            icon: '📁',
-            onClick: (category) => {
-              console.log('View projects for category:', category);
-              // TODO: Navigate to projects filtered by this category
-            },
-            variant: 'secondary',
-            show: (category) => (category.projectCount || 0) > 0
-          },
-          {
-            label: 'Change Color',
-            icon: '🎨',
-            onClick: (category) => {
-              setEditingCategory(category);
-              setShowForm(true);
-            },
-            variant: 'primary'
-          }
-        ]}
+        actions={[]}
       />
 
       {/* Category Form Modal */}
@@ -272,7 +209,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
           setEditingCategory(undefined);
         }}
         onSave={handleSave}
-        category={editingCategory}
+        entity={editingCategory}
         isCreating={!editingCategory}
         loading={formLoading}
       />

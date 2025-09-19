@@ -100,29 +100,42 @@ namespace DesignPlanner.Api.Controllers
         [Authorize(Roles = "Manager,Admin")]
         public async Task<ActionResult<ProjectResponseDto>> CreateProject([FromBody] CreateProjectRequestDto createDto)
         {
+            _logger.LogInformation("🟢 PROJECT CREATION REQUEST RECEIVED");
+            _logger.LogInformation("📋 Request Data: {@CreateDto}", createDto);
+
             try
             {
+                _logger.LogInformation("🔍 Validating model state...");
                 if (!ModelState.IsValid)
                 {
+                    _logger.LogError("❌ Model state is invalid: {@ModelState}", ModelState);
                     return BadRequest(ModelState);
                 }
+                _logger.LogInformation("✅ Model state is valid");
 
+                _logger.LogInformation("🔐 Getting current user ID...");
                 var userId = GetCurrentUserId();
+                _logger.LogInformation("👤 Current user ID: {UserId}", userId);
                 if (userId == 0)
                 {
+                    _logger.LogError("❌ Unable to identify user");
                     return Unauthorized("Unable to identify user");
                 }
 
+                _logger.LogInformation("🚀 Calling ProjectService.CreateProjectAsync...");
                 var project = await _projectService.CreateProjectAsync(createDto, userId);
+                _logger.LogInformation("✅ Project created successfully: {@Project}", project);
+
                 return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
             }
             catch (InvalidOperationException ex)
             {
+                _logger.LogError(ex, "❌ InvalidOperation error creating project: {Message}", ex.Message);
                 return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating project");
+                _logger.LogError(ex, "❌ Unexpected error creating project");
                 return StatusCode(500, "An error occurred while creating the project");
             }
         }
@@ -344,42 +357,5 @@ namespace DesignPlanner.Api.Controllers
             }
         }
 
-        /// <summary>
-        /// Update project status
-        /// </summary>
-        /// <param name="id">Project ID</param>
-        /// <param name="status">New status</param>
-        /// <returns>Updated project</returns>
-        [HttpPatch("{id}/status")]
-        [Authorize(Roles = "Manager,Admin")]
-        public async Task<ActionResult<ProjectResponseDto>> UpdateProjectStatus(int id, [FromBody] ProjectStatus status)
-        {
-            try
-            {
-                var userId = GetCurrentUserId();
-                if (userId == 0)
-                {
-                    return Unauthorized("Unable to identify user");
-                }
-
-                var result = await _projectService.ToggleProjectStatusAsync(id, status == ProjectStatus.Active, userId);
-                if (!result)
-                {
-                    return NotFound("Project not found");
-                }
-
-                var project = await _projectService.GetProjectByIdAsync(id, userId);
-                return Ok(project);
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating project status for project {ProjectId}", id);
-                return StatusCode(500, "An error occurred while updating project status");
-            }
-        }
     }
 }

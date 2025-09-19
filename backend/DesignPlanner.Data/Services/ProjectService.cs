@@ -26,37 +26,28 @@ namespace DesignPlanner.Data.Services
         /// <returns>The created project DTO</returns>
         public async Task<ProjectResponseDto?> CreateProjectAsync(CreateProjectRequestDto request, int createdByUserId)
         {
-            // Check if project code already exists
-            if (await IsProjectCodeExistsAsync(request.Code))
-            {
-                throw new ArgumentException($"Project code '{request.Code}' is already in use");
-            }
-
-            // Verify client exists and is active
+            // Verify client exists first
             var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == request.ClientId);
             if (client == null)
                 throw new ArgumentException("Client not found");
-            if (!client.IsActive)
-                throw new ArgumentException("Cannot create project for inactive client");
+
 
             // Validate dates
-            if (request.EndDate.HasValue && request.EndDate < request.StartDate)
+            if (request.EndDate.HasValue && request.StartDate.HasValue && request.EndDate < request.StartDate)
                 throw new ArgumentException("End date cannot be before start date");
-            if (request.DeadlineDate.HasValue && request.DeadlineDate < request.StartDate)
+            if (request.DeadlineDate.HasValue && request.StartDate.HasValue && request.DeadlineDate < request.StartDate)
                 throw new ArgumentException("Deadline date cannot be before start date");
 
             var project = new Project
             {
                 ClientId = request.ClientId,
-                Code = request.Code.ToUpper(),
+                CategoryId = request.CategoryId,
                 Name = request.Name,
                 Description = request.Description,
                 Status = request.Status,
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
                 DeadlineDate = request.DeadlineDate,
-                Budget = request.Budget,
-                IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -64,12 +55,31 @@ namespace DesignPlanner.Data.Services
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
 
-            // Reload with client data
-            project = await _context.Projects
+            // Reload with client and category data using projection
+            var reloadedProject = await _context.Projects
                 .Include(p => p.Client)
-                .FirstAsync(p => p.Id == project.Id);
+                .Include(p => p.Category)
+                .Where(p => p.Id == project.Id)
+                .Select(p => new ProjectResponseDto
+                {
+                    Id = p.Id,
+                    ClientId = p.ClientId,
+                    ClientName = p.Client.Name,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category != null ? p.Category.Name : string.Empty,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Status = p.Status,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    DeadlineDate = p.DeadlineDate,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    TaskCount = 0
+                })
+                .FirstAsync();
 
-            return MapToProjectResponseDto(project);
+            return reloadedProject;
         }
 
         /// <summary>
@@ -83,23 +93,16 @@ namespace DesignPlanner.Data.Services
         {
             var project = await _context.Projects
                 .Include(p => p.Client)
+                .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == projectId);
 
             if (project == null)
                 throw new ArgumentException("Project not found");
 
-            // Check if project code already exists (excluding current project)
-            if (await IsProjectCodeExistsAsync(request.Code, projectId))
-            {
-                throw new ArgumentException($"Project code '{request.Code}' is already in use");
-            }
 
-            // Verify client exists and is active
-            var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == request.ClientId);
-            if (client == null)
+            // Verify client exists
+            if (!await _context.Clients.AnyAsync(c => c.Id == request.ClientId))
                 throw new ArgumentException("Client not found");
-            if (!client.IsActive)
-                throw new ArgumentException("Cannot assign project to inactive client");
 
             // Validate dates
             if (request.EndDate.HasValue && request.EndDate < request.StartDate)
@@ -108,32 +111,46 @@ namespace DesignPlanner.Data.Services
                 throw new ArgumentException("Deadline date cannot be before start date");
 
             project.ClientId = request.ClientId;
-            project.Code = request.Code.ToUpper();
+            project.CategoryId = request.CategoryId;
             project.Name = request.Name;
             project.Description = request.Description;
             project.Status = request.Status;
-            project.StartDate = request.StartDate;
+            project.StartDate = request.StartDate ?? project.StartDate;
             project.EndDate = request.EndDate;
             project.DeadlineDate = request.DeadlineDate;
-            project.Budget = request.Budget;
-            project.IsActive = request.IsActive;
             project.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            // Reload with updated client data if changed
-            if (project.Client.Id != request.ClientId)
-            {
-                project = await _context.Projects
-                    .Include(p => p.Client)
-                    .FirstAsync(p => p.Id == projectId);
-            }
+            // Reload with updated client and category data using projection
+            var updatedProject = await _context.Projects
+                .Include(p => p.Client)
+                .Include(p => p.Category)
+                .Where(p => p.Id == projectId)
+                .Select(p => new ProjectResponseDto
+                {
+                    Id = p.Id,
+                    ClientId = p.ClientId,
+                    ClientName = p.Client.Name,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category != null ? p.Category.Name : string.Empty,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Status = p.Status,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    DeadlineDate = p.DeadlineDate,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    TaskCount = 0
+                })
+                .FirstAsync();
 
-            return MapToProjectResponseDto(project);
+            return updatedProject;
         }
 
         /// <summary>
-        /// Soft deletes a project by setting IsActive to false
+        /// Hard deletes a project from the database
         /// </summary>
         /// <param name="projectId">ID of the project to delete</param>
         /// <param name="deletedByUserId">ID of the user deleting the project</param>
@@ -144,15 +161,14 @@ namespace DesignPlanner.Data.Services
             if (project == null)
                 return false;
 
-            // Check if project has active tasks
-            var hasActiveTasks = await _context.ProjectTasks
-                .AnyAsync(t => t.ProjectId == projectId && t.IsActive);
+            // Check if project has tasks
+            var hasTasks = await _context.ProjectTasks
+                .AnyAsync(t => t.ProjectId == projectId);
 
-            if (hasActiveTasks)
-                throw new InvalidOperationException("Cannot delete project with active tasks. Please complete or deactivate tasks first.");
+            if (hasTasks)
+                throw new InvalidOperationException("Cannot delete project with tasks. Please delete or reassign tasks first.");
 
-            project.IsActive = false;
-            project.UpdatedAt = DateTime.UtcNow;
+            _context.Projects.Remove(project);
             await _context.SaveChangesAsync();
 
             return true;
@@ -168,9 +184,28 @@ namespace DesignPlanner.Data.Services
         {
             var project = await _context.Projects
                 .Include(p => p.Client)
-                .FirstOrDefaultAsync(p => p.Id == projectId);
+                .Include(p => p.Category)
+                .Where(p => p.Id == projectId)
+                .Select(p => new ProjectResponseDto
+                {
+                    Id = p.Id,
+                    ClientId = p.ClientId,
+                    ClientName = p.Client.Name,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category != null ? p.Category.Name : string.Empty,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Status = p.Status,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    DeadlineDate = p.DeadlineDate,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    TaskCount = 0
+                })
+                .FirstOrDefaultAsync();
 
-            return project != null ? MapToProjectResponseDto(project) : null;
+            return project;
         }
 
         /// <summary>
@@ -183,6 +218,7 @@ namespace DesignPlanner.Data.Services
         {
             var queryable = _context.Projects
                 .Include(p => p.Client)
+                .Include(p => p.Category)
                 .AsQueryable();
 
             // Apply filters
@@ -191,7 +227,6 @@ namespace DesignPlanner.Data.Services
                 var searchTerm = query.SearchTerm.ToLower();
                 queryable = queryable.Where(p =>
                     p.Name.ToLower().Contains(searchTerm) ||
-                    p.Code.ToLower().Contains(searchTerm) ||
                     (p.Description != null && p.Description.ToLower().Contains(searchTerm)) ||
                     p.Client.Name.ToLower().Contains(searchTerm));
             }
@@ -206,10 +241,6 @@ namespace DesignPlanner.Data.Services
                 queryable = queryable.Where(p => p.Status == query.Status.Value);
             }
 
-            if (query.IsActive.HasValue)
-            {
-                queryable = queryable.Where(p => p.IsActive == query.IsActive.Value);
-            }
 
             if (query.StartDateFrom.HasValue)
             {
@@ -224,9 +255,6 @@ namespace DesignPlanner.Data.Services
             // Apply sorting
             queryable = query.SortBy.ToLower() switch
             {
-                "code" => query.SortDirection.ToLower() == "desc"
-                    ? queryable.OrderByDescending(p => p.Code)
-                    : queryable.OrderBy(p => p.Code),
                 "name" => query.SortDirection.ToLower() == "desc"
                     ? queryable.OrderByDescending(p => p.Name)
                     : queryable.OrderBy(p => p.Name),
@@ -251,7 +279,23 @@ namespace DesignPlanner.Data.Services
             var projects = await queryable
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
-                .Select(p => MapToProjectResponseDto(p))
+                .Select(p => new ProjectResponseDto
+                {
+                    Id = p.Id,
+                    ClientId = p.ClientId,
+                    ClientName = p.Client.Name,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category != null ? p.Category.Name : string.Empty,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Status = p.Status,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    DeadlineDate = p.DeadlineDate,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    TaskCount = 0
+                })
                 .ToListAsync();
 
             return new ProjectListResponseDto
@@ -264,35 +308,6 @@ namespace DesignPlanner.Data.Services
             };
         }
 
-        /// <summary>
-        /// Toggles the active status of a project
-        /// </summary>
-        /// <param name="projectId">ID of the project to toggle</param>
-        /// <param name="isActive">New active status</param>
-        /// <param name="updatedByUserId">ID of the user updating the status</param>
-        /// <returns>True if status was successfully updated</returns>
-        public async Task<bool> ToggleProjectStatusAsync(int projectId, bool isActive, int updatedByUserId)
-        {
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-            if (project == null)
-                return false;
-
-            // If deactivating, check for active tasks
-            if (!isActive && project.IsActive)
-            {
-                var hasActiveTasks = await _context.ProjectTasks
-                    .AnyAsync(t => t.ProjectId == projectId && t.IsActive);
-
-                if (hasActiveTasks)
-                    throw new InvalidOperationException("Cannot deactivate project with active tasks. Please complete or deactivate tasks first.");
-            }
-
-            project.IsActive = isActive;
-            project.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            return true;
-        }
 
         /// <summary>
         /// Gets all active projects for dropdown/selection purposes
@@ -303,9 +318,25 @@ namespace DesignPlanner.Data.Services
         {
             var projects = await _context.Projects
                 .Include(p => p.Client)
-                .Where(p => p.IsActive)
+                .Include(p => p.Category)
                 .OrderBy(p => p.Name)
-                .Select(p => MapToProjectResponseDto(p))
+                .Select(p => new ProjectResponseDto
+                {
+                    Id = p.Id,
+                    ClientId = p.ClientId,
+                    ClientName = p.Client.Name,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category != null ? p.Category.Name : string.Empty,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Status = p.Status,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    DeadlineDate = p.DeadlineDate,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    TaskCount = 0
+                })
                 .ToListAsync();
 
             return projects;
@@ -324,63 +355,31 @@ namespace DesignPlanner.Data.Services
                 .Include(p => p.Client)
                 .Where(p => p.ClientId == clientId);
 
-            if (!includeInactive)
-            {
-                queryable = queryable.Where(p => p.IsActive);
-            }
 
             var projects = await queryable
                 .OrderBy(p => p.Name)
-                .Select(p => MapToProjectResponseDto(p))
+                .Select(p => new ProjectResponseDto
+                {
+                    Id = p.Id,
+                    ClientId = p.ClientId,
+                    ClientName = p.Client.Name,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category != null ? p.Category.Name : string.Empty,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Status = p.Status,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    DeadlineDate = p.DeadlineDate,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    TaskCount = 0
+                })
                 .ToListAsync();
 
             return projects;
         }
 
-        /// <summary>
-        /// Checks if a project code is already in use
-        /// </summary>
-        /// <param name="code">The project code to check</param>
-        /// <param name="excludeProjectId">Optional project ID to exclude from the check (for updates)</param>
-        /// <returns>True if the code is already in use</returns>
-        public async Task<bool> IsProjectCodeExistsAsync(string code, int? excludeProjectId = null)
-        {
-            var query = _context.Projects.Where(p => p.Code.ToLower() == code.ToLower());
 
-            if (excludeProjectId.HasValue)
-            {
-                query = query.Where(p => p.Id != excludeProjectId.Value);
-            }
-
-            return await query.AnyAsync();
-        }
-
-        /// <summary>
-        /// Maps a Project entity to ProjectResponseDto
-        /// </summary>
-        /// <param name="project">The project entity</param>
-        /// <returns>The project DTO</returns>
-        private static ProjectResponseDto MapToProjectResponseDto(Project project)
-        {
-            return new ProjectResponseDto
-            {
-                Id = project.Id,
-                ClientId = project.ClientId,
-                ClientName = project.Client?.Name ?? string.Empty,
-                ClientCode = project.Client?.Code ?? string.Empty,
-                Code = project.Code,
-                Name = project.Name,
-                Description = project.Description,
-                Status = project.Status,
-                StartDate = project.StartDate,
-                EndDate = project.EndDate,
-                DeadlineDate = project.DeadlineDate,
-                Budget = project.Budget,
-                IsActive = project.IsActive,
-                CreatedAt = project.CreatedAt,
-                UpdatedAt = project.UpdatedAt,
-                TaskCount = 0 // This will need to be calculated separately if needed
-            };
-        }
     }
 }

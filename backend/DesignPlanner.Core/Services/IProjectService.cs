@@ -48,14 +48,6 @@ namespace DesignPlanner.Core.Services
         /// <returns>Paginated project list response</returns>
         Task<ProjectListResponseDto> GetProjectsAsync(ProjectQueryDto query, int requestingUserId);
 
-        /// <summary>
-        /// Toggles the active status of a project
-        /// </summary>
-        /// <param name="projectId">ID of the project to toggle</param>
-        /// <param name="isActive">New active status</param>
-        /// <param name="updatedByUserId">ID of the user updating the status</param>
-        /// <returns>True if status was successfully updated</returns>
-        Task<bool> ToggleProjectStatusAsync(int projectId, bool isActive, int updatedByUserId);
 
         /// <summary>
         /// Gets all active projects for dropdown/selection purposes
@@ -73,12 +65,5 @@ namespace DesignPlanner.Core.Services
         /// <returns>List of project DTOs for the specified client</returns>
         Task<List<ProjectResponseDto>> GetProjectsByClientAsync(int clientId, int requestingUserId, bool includeInactive = false);
 
-        /// <summary>
-        /// Checks if a project code is already in use
-        /// </summary>
-        /// <param name="code">The project code to check</param>
-        /// <param name="excludeProjectId">Optional project ID to exclude from the check (for updates)</param>
-        /// <returns>True if the code is already in use</returns>
-        Task<bool> IsProjectCodeExistsAsync(string code, int? excludeProjectId = null);
     }
 }

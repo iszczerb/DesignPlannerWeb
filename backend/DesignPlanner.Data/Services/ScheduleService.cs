@@ -29,8 +29,7 @@ namespace DesignPlanner.Data.Services
 
             // Get all task types from database
             var taskTypes = await _context.TaskTypes
-                .Where(tt => tt.IsActive)
-                .Select(tt => new TaskTypeDto
+                                .Select(tt => new TaskTypeDto
                 {
                     Id = tt.Id,
                     Name = tt.Name
@@ -860,7 +859,6 @@ namespace DesignPlanner.Data.Services
                 TaskId = assignment.TaskId,
                 TaskTitle = assignment.Task.Title,
                 TaskTypeName = assignment.Task.TaskType?.Name ?? "Task",
-                ProjectCode = assignment.Task.Project.Code,
                 ProjectName = assignment.Task.Project.Name,
                 ClientCode = assignment.Task.Project.Client.Code,
                 ClientName = assignment.Task.Project.Client.Name,
@@ -989,8 +987,7 @@ namespace DesignPlanner.Data.Services
 
             // Get all task types from database
             var taskTypes = await _context.TaskTypes
-                .Where(tt => tt.IsActive)
-                .Select(tt => new TaskTypeDto
+                                .Select(tt => new TaskTypeDto
                 {
                     Id = tt.Id,
                     Name = tt.Name

@@ -15,6 +15,7 @@ import React from 'react';
 export enum EntityType {
   Clients = 'clients',
   Projects = 'projects',
+  Users = 'users',
   Teams = 'teams',
   Skills = 'skills',
   TaskTypes = 'taskTypes',
@@ -88,6 +89,57 @@ export enum UserRole {
 }
 
 /**
+ * Management level enumeration
+ */
+export enum ManagementLevel {
+  None = 0,
+  TeamLead = 1,
+  Manager = 2,
+  Director = 3,
+  Executive = 4
+}
+
+/**
+ * Labels for user roles
+ */
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.Admin]: 'Admin',
+  [UserRole.Manager]: 'Manager',
+  [UserRole.TeamMember]: 'Team Member'
+};
+
+/**
+ * Colors for user roles
+ */
+export const USER_ROLE_COLORS: Record<UserRole, string> = {
+  [UserRole.Admin]: '#dc2626',
+  [UserRole.Manager]: '#2563eb',
+  [UserRole.TeamMember]: '#059669'
+};
+
+/**
+ * Labels for management levels
+ */
+export const MANAGEMENT_LEVEL_LABELS: Record<ManagementLevel, string> = {
+  [ManagementLevel.None]: 'No Management',
+  [ManagementLevel.TeamLead]: 'Team Lead',
+  [ManagementLevel.Manager]: 'Manager',
+  [ManagementLevel.Director]: 'Director',
+  [ManagementLevel.Executive]: 'Executive'
+};
+
+/**
+ * Colors for management levels
+ */
+export const MANAGEMENT_LEVEL_COLORS: Record<ManagementLevel, string> = {
+  [ManagementLevel.None]: '#6b7280',
+  [ManagementLevel.TeamLead]: '#059669',
+  [ManagementLevel.Manager]: '#2563eb',
+  [ManagementLevel.Director]: '#7c3aed',
+  [ManagementLevel.Executive]: '#dc2626'
+};
+
+/**
  * Holiday status based on date relative to today
  */
 export enum HolidayStatus {
@@ -121,6 +173,8 @@ export interface Client {
   address?: string;
   /** Whether the client is active */
   isActive: boolean;
+  /** Client color for visual identification */
+  color: string;
   /** When the client was created */
   createdAt: Date;
   /** Number of active projects for this client */
@@ -137,12 +191,8 @@ export interface CreateClient {
   name: string;
   /** Client description */
   description?: string;
-  /** Contact email address */
-  contactEmail?: string;
-  /** Contact phone number */
-  contactPhone?: string;
-  /** Client address */
-  address?: string;
+  /** Client color for visual identification */
+  color: string;
 }
 
 /**
@@ -157,12 +207,8 @@ export interface UpdateClient {
   name: string;
   /** Client description */
   description?: string;
-  /** Contact email address */
-  contactEmail?: string;
-  /** Contact phone number */
-  contactPhone?: string;
-  /** Client address */
-  address?: string;
+  /** Client color for visual identification */
+  color: string;
   /** Whether the client is active */
   isActive: boolean;
 }
@@ -215,16 +261,12 @@ export interface Project {
   clientId: number;
   /** Client name */
   clientName: string;
-  /** Client code */
-  clientCode: string;
   /** Category identifier */
   categoryId?: number;
   /** Category name */
   categoryName?: string;
   /** Category color */
   categoryColor?: string;
-  /** Project code (e.g., AWS001, MSF023) */
-  code: string;
   /** Project name */
   name: string;
   /** Project description */
@@ -234,15 +276,11 @@ export interface Project {
   /** Project status display name */
   statusName: string;
   /** Project start date */
-  startDate: Date;
+  startDate?: Date;
   /** Project end date */
   endDate?: Date;
   /** Project deadline date */
   deadlineDate?: Date;
-  /** Project budget */
-  budget?: number;
-  /** Whether the project is active */
-  isActive: boolean;
   /** When the project was created */
   createdAt: Date;
   /** When the project was last updated */
@@ -263,8 +301,6 @@ export interface CreateProject {
   clientId: number;
   /** Category identifier for the project */
   categoryId?: number;
-  /** Project code (e.g., AWS001, MSF023) */
-  code: string;
   /** Project name */
   name: string;
   /** Project description */
@@ -272,13 +308,11 @@ export interface CreateProject {
   /** Project status */
   status?: ProjectStatus;
   /** Project start date */
-  startDate: Date;
+  startDate?: Date;
   /** Project end date (optional) */
   endDate?: Date;
   /** Project deadline date (optional) */
   deadlineDate?: Date;
-  /** Project budget (optional) */
-  budget?: number;
 }
 
 /**
@@ -291,8 +325,6 @@ export interface UpdateProject {
   clientId: number;
   /** Category identifier for the project */
   categoryId?: number;
-  /** Project code (e.g., AWS001, MSF023) */
-  code: string;
   /** Project name */
   name: string;
   /** Project description */
@@ -300,15 +332,11 @@ export interface UpdateProject {
   /** Project status */
   status: ProjectStatus;
   /** Project start date */
-  startDate: Date;
+  startDate?: Date;
   /** Project end date (optional) */
   endDate?: Date;
   /** Project deadline date (optional) */
   deadlineDate?: Date;
-  /** Project budget (optional) */
-  budget?: number;
-  /** Whether the project is active */
-  isActive: boolean;
 }
 
 /**
@@ -1065,14 +1093,6 @@ export const HOLIDAY_STATUS_LABELS: Record<HolidayStatus, string> = {
   [HolidayStatus.Future]: 'Future'
 };
 
-/**
- * User role labels
- */
-export const USER_ROLE_LABELS: Record<UserRole, string> = {
-  [UserRole.Admin]: 'Administrator',
-  [UserRole.Manager]: 'Manager',
-  [UserRole.TeamMember]: 'Team Member'
-};
 
 /**
  * Default pagination settings
@@ -1227,6 +1247,170 @@ export interface TableSort {
   /** Sort direction */
   direction: 'asc' | 'desc';
 }
+
+// ============================================================================
+// USER INTERFACES
+// ============================================================================
+
+/**
+ * User skill information
+ */
+export interface UserSkill {
+  /** Skill unique identifier */
+  id: number;
+  /** Skill name */
+  name: string;
+  /** Skill category */
+  category?: string;
+}
+
+/**
+ * User team information
+ */
+export interface UserTeam {
+  /** Team unique identifier */
+  id: number;
+  /** Team name */
+  name: string;
+  /** Team code */
+  code: string;
+}
+
+/**
+ * User employee information
+ */
+export interface UserEmployee {
+  /** Employee unique identifier */
+  id: number;
+  /** Employee ID string */
+  employeeId: string;
+  /** Employee position */
+  position?: string;
+  /** Employee phone number */
+  phoneNumber?: string;
+  /** Team information */
+  team?: UserTeam;
+  /** List of employee skills */
+  skills: UserSkill[];
+}
+
+/**
+ * Complete user entity data
+ */
+export interface User {
+  /** User unique identifier */
+  id: number;
+  /** User's username */
+  username: string;
+  /** User's first name */
+  firstName: string;
+  /** User's last name */
+  lastName: string;
+  /** User's full name */
+  fullName: string;
+  /** User's role in the system */
+  role: UserRole;
+  /** Whether the user is active */
+  isActive: boolean;
+  /** When the user was created */
+  createdAt: Date;
+  /** Last login timestamp */
+  lastLoginAt?: Date;
+  /** Employee information */
+  employee?: UserEmployee;
+}
+
+/**
+ * Interface for creating a new user
+ */
+export interface CreateUserDto {
+  /** User's username (must be unique) */
+  username: string;
+  /** User's password */
+  password: string;
+  /** User's first name */
+  firstName: string;
+  /** User's last name */
+  lastName: string;
+  /** User's role in the system */
+  role: UserRole;
+  /** Team ID for employee assignment (required) */
+  teamId: number;
+  /** Management team ID (for managers only) */
+  managedTeamId?: number;
+  /** Employee position (optional) */
+  position?: string;
+  /** List of skill IDs for this user (optional) */
+  skillIds: number[];
+}
+
+/**
+ * Interface for updating an existing user
+ */
+export interface UpdateUserDto {
+  /** User ID */
+  id: number;
+  /** User's username (must be unique) */
+  username: string;
+  /** User's first name */
+  firstName: string;
+  /** User's last name */
+  lastName: string;
+  /** User's role in the system */
+  role: UserRole;
+  /** Team ID for employee assignment (required) */
+  teamId: number;
+  /** Management team ID (for managers only) */
+  managedTeamId?: number;
+  /** Employee position (optional) */
+  position?: string;
+  /** List of skill IDs for this user (optional) */
+  skillIds: number[];
+  /** Whether the user is active */
+  isActive: boolean;
+}
+
+/**
+ * Response interface for paginated user lists
+ */
+export interface UserListResponse {
+  /** List of users */
+  users: User[];
+  /** Total number of users */
+  totalCount: number;
+  /** Current page number */
+  pageNumber: number;
+  /** Number of items per page */
+  pageSize: number;
+  /** Total number of pages */
+  totalPages: number;
+}
+
+/**
+ * Query parameters for filtering and searching users
+ */
+export interface UserQuery {
+  /** Page number for pagination */
+  pageNumber?: number;
+  /** Number of items per page */
+  pageSize?: number;
+  /** Search term for filtering users */
+  searchTerm?: string;
+  /** Filter by active status */
+  isActive?: boolean;
+  /** Filter by user role */
+  role?: UserRole;
+  /** Filter by team ID */
+  teamId?: number;
+  /** Field to sort by */
+  sortBy?: string;
+  /** Sort direction (asc or desc) */
+  sortDirection?: 'asc' | 'desc';
+}
+
+// ============================================================================
+// TABLE INTERFACES
+// ============================================================================
 
 /**
  * Table state management

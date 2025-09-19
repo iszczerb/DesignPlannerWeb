@@ -7,7 +7,8 @@ import {
   EntityFormProps,
   ProjectStatus,
   PROJECT_STATUS_LABELS,
-  Client
+  Client,
+  Category
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
 import './EntityForm.css';
@@ -21,48 +22,63 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
   loading = false
 }) => {
   const [formData, setFormData] = useState({
-    code: '',
+    clientId: 0,
     name: '',
     description: '',
-    clientId: 0,
-    status: ProjectStatus.Planning,
+    categoryId: 0,
+    status: '',
     startDate: '',
-    deadline: '',
-    budget: '',
-    isActive: true
+    deadline: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 PROJECT FORM - useEffect triggered');
+    console.log('📊 PROJECT FORM - isOpen:', isOpen);
+    console.log('📊 PROJECT FORM - project:', project);
+    console.log('📊 PROJECT FORM - isCreating:', isCreating);
+
     if (isOpen) {
       loadClients();
+      loadCategories();
       if (project && !isCreating) {
-        setFormData({
-          code: project.code || '',
+        console.log('📝 PROJECT FORM - Loading existing project data');
+        // Format dates for input fields (YYYY-MM-DD)
+        const formatDateForInput = (date: any) => {
+          if (!date) return '';
+          const d = new Date(date);
+          return d.toISOString().split('T')[0];
+        };
+
+        const formDataToSet = {
+          clientId: project.clientId || 0,
           name: project.name || '',
           description: project.description || '',
-          clientId: project.clientId || 0,
-          status: project.status || ProjectStatus.Planning,
-          startDate: project.startDate || '',
-          deadline: project.deadline || '',
-          budget: project.budget ? project.budget.toString() : '',
-          isActive: project.isActive ?? true
-        });
+          categoryId: project.categoryId || 0,
+          status: project.status ? project.status.toString() : '',
+          startDate: formatDateForInput(project.startDate),
+          deadline: formatDateForInput(project.deadlineDate)
+        };
+
+        console.log('📋 PROJECT FORM - Setting form data to:', formDataToSet);
+        setFormData(formDataToSet);
       } else {
+        console.log('➕ PROJECT FORM - Creating new project (no defaults)');
+        // For new projects: no auto-defaults, let user choose everything
         setFormData({
-          code: '',
+          clientId: 0,
           name: '',
           description: '',
-          clientId: 0,
-          status: ProjectStatus.Planning,
+          categoryId: 0,
+          status: '',
           startDate: '',
-          deadline: '',
-          budget: '',
-          isActive: true
+          deadline: ''
         });
       }
       setErrors({});
@@ -74,11 +90,23 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
     try {
       setLoadingClients(true);
       const clientsData = await databaseService.getClients();
-      setClients(clientsData.filter(c => c.isActive));
+      setClients(Array.isArray(clientsData) ? clientsData : []);
     } catch (err) {
       console.error('Failed to load clients:', err);
     } finally {
       setLoadingClients(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const categoriesData = await databaseService.getCategories();
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    } finally {
+      setLoadingCategories(false);
     }
   };
 
@@ -95,14 +123,6 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.code.trim()) {
-      newErrors.code = 'Project code is required';
-    } else if (formData.code.length < 2) {
-      newErrors.code = 'Project code must be at least 2 characters';
-    } else if (!/^[A-Z0-9\-]+$/.test(formData.code)) {
-      newErrors.code = 'Project code must contain only uppercase letters, numbers, and hyphens';
-    }
-
     if (!formData.name.trim()) {
       newErrors.name = 'Project name is required';
     } else if (formData.name.length < 2) {
@@ -113,6 +133,11 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
       newErrors.clientId = 'Please select a client';
     }
 
+    if (!formData.categoryId || formData.categoryId === 0) {
+      newErrors.categoryId = 'Please select a category';
+    }
+
+
     if (formData.startDate && formData.deadline) {
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.deadline);
@@ -121,37 +146,42 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
       }
     }
 
-    if (formData.budget && isNaN(parseFloat(formData.budget))) {
-      newErrors.budget = 'Please enter a valid budget amount';
-    } else if (formData.budget && parseFloat(formData.budget) < 0) {
-      newErrors.budget = 'Budget must be a positive number';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🟢 PROJECT FORM SUBMIT - handleSubmit called');
     e.preventDefault();
 
+    console.log('🔍 PROJECT FORM - validating form...');
     if (!validateForm()) {
+      console.log('❌ PROJECT FORM - validation failed');
       return;
     }
+    console.log('✅ PROJECT FORM - validation passed');
 
     try {
       const submitData = {
-        ...formData,
         clientId: parseInt(formData.clientId.toString()),
-        status: parseInt(formData.status.toString()) as ProjectStatus,
-        budget: formData.budget ? parseFloat(formData.budget) : undefined
+        categoryId: parseInt(formData.categoryId.toString()),
+        name: formData.name,
+        description: formData.description,
+        status: formData.status ? parseInt(formData.status.toString()) as ProjectStatus : undefined,
+        startDate: formData.startDate ? new Date(formData.startDate) : undefined,
+        deadlineDate: formData.deadline ? new Date(formData.deadline) : undefined
       };
 
       const finalData = isCreating
         ? submitData as CreateProjectDto
         : { ...submitData, id: project!.id! } as UpdateProjectDto;
 
+      console.log('📋 PROJECT FORM - submitting data:', finalData);
+      console.log('🚀 PROJECT FORM - calling onSave...');
       await onSave(finalData);
+      console.log('✅ PROJECT FORM - onSave completed successfully');
     } catch (error) {
+      console.log('❌ PROJECT FORM - error in handleSubmit:', error);
       if (error instanceof Error) {
         setErrors({ submit: error.message });
       }
@@ -160,9 +190,13 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
 
   const handleClose = () => {
     if (isDirty && !loading) {
-      if (window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+      // Custom confirmation instead of browser alert
+      const shouldClose = isDirty ? false : true;
+      if (shouldClose) {
         onClose();
       }
+      // For now, just close - we can add a proper modal confirmation later if needed
+      onClose();
     } else {
       onClose();
     }
@@ -204,46 +238,59 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
           </div>
 
           <form onSubmit={handleSubmit} className="entity-form-content">
-            <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="code" className="form-label required">
-                  Project Code
-                </label>
-                <input
-                  id="code"
-                  type="text"
-                  className={`form-input ${errors.code ? 'error' : ''}`}
-                  value={formData.code}
-                  onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
-                  placeholder="e.g., PROJ-001, WEB-2024"
-                  disabled={loading}
-                  maxLength={20}
-                />
-                {errors.code && <span className="form-error">{errors.code}</span>}
-              </div>
-
+            <div className="form-grid project-form-grid">
+              {/* First Row - Client and Category */}
               <div className="form-group">
                 <label htmlFor="clientId" className="form-label required">
                   Client
                 </label>
-                <select
-                  id="clientId"
-                  className={`form-select ${errors.clientId ? 'error' : ''}`}
-                  value={formData.clientId}
-                  onChange={(e) => handleInputChange('clientId', parseInt(e.target.value))}
-                  disabled={loading || loadingClients}
-                >
-                  <option value={0}>Select a client...</option>
-                  {clients.map(client => (
-                    <option key={client.id} value={client.id}>
-                      {client.code} - {client.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="form-select-wrapper">
+                  <select
+                    id="clientId"
+                    className={`form-select ${errors.clientId ? 'error' : ''}`}
+                    value={formData.clientId}
+                    onChange={(e) => handleInputChange('clientId', parseInt(e.target.value))}
+                    disabled={loading || loadingClients}
+                  >
+                    <option value={0}>Select a client...</option>
+                    {clients.map(client => (
+                      <option key={client.id} value={client.id}>
+                        {client.code} - {client.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="form-select-arrow">▼</span>
+                </div>
                 {errors.clientId && <span className="form-error">{errors.clientId}</span>}
                 {loadingClients && <span className="form-help">Loading clients...</span>}
               </div>
 
+              <div className="form-group">
+                <label htmlFor="categoryId" className="form-label required">
+                  Category
+                </label>
+                <div className="form-select-wrapper">
+                  <select
+                    id="categoryId"
+                    className={`form-select ${errors.categoryId ? 'error' : ''}`}
+                    value={formData.categoryId}
+                    onChange={(e) => handleInputChange('categoryId', parseInt(e.target.value))}
+                    disabled={loading || loadingCategories}
+                  >
+                    <option value={0}>Select a category...</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="form-select-arrow">▼</span>
+                </div>
+                {errors.categoryId && <span className="form-error">{errors.categoryId}</span>}
+                {loadingCategories && <span className="form-help">Loading categories...</span>}
+              </div>
+
+              {/* Second Row - Project Name (full width) */}
               <div className="form-group form-group-full">
                 <label htmlFor="name" className="form-label required">
                   Project Name
@@ -261,6 +308,7 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
                 {errors.name && <span className="form-error">{errors.name}</span>}
               </div>
 
+              {/* Third Row - Description (full width) */}
               <div className="form-group form-group-full">
                 <label htmlFor="description" className="form-label">
                   Description
@@ -277,41 +325,29 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
                 />
               </div>
 
+              {/* Fourth Row - Status, Start Date, and Deadline */}
               <div className="form-group">
-                <label htmlFor="status" className="form-label required">
+                <label htmlFor="status" className="form-label">
                   Status
                 </label>
-                <select
-                  id="status"
-                  className="form-select"
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', parseInt(e.target.value))}
-                  disabled={loading}
-                >
-                  {Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="budget" className="form-label">
-                  Budget ($)
-                </label>
-                <input
-                  id="budget"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className={`form-input ${errors.budget ? 'error' : ''}`}
-                  value={formData.budget}
-                  onChange={(e) => handleInputChange('budget', e.target.value)}
-                  placeholder="0.00"
-                  disabled={loading}
-                />
-                {errors.budget && <span className="form-error">{errors.budget}</span>}
+                <div className="form-select-wrapper">
+                  <select
+                    id="status"
+                    className={`form-select ${errors.status ? 'error' : ''}`}
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    disabled={loading}
+                  >
+                    <option value="">Select status...</option>
+                    {Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="form-select-arrow">▼</span>
+                </div>
+                {errors.status && <span className="form-error">{errors.status}</span>}
               </div>
 
               <div className="form-group">
@@ -343,21 +379,6 @@ const ProjectForm: React.FC<EntityFormProps<Project, CreateProjectDto, UpdatePro
                   disabled={loading}
                 />
                 {errors.deadline && <span className="form-error">{errors.deadline}</span>}
-              </div>
-
-              <div className="form-group">
-                <label className="form-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
-                    disabled={loading}
-                  />
-                  <span className="form-checkbox-label">Active Project</span>
-                </label>
-                <div className="form-help">
-                  Inactive projects won't appear in task creation
-                </div>
               </div>
             </div>
 

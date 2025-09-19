@@ -390,6 +390,17 @@
     border-bottom-color: #374151;
   }
 
+  /* Force table headers to be visible in dark mode */
+  .data-table-header-cell {
+    background: #111827 !important;
+    color: #f9fafb !important;
+    border-bottom-color: #374151 !important;
+  }
+
+  .data-table thead {
+    background: #111827 !important;
+  }
+
   .database-tab {
     color: #9ca3af;
   }

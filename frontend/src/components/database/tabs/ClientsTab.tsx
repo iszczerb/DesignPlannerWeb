@@ -8,7 +8,8 @@ import {
   UpdateClientDto,
   TableColumn,
   BulkActionType,
-  BulkActionResult
+  BulkActionResult,
+  Project
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
 
@@ -18,6 +19,7 @@ interface ClientsTabProps {
 
 const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -28,11 +30,40 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
 
   useEffect(() => {
     loadClients();
+    loadProjects();
   }, []);
 
   useEffect(() => {
     onEntityCountChange(Array.isArray(clients) ? clients.length : 0);
   }, [clients]);
+
+  // Recalculate project counts when both clients and projects are loaded
+  useEffect(() => {
+    if (Array.isArray(clients) && clients.length > 0 && Array.isArray(projects)) {
+      const clientsWithCount = clients.map(client => ({
+        ...client,
+        projectCount: projects.filter(p => p.clientId === client.id).length
+      }));
+
+      // Only update if counts actually changed
+      const countsChanged = clientsWithCount.some((client, index) =>
+        client.projectCount !== clients[index]?.projectCount
+      );
+
+      if (countsChanged) {
+        setClients(clientsWithCount);
+      }
+    }
+  }, [projects]);
+
+  const loadProjects = async () => {
+    try {
+      const data = await databaseService.getProjects();
+      setProjects(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load projects:', err);
+    }
+  };
 
   const loadClients = async () => {
     try {
@@ -73,6 +104,7 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
       setShowForm(false);
       setEditingClient(undefined);
       await loadClients();
+      await loadProjects(); // Reload projects to trigger project count recalculation
     } catch (err) {
       throw err; // Let the form handle the error
     } finally {
@@ -84,59 +116,21 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
     if (!deletingClient) return;
 
     try {
-      await databaseService.deleteClient(deletingClient.id!);
+      console.log('Deleting client:', deletingClient.id);
+      console.log('About to call databaseService.deleteClient');
+      const result = await databaseService.deleteClient(deletingClient.id!);
+      console.log('Delete result:', result);
       setShowDeleteConfirm(false);
       setDeletingClient(undefined);
       await loadClients();
+      await loadProjects(); // Reload projects to trigger project count recalculation
     } catch (err) {
+      console.error('Delete error:', err);
+      console.error('Delete error details:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete client');
     }
   };
 
-  const handleBulkAction = async (action: BulkActionType, items: Client[]): Promise<BulkActionResult> => {
-    try {
-      let result: BulkActionResult;
-
-      switch (action) {
-        case BulkActionType.Activate:
-          result = await databaseService.bulkUpdateClients(
-            items.map(item => ({ ...item, isActive: true }))
-          );
-          break;
-        case BulkActionType.Deactivate:
-          result = await databaseService.bulkUpdateClients(
-            items.map(item => ({ ...item, isActive: false }))
-          );
-          break;
-        case BulkActionType.Delete:
-          result = await databaseService.bulkDeleteClients(items.map(item => item.id!));
-          break;
-        case BulkActionType.Export:
-          result = await databaseService.exportClients(items.map(item => item.id!));
-          break;
-        default:
-          throw new Error('Unsupported bulk action');
-      }
-
-      if (result.success) {
-        await loadClients();
-      }
-
-      return result;
-    } catch (err) {
-      return {
-        success: false,
-        message: err instanceof Error ? err.message : 'Bulk action failed',
-        affectedCount: 0
-      };
-    }
-  };
-
-  const getStatusBadge = (isActive: boolean) => (
-    <span className={`status-badge ${isActive ? 'active' : 'inactive'}`}>
-      {isActive ? 'Active' : 'Inactive'}
-    </span>
-  );
 
   const getProjectsCount = (count: number) => (
     <span className="count-badge">
@@ -146,68 +140,54 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
 
   const columns: TableColumn<Client>[] = [
     {
+      key: 'color',
+      label: 'Color',
+      sortable: false,
+      width: '80px',
+      render: (value) => (
+        <div
+          style={{
+            width: '32px',
+            height: '32px',
+            backgroundColor: value || '#0066CC',
+            borderRadius: '6px',
+            border: '2px solid #e5e7eb'
+          }}
+          title={value || '#0066CC'}
+        />
+      )
+    },
+    {
       key: 'code',
-      title: 'Code',
+      label: 'Code',
       sortable: true,
       width: '120px'
     },
     {
       key: 'name',
-      title: 'Name',
+      label: 'Name',
       sortable: true,
       width: '200px'
     },
     {
-      key: 'contactEmail',
-      title: 'Contact Email',
+      key: 'description',
+      label: 'Description',
       sortable: true,
-      width: '200px',
+      width: '300px',
       render: (value) => value || '-'
     },
     {
-      key: 'projectsCount',
-      title: 'Projects',
+      key: 'projectCount',
+      label: 'Projects',
       sortable: true,
       width: '100px',
       render: (value) => getProjectsCount(value || 0)
     },
-    {
-      key: 'isActive',
-      title: 'Status',
-      sortable: true,
-      width: '100px',
-      render: (value) => getStatusBadge(value)
-    }
   ];
 
-  const quickFilters = useMemo(() => [
-    {
-      key: 'isActive',
-      label: 'Status',
-      options: [
-        { label: 'Active', value: true, count: Array.isArray(clients) ? clients.filter(c => c.isActive).length : 0 },
-        { label: 'Inactive', value: false, count: Array.isArray(clients) ? clients.filter(c => !c.isActive).length : 0 }
-      ]
-    },
-    {
-      key: 'hasProjects',
-      label: 'Projects',
-      options: [
-        {
-          label: 'Has Projects',
-          value: true,
-          count: Array.isArray(clients) ? clients.filter(c => (c.projectsCount || 0) > 0).length : 0
-        },
-        {
-          label: 'No Projects',
-          value: false,
-          count: Array.isArray(clients) ? clients.filter(c => (c.projectsCount || 0) === 0).length : 0
-        }
-      ]
-    }
-  ], [clients]);
+  const quickFilters = useMemo(() => [], [clients]);
 
-  const searchFields: (keyof Client)[] = ['code', 'name', 'contactEmail'];
+  const searchFields: (keyof Client)[] = ['code', 'name', 'description'];
 
   return (
     <>
@@ -220,24 +200,14 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onBulkAction={handleBulkAction}
         searchFields={searchFields}
         quickFilters={quickFilters}
+        enableSelection={false}
+        enableBulkActions={false}
         getItemKey={(item) => item.id!}
         emptyMessage="No clients found. Create your first client to get started."
         createButtonText="Add Client"
-        actions={[
-          {
-            label: 'View Projects',
-            icon: '📋',
-            onClick: (client) => {
-              console.log('View projects for client:', client);
-              // TODO: Navigate to projects filtered by this client
-            },
-            variant: 'secondary',
-            show: (client) => (client.projectsCount || 0) > 0
-          }
-        ]}
+        actions={[]}
       />
 
       {/* Client Form Modal */}
@@ -248,7 +218,7 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
           setEditingClient(undefined);
         }}
         onSave={handleSave}
-        client={editingClient}
+        entity={editingClient}
         isCreating={!editingClient}
         loading={formLoading}
       />

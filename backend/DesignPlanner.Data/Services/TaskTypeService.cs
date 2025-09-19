@@ -36,8 +36,6 @@ namespace DesignPlanner.Data.Services
             {
                 Name = request.Name,
                 Description = request.Description,
-                Color = request.Color,
-                IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -68,8 +66,6 @@ namespace DesignPlanner.Data.Services
 
             taskType.Name = request.Name;
             taskType.Description = request.Description;
-            taskType.Color = request.Color;
-            taskType.IsActive = request.IsActive;
 
             await _context.SaveChangesAsync();
 
@@ -88,14 +84,14 @@ namespace DesignPlanner.Data.Services
             if (taskType == null)
                 return false;
 
-            // Check if task type is used in any active project tasks
-            var hasActiveTasks = await _context.ProjectTasks
-                .AnyAsync(pt => pt.TaskTypeId == taskTypeId && pt.IsActive);
+            // Check if task type is used in any project tasks
+            var hasExistingTasks = await _context.ProjectTasks
+                .AnyAsync(pt => pt.TaskTypeId == taskTypeId);
 
-            if (hasActiveTasks)
-                throw new InvalidOperationException("Cannot delete task type that is used in active project tasks. Please complete or reassign tasks first.");
+            if (hasExistingTasks)
+                throw new InvalidOperationException("Cannot delete task type that is used in project tasks. Please reassign tasks first.");
 
-            taskType.IsActive = false;
+            _context.TaskTypes.Remove(taskType);
             await _context.SaveChangesAsync();
 
             return true;
@@ -132,11 +128,6 @@ namespace DesignPlanner.Data.Services
                     (tt.Description != null && tt.Description.ToLower().Contains(searchTerm)));
             }
 
-            if (query.IsActive.HasValue)
-            {
-                queryable = queryable.Where(tt => tt.IsActive == query.IsActive.Value);
-            }
-
             // Apply sorting
             queryable = query.SortBy.ToLower() switch
             {
@@ -168,44 +159,15 @@ namespace DesignPlanner.Data.Services
             };
         }
 
-        /// <summary>
-        /// Toggles the active status of a task type
-        /// </summary>
-        /// <param name="taskTypeId">ID of the task type to toggle</param>
-        /// <param name="isActive">New active status</param>
-        /// <param name="updatedByUserId">ID of the user updating the status</param>
-        /// <returns>True if status was successfully updated</returns>
-        public async Task<bool> ToggleTaskTypeStatusAsync(int taskTypeId, bool isActive, int updatedByUserId)
-        {
-            var taskType = await _context.TaskTypes.FirstOrDefaultAsync(tt => tt.Id == taskTypeId);
-            if (taskType == null)
-                return false;
-
-            // If deactivating, check for active project tasks
-            if (!isActive && taskType.IsActive)
-            {
-                var hasActiveTasks = await _context.ProjectTasks
-                    .AnyAsync(pt => pt.TaskTypeId == taskTypeId && pt.IsActive);
-
-                if (hasActiveTasks)
-                    throw new InvalidOperationException("Cannot deactivate task type that is used in active project tasks. Please complete or reassign tasks first.");
-            }
-
-            taskType.IsActive = isActive;
-            await _context.SaveChangesAsync();
-
-            return true;
-        }
 
         /// <summary>
-        /// Gets all active task types for dropdown/selection purposes
+        /// Gets all task types for dropdown/selection purposes
         /// </summary>
         /// <param name="requestingUserId">ID of the user requesting the task types</param>
-        /// <returns>List of active task type DTOs</returns>
+        /// <returns>List of task type DTOs</returns>
         public async Task<List<TaskTypeResponseDto>> GetActiveTaskTypesAsync(int requestingUserId)
         {
             var taskTypes = await _context.TaskTypes
-                .Where(tt => tt.IsActive)
                 .OrderBy(tt => tt.Name)
                 .Select(tt => MapToTaskTypeResponseDto(tt))
                 .ToListAsync();
@@ -243,8 +205,6 @@ namespace DesignPlanner.Data.Services
                 Id = taskType.Id,
                 Name = taskType.Name,
                 Description = taskType.Description,
-                Color = taskType.Color,
-                IsActive = taskType.IsActive,
                 CreatedAt = taskType.CreatedAt,
                 RequiredSkills = new List<TaskTypeSkillDto>(), // This will need to be populated separately if needed
                 TaskCount = 0 // This will need to be calculated separately if needed
