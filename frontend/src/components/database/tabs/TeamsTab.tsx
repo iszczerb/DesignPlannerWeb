@@ -6,9 +6,7 @@ import {
   Team,
   CreateTeamDto,
   UpdateTeamDto,
-  TableColumn,
-  BulkActionType,
-  BulkActionResult
+  TableColumn
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
 
@@ -93,34 +91,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
     }
   };
 
-  const handleBulkAction = async (action: BulkActionType, items: Team[]): Promise<BulkActionResult> => {
-    try {
-      let result: BulkActionResult;
-
-      switch (action) {
-        case BulkActionType.Delete:
-          result = await databaseService.bulkDeleteTeams(items.map(item => item.id!));
-          break;
-        case BulkActionType.Export:
-          result = await databaseService.exportTeams(items.map(item => item.id!));
-          break;
-        default:
-          throw new Error('Unsupported bulk action');
-      }
-
-      if (result.success) {
-        await loadTeams();
-      }
-
-      return result;
-    } catch (err) {
-      return {
-        success: false,
-        message: err instanceof Error ? err.message : 'Bulk action failed',
-        affectedCount: 0
-      };
-    }
-  };
+  // Bulk actions removed - not needed for Teams tab
 
 
   const getMembersCount = (count: number) => (
@@ -187,9 +158,10 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onBulkAction={handleBulkAction}
         searchFields={searchFields}
         quickFilters={[]}
+        enableSelection={false}
+        enableBulkActions={false}
         getItemKey={(item) => item.id!}
         emptyMessage="No teams found. Create your first team to get started."
         createButtonText="Add Team"

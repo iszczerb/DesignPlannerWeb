@@ -57,9 +57,10 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
     setLoadingUsers(true);
     try {
       const userData = await databaseService.getUsers();
-      setUsers(userData);
+      setUsers(userData.users || []);
     } catch (error) {
       console.error('Failed to load users:', error);
+      setUsers([]);
     } finally {
       setLoadingUsers(false);
     }
