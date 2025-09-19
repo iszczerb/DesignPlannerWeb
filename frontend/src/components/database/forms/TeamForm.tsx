@@ -4,10 +4,8 @@ import {
   Team,
   CreateTeamDto,
   UpdateTeamDto,
-  EntityFormProps,
-  User
+  EntityFormProps
 } from '../../../types/database';
-import { databaseService } from '../../../services/databaseService';
 import './EntityForm.css';
 
 const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = ({
@@ -20,51 +18,29 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    leaderId: 0,
-    userIds: [] as number[]
+    description: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      loadUsers();
       if (team && !isCreating) {
         setFormData({
           name: team.name || '',
-          description: team.description || '',
-          leaderId: team.leaderId || 0,
-          userIds: team.userIds || []
+          description: team.description || ''
         });
       } else {
         setFormData({
           name: '',
-          description: '',
-          leaderId: 0,
-          userIds: []
+          description: ''
         });
       }
       setErrors({});
       setIsDirty(false);
     }
   }, [isOpen, team, isCreating]);
-
-  const loadUsers = async () => {
-    setLoadingUsers(true);
-    try {
-      const userData = await databaseService.getUsers();
-      setUsers(userData.users || []);
-    } catch (error) {
-      console.error('Failed to load users:', error);
-      setUsers([]);
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -159,45 +135,12 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
               </div>
 
               <div className="form-group form-group-full">
-                <label className="form-label">Team Members</label>
-                <div className="form-checkbox-group">
-                  {loadingUsers ? (
-                    <span className="form-info-text">Loading users...</span>
-                  ) : users.length > 0 ? (
-                    <div className="form-checkbox-grid">
-                      {users.map(user => (
-                        <label key={user.id} className="form-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={formData.userIds.includes(user.id!)}
-                            onChange={(e) => {
-                              const userId = user.id!;
-                              if (e.target.checked) {
-                                handleInputChange('userIds', [...formData.userIds, userId]);
-                              } else {
-                                handleInputChange('userIds', formData.userIds.filter(id => id !== userId));
-                              }
-                            }}
-                            disabled={loading}
-                          />
-                          <span className="form-checkbox-label">
-                            {user.firstName} {user.lastName}
-                            {user.employee?.position && (
-                              <small className="form-checkbox-detail"> - {user.employee.position}</small>
-                            )}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="form-info-text">No users available. Create users first.</span>
-                  )}
-                </div>
-                {formData.userIds.length > 0 && (
-                  <span className="form-helper-text">
-                    {formData.userIds.length} member{formData.userIds.length !== 1 ? 's' : ''} selected
+                <div className="form-info">
+                  <span className="form-info-text">
+                    💡 <strong>Team Members Assignment:</strong> Users are assigned to teams in the <strong>Users tab</strong>.
+                    Create team members there and set their team assignment.
                   </span>
-                )}
+                </div>
               </div>
             </div>
 

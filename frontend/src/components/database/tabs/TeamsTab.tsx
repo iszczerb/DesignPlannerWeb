@@ -100,13 +100,13 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
     </span>
   );
 
-  const getLeaderBadge = (leaderName?: string) => {
-    if (!leaderName) {
-      return <span className="text-muted">No leader assigned</span>;
+  const getManagerBadge = (managerName?: string) => {
+    if (!managerName) {
+      return <span className="text-muted">No manager assigned</span>;
     }
     return (
-      <span className="leader-badge">
-        👤 {leaderName}
+      <span className="manager-badge">
+        👤 {managerName}
       </span>
     );
   };
@@ -119,14 +119,14 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
       width: '200px'
     },
     {
-      key: 'leaderName',
-      label: 'Team Leader',
+      key: 'managerName',
+      label: 'Team Manager',
       sortable: true,
       width: '180px',
-      render: (value) => getLeaderBadge(value)
+      render: (value) => getManagerBadge(value)
     },
     {
-      key: 'membersCount',
+      key: 'memberCount',
       label: 'Members',
       sortable: true,
       width: '120px',
@@ -145,7 +145,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
   ];
 
 
-  const searchFields: (keyof Team)[] = ['name', 'description', 'leaderName'];
+  const searchFields: (keyof Team)[] = ['name', 'description'];
 
   return (
     <>
@@ -176,14 +176,14 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
             variant: 'secondary'
           },
           {
-            label: 'Assign Leader',
+            label: 'Assign Manager',
             icon: '👑',
             onClick: (team) => {
-              console.log('Assign leader to team:', team);
-              // TODO: Open leader assignment modal
+              console.log('Assign manager to team:', team);
+              // TODO: Open manager assignment modal
             },
             variant: 'primary',
-            show: (team) => !team.leaderId
+            show: (team) => !team.managerId
           },
           {
             label: 'View Schedule',
@@ -193,7 +193,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
               // TODO: Navigate to team schedule
             },
             variant: 'secondary',
-            show: (team) => (team.membersCount || 0) > 0
+            show: (team) => (team.memberCount || 0) > 0
           }
         ]}
       />
