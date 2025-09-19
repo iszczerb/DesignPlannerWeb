@@ -98,16 +98,6 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
       let result: BulkActionResult;
 
       switch (action) {
-        case BulkActionType.Activate:
-          result = await databaseService.bulkUpdateTeams(
-            items.map(item => ({ ...item, isActive: true }))
-          );
-          break;
-        case BulkActionType.Deactivate:
-          result = await databaseService.bulkUpdateTeams(
-            items.map(item => ({ ...item, isActive: false }))
-          );
-          break;
         case BulkActionType.Delete:
           result = await databaseService.bulkDeleteTeams(items.map(item => item.id!));
           break;
@@ -132,11 +122,6 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
     }
   };
 
-  const getStatusBadge = (isActive: boolean) => (
-    <span className={`status-badge ${isActive ? 'active' : 'inactive'}`}>
-      {isActive ? 'Active' : 'Inactive'}
-    </span>
-  );
 
   const getMembersCount = (count: number) => (
     <span className="count-badge">
@@ -158,33 +143,27 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
   const columns: TableColumn<Team>[] = [
     {
       key: 'name',
-      title: 'Name',
+      label: 'Name',
       sortable: true,
       width: '200px'
     },
     {
-      key: 'code',
-      title: 'Code',
-      sortable: true,
-      width: '120px'
-    },
-    {
       key: 'leaderName',
-      title: 'Team Leader',
+      label: 'Team Leader',
       sortable: true,
       width: '180px',
       render: (value) => getLeaderBadge(value)
     },
     {
       key: 'membersCount',
-      title: 'Members',
+      label: 'Members',
       sortable: true,
       width: '120px',
       render: (value) => getMembersCount(value || 0)
     },
     {
       key: 'description',
-      title: 'Description',
+      label: 'Description',
       sortable: false,
       width: '250px',
       render: (value) => {
@@ -192,64 +171,10 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
         return value.length > 50 ? `${value.substring(0, 50)}...` : value;
       }
     },
-    {
-      key: 'isActive',
-      title: 'Status',
-      sortable: true,
-      width: '100px',
-      render: (value) => getStatusBadge(value)
-    }
   ];
 
-  const quickFilters = useMemo(() => [
-    {
-      key: 'isActive',
-      label: 'Status',
-      options: [
-        { label: 'Active', value: true, count: Array.isArray(teams) ? teams.filter(t => t.isActive).length : 0 },
-        { label: 'Inactive', value: false, count: Array.isArray(teams) ? teams.filter(t => !t.isActive).length : 0 }
-      ]
-    },
-    {
-      key: 'hasLeader',
-      label: 'Leadership',
-      options: [
-        {
-          label: 'Has Leader',
-          value: true,
-          count: Array.isArray(teams) ? teams.filter(t => t.leaderId).length : 0
-        },
-        {
-          label: 'No Leader',
-          value: false,
-          count: Array.isArray(teams) ? teams.filter(t => !t.leaderId).length : 0
-        }
-      ]
-    },
-    {
-      key: 'memberSize',
-      label: 'Team Size',
-      options: [
-        {
-          label: 'Small (1-5)',
-          value: 'small',
-          count: Array.isArray(teams) ? teams.filter(t => (t.membersCount || 0) <= 5).length : 0
-        },
-        {
-          label: 'Medium (6-10)',
-          value: 'medium',
-          count: Array.isArray(teams) ? teams.filter(t => (t.membersCount || 0) >= 6 && (t.membersCount || 0) <= 10).length : 0
-        },
-        {
-          label: 'Large (11+)',
-          value: 'large',
-          count: Array.isArray(teams) ? teams.filter(t => (t.membersCount || 0) > 10).length : 0
-        }
-      ]
-    }
-  ], [teams]);
 
-  const searchFields: (keyof Team)[] = ['name', 'code', 'description', 'leaderName'];
+  const searchFields: (keyof Team)[] = ['name', 'description', 'leaderName'];
 
   return (
     <>
@@ -264,7 +189,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
         onDelete={handleDelete}
         onBulkAction={handleBulkAction}
         searchFields={searchFields}
-        quickFilters={quickFilters}
+        quickFilters={[]}
         getItemKey={(item) => item.id!}
         emptyMessage="No teams found. Create your first team to get started."
         createButtonText="Add Team"

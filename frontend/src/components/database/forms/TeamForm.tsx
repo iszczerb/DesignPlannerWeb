@@ -18,10 +18,9 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    code: '',
     description: '',
     leaderId: 0,
-    isActive: true
+    userIds: [] as number[]
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -32,18 +31,16 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
       if (team && !isCreating) {
         setFormData({
           name: team.name || '',
-          code: team.code || '',
           description: team.description || '',
           leaderId: team.leaderId || 0,
-          isActive: team.isActive ?? true
+          userIds: [] // TODO: Load team members when available
         });
       } else {
         setFormData({
           name: '',
-          code: '',
           description: '',
           leaderId: 0,
-          isActive: true
+          userIds: []
         });
       }
       setErrors({});
@@ -64,12 +61,6 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
 
     if (!formData.name.trim()) {
       newErrors.name = 'Team name is required';
-    }
-
-    if (!formData.code.trim()) {
-      newErrors.code = 'Team code is required';
-    } else if (!/^[A-Z0-9]+$/.test(formData.code)) {
-      newErrors.code = 'Team code must contain only uppercase letters and numbers';
     }
 
     setErrors(newErrors);
@@ -135,20 +126,6 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
                 {errors.name && <span className="form-error">{errors.name}</span>}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="code" className="form-label required">Team Code</label>
-                <input
-                  id="code"
-                  type="text"
-                  className={`form-input ${errors.code ? 'error' : ''}`}
-                  value={formData.code}
-                  onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
-                  placeholder="e.g., STRUCT"
-                  disabled={loading}
-                  maxLength={10}
-                />
-                {errors.code && <span className="form-error">{errors.code}</span>}
-              </div>
 
               <div className="form-group form-group-full">
                 <label htmlFor="description" className="form-label">Description</label>
@@ -163,16 +140,11 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
-                    disabled={loading}
-                  />
-                  <span className="form-checkbox-label">Active Team</span>
-                </label>
+              <div className="form-group form-group-full">
+                <label htmlFor="users" className="form-label">Team Members</label>
+                <div className="form-info">
+                  <span className="form-info-text">Team member management will be available soon</span>
+                </div>
               </div>
             </div>
 
