@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../common/DataTable';
 import SkillForm from '../forms/SkillForm';
 import ConfirmDialog from '../../common/ConfirmDialog';
+import ViewTaskTypesModal from '../modals/ViewTaskTypesModal';
+import AddToTaskTypeModal from '../modals/AddToTaskTypeModal';
 import {
   Skill,
   CreateSkillDto,
   UpdateSkillDto,
   TableColumn,
-  BulkActionType,
-  BulkActionResult,
   SkillCategory,
   SKILL_CATEGORY_LABELS,
   SKILL_CATEGORY_COLORS
@@ -28,6 +28,9 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingSkill, setDeletingSkill] = useState<Skill | undefined>();
   const [formLoading, setFormLoading] = useState(false);
+  const [showViewTaskTypesModal, setShowViewTaskTypesModal] = useState(false);
+  const [showAddToTaskTypeModal, setShowAddToTaskTypeModal] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
 
   useEffect(() => {
     loadSkills();
@@ -96,50 +99,6 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
     }
   };
 
-  const handleBulkAction = async (action: BulkActionType, items: Skill[]): Promise<BulkActionResult> => {
-    try {
-      let result: BulkActionResult;
-
-      switch (action) {
-        case BulkActionType.Activate:
-          result = await databaseService.bulkUpdateSkills(
-            items.map(item => ({ ...item, isActive: true }))
-          );
-          break;
-        case BulkActionType.Deactivate:
-          result = await databaseService.bulkUpdateSkills(
-            items.map(item => ({ ...item, isActive: false }))
-          );
-          break;
-        case BulkActionType.Delete:
-          result = await databaseService.bulkDeleteSkills(items.map(item => item.id!));
-          break;
-        case BulkActionType.Export:
-          result = await databaseService.exportSkills(items.map(item => item.id!));
-          break;
-        default:
-          throw new Error('Unsupported bulk action');
-      }
-
-      if (result.success) {
-        await loadSkills();
-      }
-
-      return result;
-    } catch (err) {
-      return {
-        success: false,
-        message: err instanceof Error ? err.message : 'Bulk action failed',
-        affectedCount: 0
-      };
-    }
-  };
-
-  const getStatusBadge = (isActive: boolean) => (
-    <span className={`status-badge ${isActive ? 'active' : 'inactive'}`}>
-      {isActive ? 'Active' : 'Inactive'}
-    </span>
-  );
 
   const getCategoryBadge = (category: SkillCategory) => (
     <span
@@ -153,29 +112,29 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
     </span>
   );
 
-  const getEmployeesCount = (count: number) => (
+  const getTaskTypesCount = (count: number) => (
     <span className="count-badge">
-      {count} {count === 1 ? 'employee' : 'employees'}
+      {count} {count === 1 ? 'task type' : 'task types'}
     </span>
   );
 
   const columns: TableColumn<Skill>[] = [
     {
       key: 'name',
-      title: 'Name',
+      label: 'Skill',
       sortable: true,
       width: '200px'
     },
     {
       key: 'category',
-      title: 'Category',
+      label: 'Type',
       sortable: true,
       width: '150px',
       render: (value) => getCategoryBadge(value)
     },
     {
       key: 'description',
-      title: 'Description',
+      label: 'Description',
       sortable: false,
       width: '300px',
       render: (value) => {
@@ -184,56 +143,14 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
       }
     },
     {
-      key: 'employeesCount',
-      title: 'Employees',
+      key: 'taskTypesCount',
+      label: 'Task Types',
       sortable: true,
       width: '120px',
-      render: (value) => getEmployeesCount(value || 0)
-    },
-    {
-      key: 'isActive',
-      title: 'Status',
-      sortable: true,
-      width: '100px',
-      render: (value) => getStatusBadge(value)
+      render: (value) => getTaskTypesCount(value || 0)
     }
   ];
 
-  const quickFilters = useMemo(() => [
-    {
-      key: 'category',
-      label: 'Category',
-      options: Object.entries(SKILL_CATEGORY_LABELS).map(([value, label]) => ({
-        label,
-        value: parseInt(value),
-        count: Array.isArray(skills) ? skills.filter(s => s.category === parseInt(value)).length : 0
-      }))
-    },
-    {
-      key: 'isActive',
-      label: 'Status',
-      options: [
-        { label: 'Active', value: true, count: Array.isArray(skills) ? skills.filter(s => s.isActive).length : 0 },
-        { label: 'Inactive', value: false, count: Array.isArray(skills) ? skills.filter(s => !s.isActive).length : 0 }
-      ]
-    },
-    {
-      key: 'hasEmployees',
-      label: 'Usage',
-      options: [
-        {
-          label: 'In Use',
-          value: true,
-          count: Array.isArray(skills) ? skills.filter(s => (s.employeesCount || 0) > 0).length : 0
-        },
-        {
-          label: 'Unused',
-          value: false,
-          count: Array.isArray(skills) ? skills.filter(s => (s.employeesCount || 0) === 0).length : 0
-        }
-      ]
-    }
-  ], [skills]);
 
   const searchFields: (keyof Skill)[] = ['name', 'description'];
 
@@ -248,29 +165,30 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onBulkAction={handleBulkAction}
         searchFields={searchFields}
-        quickFilters={quickFilters}
+        quickFilters={[]}
+        enableSelection={false}
+        enableBulkActions={false}
         getItemKey={(item) => item.id!}
         emptyMessage="No skills found. Create your first skill to get started."
         createButtonText="Add Skill"
         actions={[
           {
-            label: 'View Employees',
-            icon: '👥',
+            label: 'View Task Types',
+            icon: '📋',
             onClick: (skill) => {
-              console.log('View employees with skill:', skill);
-              // TODO: Navigate to employees filtered by this skill
+              setSelectedSkill(skill);
+              setShowViewTaskTypesModal(true);
             },
             variant: 'secondary',
-            show: (skill) => (skill.employeesCount || 0) > 0
+            show: (skill) => (skill.taskTypesCount || 0) > 0
           },
           {
             label: 'Add to Task Type',
             icon: '🔗',
             onClick: (skill) => {
-              console.log('Add skill to task type:', skill);
-              // TODO: Open task type assignment modal
+              setSelectedSkill(skill);
+              setShowAddToTaskTypeModal(true);
             },
             variant: 'primary'
           }
@@ -285,7 +203,7 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
           setEditingSkill(undefined);
         }}
         onSave={handleSave}
-        skill={editingSkill}
+        entity={editingSkill}
         isCreating={!editingSkill}
         loading={formLoading}
       />
@@ -302,6 +220,32 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
         }}
         confirmText="Delete"
         confirmVariant="danger"
+      />
+
+      {/* View Task Types Modal */}
+      <ViewTaskTypesModal
+        isOpen={showViewTaskTypesModal}
+        onClose={() => {
+          setShowViewTaskTypesModal(false);
+          setSelectedSkill(null);
+        }}
+        skill={selectedSkill}
+        onRemoveFromTaskType={() => {
+          loadSkills(); // Refresh skills to update counts
+        }}
+      />
+
+      {/* Add to Task Type Modal */}
+      <AddToTaskTypeModal
+        isOpen={showAddToTaskTypeModal}
+        onClose={() => {
+          setShowAddToTaskTypeModal(false);
+          setSelectedSkill(null);
+        }}
+        skill={selectedSkill}
+        onTaskTypesUpdated={() => {
+          loadSkills(); // Refresh skills to update counts
+        }}
       />
     </>
   );

@@ -26,6 +26,7 @@ namespace DesignPlanner.Data.Context
         public DbSet<Holiday> Holidays { get; set; }
         public DbSet<Skill> Skills { get; set; }
         public DbSet<EmployeeSkill> EmployeeSkills { get; set; }
+        public DbSet<TaskTypeSkill> TaskTypeSkills { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Category> Categories { get; set; }
 
@@ -47,6 +48,7 @@ namespace DesignPlanner.Data.Context
             modelBuilder.ApplyConfiguration(new HolidayConfiguration());
             modelBuilder.ApplyConfiguration(new SkillConfiguration());
             modelBuilder.ApplyConfiguration(new EmployeeSkillConfiguration());
+            modelBuilder.ApplyConfiguration(new TaskTypeSkillConfiguration());
             modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
             modelBuilder.ApplyConfiguration(new CategoryConfiguration());
 

@@ -1,0 +1,301 @@
+/* Modal Base Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.large-modal {
+  width: 600px;
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.modal-body {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Loading and Error States */
+.loading-state, .error-state, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: #dc2626;
+  margin-bottom: 16px;
+}
+
+.text-muted {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Members List Styles */
+.members-header {
+  margin-bottom: 20px;
+}
+
+.members-count {
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.member-info {
+  flex: 1;
+}
+
+.member-name {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.member-details {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.member-username {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.member-position {
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.member-role {
+  font-weight: 500;
+}
+
+.member-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Button Styles */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+.btn:disabled {
+  background-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Selection Buttons */
+.selection-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Checkbox List Styles */
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.checkbox-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  transition: all 0.2s;
+}
+
+.checkbox-item:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.checkbox-input {
+  margin-right: 12px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.checkbox-info {
+  flex: 1;
+}
+
+.checkbox-name {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 4px;
+}
+
+.checkbox-meta {
+  display: flex;
+  gap: 12px;
+}
+
+.meta-item {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.original-badge {
+  font-size: 0.75rem;
+  background-color: #059669;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 8px;
+}

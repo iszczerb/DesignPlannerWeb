@@ -30,7 +30,17 @@
       "Bash(dotnet add package:*)",
       "Bash(rg:*)",
       "Bash(cat:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git commit:*)",
+      "Bash(wmic process where ProcessId=25156 delete:*)",
+      "Bash(wmic process where ProcessId=29648 delete:*)",
+      "Bash(wmic process where ProcessId=23428 delete:*)",
+      "Bash(sqlite3:*)",
+      "Bash(wmic process where ProcessId=14300 delete:*)",
+      "Bash(wmic process where ProcessId=22240 delete:*)",
+      "Bash(wmic process where ProcessId=25924 delete:*)",
+      "Bash(wmic process where ProcessId=6964 delete:*)",
+      "Bash(wmic process where ProcessId=16944 delete:*)"
     ],
     "deny": [],
     "ask": []

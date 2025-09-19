@@ -76,6 +76,11 @@ namespace DesignPlanner.Core.DTOs
         public string? Description { get; set; }
 
         /// <summary>
+        /// List of skill IDs for this task type
+        /// </summary>
+        public List<int> Skills { get; set; } = new();
+
+        /// <summary>
         /// When the task type was created
         /// </summary>
         public DateTime CreatedAt { get; set; }

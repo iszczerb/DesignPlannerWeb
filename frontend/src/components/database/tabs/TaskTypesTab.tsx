@@ -8,7 +8,8 @@ import {
   UpdateTaskTypeDto,
   TableColumn,
   BulkActionType,
-  BulkActionResult
+  BulkActionResult,
+  Skill
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
 
@@ -97,18 +98,36 @@ const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
 
 
 
+  const [allSkills, setAllSkills] = useState<Skill[]>([]);
+
+  useEffect(() => {
+    loadSkills();
+  }, []);
+
+  const loadSkills = async () => {
+    try {
+      const skills = await databaseService.getSkills();
+      setAllSkills(skills);
+    } catch (err) {
+      console.error('Failed to load skills:', err);
+    }
+  };
+
   const getSkillsBadges = (skillIds: number[]) => {
     if (!skillIds || skillIds.length === 0) {
-      return <span className="text-muted"></span>;
+      return <span className="text-muted">No skills required</span>;
     }
 
     return (
       <div className="skills-badges">
-        {skillIds.slice(0, 3).map((skillId, index) => (
-          <span key={skillId} className="skill-badge">
-            Skill {skillId}
-          </span>
-        ))}
+        {skillIds.slice(0, 3).map((skillId) => {
+          const skill = allSkills.find(s => s.id === skillId);
+          return (
+            <span key={skillId} className="skill-badge">
+              {skill ? skill.name : `Skill ${skillId}`}
+            </span>
+          );
+        })}
         {skillIds.length > 3 && (
           <span className="skill-badge-more">
             +{skillIds.length - 3} more
@@ -122,12 +141,6 @@ const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
   const getProjectsCount = (count: number) => (
     <span className="count-badge">
       {count} {count === 1 ? 'project' : 'projects'}
-    </span>
-  );
-
-  const getCategoriesCount = (count: number) => (
-    <span className="count-badge">
-      {count} {count === 1 ? 'category' : 'categories'}
     </span>
   );
 
@@ -158,13 +171,6 @@ const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
       sortable: true,
       width: '100px',
       render: (value) => getProjectsCount(value || 0)
-    },
-    {
-      key: 'categoryCount',
-      label: 'Categories',
-      sortable: true,
-      width: '100px',
-      render: (value) => getCategoriesCount(value || 0)
     }
   ];
 

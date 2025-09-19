@@ -277,6 +277,13 @@ namespace DesignPlanner.Data.Services
             var memberCount = await GetTeamMemberCountAsync(team.Id);
             var activeMemberCount = await GetActiveTeamMemberCountAsync(team.Id);
 
+            // Find the team manager (user with Admin or Manager role assigned to this team)
+            var manager = await _context.Users
+                .Include(u => u.Employee)
+                .FirstOrDefaultAsync(u => u.Employee != null &&
+                                        u.Employee.TeamId == team.Id &&
+                                        (u.Role == Core.Enums.UserRole.Admin || u.Role == Core.Enums.UserRole.Manager));
+
             return new TeamDetailDto
             {
                 Id = team.Id,
@@ -286,7 +293,9 @@ namespace DesignPlanner.Data.Services
                 IsActive = team.IsActive,
                 CreatedAt = team.CreatedAt,
                 MemberCount = memberCount,
-                ActiveMemberCount = activeMemberCount
+                ActiveMemberCount = activeMemberCount,
+                ManagerId = manager?.Id,
+                ManagerName = manager != null ? $"{manager.FirstName} {manager.LastName}" : null
             };
         }
     }

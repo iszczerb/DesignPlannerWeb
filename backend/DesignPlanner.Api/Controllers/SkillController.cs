@@ -38,7 +38,7 @@ namespace DesignPlanner.Api.Controllers
         /// </summary>
         /// <returns>List of skills</returns>
         [HttpGet]
-        public async Task<ActionResult<SkillListResponseDto>> GetSkills([FromQuery] SkillQueryDto? query = null)
+        public async Task<ActionResult> GetSkills([FromQuery] SkillQueryDto? query = null)
         {
             try
             {
@@ -49,8 +49,8 @@ namespace DesignPlanner.Api.Controllers
                 }
 
                 query ??= new SkillQueryDto();
-                var skills = await _skillService.GetSkillsAsync(query, userId);
-                return Ok(skills);
+                var skillsResponse = await _skillService.GetSkillsAsync(query, userId);
+                return Ok(new { skills = skillsResponse.Skills });
             }
             catch (Exception ex)
             {

@@ -161,11 +161,13 @@ namespace DesignPlanner.Data.Services
             var totalCount = await queryable.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalCount / query.PageSize);
 
-            var skills = await queryable
+            var skillEntities = await queryable
+                .Include(s => s.TaskTypeSkills)
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
-                .Select(s => MapToSkillResponseDto(s))
                 .ToListAsync();
+
+            var skills = skillEntities.Select(s => MapToSkillResponseDtoWithCounts(s)).ToList();
 
             return new SkillListResponseDto
             {
@@ -299,6 +301,26 @@ namespace DesignPlanner.Data.Services
                 IsActive = skill.IsActive,
                 CreatedAt = skill.CreatedAt,
                 EmployeeCount = 0 // This will need to be calculated separately if needed
+            };
+        }
+
+        /// <summary>
+        /// Maps a Skill entity to SkillResponseDto with counts calculated
+        /// </summary>
+        /// <param name="skill">The skill entity with TaskTypeSkills included</param>
+        /// <returns>The skill DTO with task types count</returns>
+        private static SkillResponseDto MapToSkillResponseDtoWithCounts(Skill skill)
+        {
+            return new SkillResponseDto
+            {
+                Id = skill.Id,
+                Name = skill.Name,
+                Description = skill.Description,
+                Category = skill.Category,
+                IsActive = skill.IsActive,
+                CreatedAt = skill.CreatedAt,
+                EmployeeCount = 0, // This will need to be calculated separately if needed
+                TaskTypesCount = skill.TaskTypeSkills?.Count ?? 0
             };
         }
     }

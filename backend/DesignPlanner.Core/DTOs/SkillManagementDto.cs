@@ -96,6 +96,11 @@ namespace DesignPlanner.Core.DTOs
         /// Number of employees with this skill
         /// </summary>
         public int EmployeeCount { get; set; }
+
+        /// <summary>
+        /// Number of task types that require this skill
+        /// </summary>
+        public int TaskTypesCount { get; set; }
     }
 
     /// <summary>

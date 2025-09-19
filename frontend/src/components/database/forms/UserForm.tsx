@@ -9,8 +9,7 @@ import {
   USER_ROLE_LABELS,
   ManagementLevel,
   MANAGEMENT_LEVEL_LABELS,
-  Team,
-  Skill
+  Team
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
 import './EntityForm.css';
@@ -31,16 +30,15 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
     role: '',
     managementLevel: undefined as ManagementLevel | undefined,
     teamId: 0,
-    skillIds: [] as number[]
+    teamIds: [] as number[] // Support multiple teams (primary stored in teamId)
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
-  // Load teams and skills when form opens
+  // Load teams when form opens
   useEffect(() => {
     if (isOpen) {
       loadFormData();
@@ -50,12 +48,8 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
   const loadFormData = async () => {
     setLoadingData(true);
     try {
-      const [teamsData, skillsData] = await Promise.all([
-        databaseService.getTeams(),
-        databaseService.getSkills()
-      ]);
+      const teamsData = await databaseService.getTeams();
       setTeams(teamsData);
-      setSkills(skillsData);
     } catch (error) {
       console.error('Failed to load form data:', error);
     } finally {
@@ -84,7 +78,7 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
           role: user.employee?.position || '',
           managementLevel: managementLevel,
           teamId: user.employee?.team?.id || 0,
-          skillIds: user.employee?.skills?.map(skill => skill.id) || []
+          teamIds: user.employee?.team?.id ? [user.employee.team.id] : [], // Start with primary team
         });
       } else {
         setFormData({
@@ -95,7 +89,7 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
           role: '',
           managementLevel: undefined,
           teamId: 0,
-          skillIds: []
+          teamIds: [],
         });
       }
       setErrors({});
@@ -107,6 +101,11 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
 
+      // If teams are being updated, update primary team
+      if (field === 'teamIds') {
+        const teamIds = value as number[];
+        newData.teamId = teamIds.length > 0 ? teamIds[0] : 0; // First selected team is primary
+      }
 
       return newData;
     });
@@ -143,8 +142,9 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
       newErrors.role = 'Role is required';
     }
 
-    if (!formData.teamId) {
-      newErrors.teamId = 'Team is required';
+    // Teams are optional for Admin users (Director level)
+    if (formData.teamIds.length === 0 && formData.managementLevel !== ManagementLevel.Director) {
+      newErrors.teamIds = 'At least one team is required';
     }
 
     if (formData.managementLevel === undefined) {
@@ -191,13 +191,24 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
     }
   };
 
-  const handleSkillToggle = (skillId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      skillIds: prev.skillIds.includes(skillId)
-        ? prev.skillIds.filter(id => id !== skillId)
-        : [...prev.skillIds, skillId]
-    }));
+
+  const handleTeamToggle = (teamId: number) => {
+    setFormData(prev => {
+      const isSelected = prev.teamIds.includes(teamId);
+      let newTeamIds;
+
+      if (isSelected) {
+        newTeamIds = prev.teamIds.filter(id => id !== teamId);
+      } else {
+        newTeamIds = [...prev.teamIds, teamId];
+      }
+
+      return {
+        ...prev,
+        teamIds: newTeamIds,
+        teamId: newTeamIds.length > 0 ? newTeamIds[0] : 0 // First selected team is primary
+      };
+    });
     setIsDirty(true);
   };
 
@@ -320,52 +331,38 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
                 {errors.managementLevel && <span className="form-error">{errors.managementLevel}</span>}
               </div>
 
-              {/* Team */}
-              <div className="form-group">
-                <label htmlFor="teamId" className="form-label required">Team</label>
-                <div className="form-select-wrapper">
-                  <select
-                    id="teamId"
-                    className={`form-select ${errors.teamId ? 'error' : ''}`}
-                    value={formData.teamId || ''}
-                    onChange={(e) => handleInputChange('teamId', e.target.value ? parseInt(e.target.value) : 0)}
-                    disabled={loading || loadingData}
-                  >
-                    <option value="">Select Team...</option>
-                    {teams.map(team => (
-                      <option key={team.id} value={team.id}>{team.name} ({team.code})</option>
-                    ))}
-                  </select>
-                  <span className="form-select-arrow">▼</span>
-                </div>
-                {errors.teamId && <span className="form-error">{errors.teamId}</span>}
-              </div>
-
-
-
-              {/* Skills */}
+              {/* Teams */}
               <div className="form-group form-group-full">
-                <label className="form-label">Skills (Optional)</label>
+                <label className="form-label required">Teams</label>
                 <div className="skills-container">
-                  {skills.length > 0 ? (
+                  {teams.length > 0 ? (
                     <div className="skills-grid">
-                      {skills.map(skill => (
-                        <label key={skill.id} className="skill-checkbox">
+                      {teams.map(team => (
+                        <label key={team.id} className="skill-checkbox">
                           <input
                             type="checkbox"
-                            checked={formData.skillIds.includes(skill.id)}
-                            onChange={() => handleSkillToggle(skill.id)}
+                            checked={formData.teamIds.includes(team.id)}
+                            onChange={() => handleTeamToggle(team.id)}
                             disabled={loading || loadingData}
                           />
-                          <span className="skill-label">{skill.name}</span>
+                          <span className="skill-label">
+                            {team.name}
+                            {formData.teamIds.length > 0 && formData.teamIds[0] === team.id && (
+                              <span className="primary-indicator"> (Primary)</span>
+                            )}
+                          </span>
                         </label>
                       ))}
                     </div>
                   ) : (
-                    <span className="no-skills">No skills available</span>
+                    <span className="no-skills">No teams available</span>
                   )}
+                  {errors.teamIds && <span className="form-error">{errors.teamIds}</span>}
                 </div>
               </div>
+
+
+
 
             </div>
 

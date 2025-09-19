@@ -42,7 +42,22 @@ namespace DesignPlanner.Data.Services
             _context.TaskTypes.Add(taskType);
             await _context.SaveChangesAsync();
 
-            return MapToTaskTypeResponseDto(taskType);
+            // Add skills to the task type
+            if (request.Skills?.Any() == true)
+            {
+                var taskTypeSkills = request.Skills.Select(skillId => new TaskTypeSkill
+                {
+                    TaskTypeId = taskType.Id,
+                    SkillId = skillId,
+                    IsRequired = true,
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                _context.TaskTypeSkills.AddRange(taskTypeSkills);
+                await _context.SaveChangesAsync();
+            }
+
+            return await GetTaskTypeByIdAsync(taskType.Id, createdByUserId);
         }
 
         /// <summary>
@@ -67,9 +82,30 @@ namespace DesignPlanner.Data.Services
             taskType.Name = request.Name;
             taskType.Description = request.Description;
 
+            // Update skills for the task type
+            // First, remove all existing skills
+            var existingSkills = await _context.TaskTypeSkills
+                .Where(tts => tts.TaskTypeId == taskTypeId)
+                .ToListAsync();
+            _context.TaskTypeSkills.RemoveRange(existingSkills);
+
+            // Then add the new skills
+            if (request.Skills?.Any() == true)
+            {
+                var taskTypeSkills = request.Skills.Select(skillId => new TaskTypeSkill
+                {
+                    TaskTypeId = taskTypeId,
+                    SkillId = skillId,
+                    IsRequired = true,
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                _context.TaskTypeSkills.AddRange(taskTypeSkills);
+            }
+
             await _context.SaveChangesAsync();
 
-            return MapToTaskTypeResponseDto(taskType);
+            return await GetTaskTypeByIdAsync(taskTypeId, updatedByUserId);
         }
 
         /// <summary>
@@ -105,7 +141,12 @@ namespace DesignPlanner.Data.Services
         /// <returns>The task type DTO if found</returns>
         public async Task<TaskTypeResponseDto?> GetTaskTypeByIdAsync(int taskTypeId, int requestingUserId)
         {
-            var taskType = await _context.TaskTypes.FirstOrDefaultAsync(tt => tt.Id == taskTypeId);
+            var taskType = await _context.TaskTypes
+                .Include(tt => tt.TaskTypeSkills)
+                    .ThenInclude(tts => tts.Skill)
+                .Include(tt => tt.Tasks)
+                .FirstOrDefaultAsync(tt => tt.Id == taskTypeId);
+
             return taskType != null ? MapToTaskTypeResponseDto(taskType) : null;
         }
 
@@ -143,11 +184,15 @@ namespace DesignPlanner.Data.Services
             var totalCount = await queryable.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalCount / query.PageSize);
 
-            var taskTypes = await queryable
+            var taskTypeEntities = await queryable
+                .Include(tt => tt.TaskTypeSkills)
+                    .ThenInclude(tts => tts.Skill)
+                .Include(tt => tt.Tasks)
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
-                .Select(tt => MapToTaskTypeResponseDto(tt))
                 .ToListAsync();
+
+            var taskTypes = taskTypeEntities.Select(tt => MapToTaskTypeResponseDto(tt)).ToList();
 
             return new TaskTypeListResponseDto
             {
@@ -167,12 +212,14 @@ namespace DesignPlanner.Data.Services
         /// <returns>List of task type DTOs</returns>
         public async Task<List<TaskTypeResponseDto>> GetActiveTaskTypesAsync(int requestingUserId)
         {
-            var taskTypes = await _context.TaskTypes
+            var taskTypeEntities = await _context.TaskTypes
+                .Include(tt => tt.TaskTypeSkills)
+                    .ThenInclude(tts => tts.Skill)
+                .Include(tt => tt.Tasks)
                 .OrderBy(tt => tt.Name)
-                .Select(tt => MapToTaskTypeResponseDto(tt))
                 .ToListAsync();
 
-            return taskTypes;
+            return taskTypeEntities.Select(tt => MapToTaskTypeResponseDto(tt)).ToList();
         }
 
         /// <summary>
@@ -200,14 +247,23 @@ namespace DesignPlanner.Data.Services
         /// <returns>The task type DTO</returns>
         private static TaskTypeResponseDto MapToTaskTypeResponseDto(TaskType taskType)
         {
+            var requiredSkills = taskType.TaskTypeSkills?.Select(tts => new TaskTypeSkillDto
+            {
+                Id = tts.Skill.Id,
+                Name = tts.Skill.Name,
+                Category = tts.Skill.Category,
+                IsActive = tts.Skill.IsActive
+            }).ToList() ?? new List<TaskTypeSkillDto>();
+
             return new TaskTypeResponseDto
             {
                 Id = taskType.Id,
                 Name = taskType.Name,
                 Description = taskType.Description,
+                Skills = taskType.TaskTypeSkills?.Select(tts => tts.SkillId).ToList() ?? new List<int>(),
                 CreatedAt = taskType.CreatedAt,
-                RequiredSkills = new List<TaskTypeSkillDto>(), // This will need to be populated separately if needed
-                TaskCount = 0 // This will need to be calculated separately if needed
+                RequiredSkills = requiredSkills,
+                TaskCount = taskType.Tasks?.Count ?? 0
             };
         }
     }

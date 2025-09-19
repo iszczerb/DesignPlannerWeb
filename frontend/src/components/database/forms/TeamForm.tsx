@@ -57,6 +57,7 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
       newErrors.name = 'Team name is required';
     }
 
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -67,8 +68,8 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
 
     try {
       const submitData = isCreating
-        ? formData as CreateTeamDto
-        : { ...formData, id: team!.id! } as UpdateTeamDto;
+        ? { ...formData, code: 'AUTO' } as CreateTeamDto
+        : { ...formData, id: team!.id!, code: team!.code, isActive: team!.isActive } as UpdateTeamDto;
       await onSave(submitData);
     } catch (error) {
       if (error instanceof Error) {
@@ -119,6 +120,7 @@ const TeamForm: React.FC<EntityFormProps<Team, CreateTeamDto, UpdateTeamDto>> = 
                 />
                 {errors.name && <span className="form-error">{errors.name}</span>}
               </div>
+
 
 
               <div className="form-group form-group-full">

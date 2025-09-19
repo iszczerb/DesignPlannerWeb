@@ -19,5 +19,6 @@ namespace DesignPlanner.Core.Entities
 
         // Navigation properties
         public virtual ICollection<ProjectTask> Tasks { get; set; } = new List<ProjectTask>();
+        public virtual ICollection<TaskTypeSkill> TaskTypeSkills { get; set; } = new List<TaskTypeSkill>();
     }
 }

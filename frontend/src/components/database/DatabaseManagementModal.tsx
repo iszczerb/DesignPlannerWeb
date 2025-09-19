@@ -149,6 +149,13 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       handleClose();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
+      const nextIndex = e.shiftKey
+        ? (currentIndex - 1 + tabs.length) % tabs.length
+        : (currentIndex + 1) % tabs.length;
+      setActiveTab(tabs[nextIndex].id);
     }
   };
 

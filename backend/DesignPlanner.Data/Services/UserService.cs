@@ -34,11 +34,19 @@ namespace DesignPlanner.Data.Services
                 throw new ArgumentException($"Username '{request.Username}' already exists");
             }
 
-            // Verify team exists
-            var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == request.TeamId);
-            if (team == null)
+            // Verify team exists (optional for Admin users)
+            Team? team = null;
+            if (request.TeamId > 0)
             {
-                throw new ArgumentException($"Team with ID {request.TeamId} not found");
+                team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == request.TeamId);
+                if (team == null)
+                {
+                    throw new ArgumentException($"Team with ID {request.TeamId} not found");
+                }
+            }
+            else if (request.Role != Core.Enums.UserRole.Admin)
+            {
+                throw new ArgumentException("Team is required for non-admin users");
             }
 
             // Hash password
@@ -83,7 +91,7 @@ namespace DesignPlanner.Data.Services
                 var employee = new Employee
                 {
                     UserId = user.Id,
-                    TeamId = request.TeamId,
+                    TeamId = request.TeamId > 0 ? request.TeamId : null,
                     EmployeeId = employeeId,
                     FirstName = request.FirstName,
                     LastName = request.LastName,
@@ -143,11 +151,19 @@ namespace DesignPlanner.Data.Services
                 throw new ArgumentException($"Username '{request.Username}' already exists");
             }
 
-            // Verify team exists
-            var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == request.TeamId);
-            if (team == null)
+            // Verify team exists (optional for Admin users)
+            Team? team = null;
+            if (request.TeamId > 0)
             {
-                throw new ArgumentException($"Team with ID {request.TeamId} not found");
+                team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == request.TeamId);
+                if (team == null)
+                {
+                    throw new ArgumentException($"Team with ID {request.TeamId} not found");
+                }
+            }
+            else if (request.Role != Core.Enums.UserRole.Admin)
+            {
+                throw new ArgumentException("Team is required for non-admin users");
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -164,7 +180,7 @@ namespace DesignPlanner.Data.Services
                 // Update employee
                 if (user.Employee != null)
                 {
-                    user.Employee.TeamId = request.TeamId;
+                    user.Employee.TeamId = request.TeamId > 0 ? request.TeamId : (int?)null;
                     user.Employee.FirstName = request.FirstName;
                     user.Employee.LastName = request.LastName;
                     user.Employee.Position = request.Position;

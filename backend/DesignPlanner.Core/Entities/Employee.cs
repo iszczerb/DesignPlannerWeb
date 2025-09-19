@@ -11,8 +11,7 @@ namespace DesignPlanner.Core.Entities
         [Required]
         public int UserId { get; set; }
 
-        [Required]
-        public int TeamId { get; set; }
+        public int? TeamId { get; set; }
 
         [Required]
         [MaxLength(20)]

@@ -3,6 +3,7 @@ using System;
 using DesignPlanner.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DesignPlanner.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250919121803_AddTaskTypeSkillTable")]
+    partial class AddTaskTypeSkillTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -967,7 +970,7 @@ namespace DesignPlanner.Data.Migrations
             modelBuilder.Entity("DesignPlanner.Core.Entities.TaskTypeSkill", b =>
                 {
                     b.HasOne("DesignPlanner.Core.Entities.Skill", "Skill")
-                        .WithMany("TaskTypeSkills")
+                        .WithMany()
                         .HasForeignKey("SkillId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1015,8 +1018,6 @@ namespace DesignPlanner.Data.Migrations
             modelBuilder.Entity("DesignPlanner.Core.Entities.Skill", b =>
                 {
                     b.Navigation("EmployeeSkills");
-
-                    b.Navigation("TaskTypeSkills");
                 });
 
             modelBuilder.Entity("DesignPlanner.Core.Entities.TaskType", b =>

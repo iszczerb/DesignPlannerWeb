@@ -3,6 +3,7 @@ using System;
 using DesignPlanner.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DesignPlanner.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250919112516_MakeTeamIdNullableForAdmins")]
+    partial class MakeTeamIdNullableForAdmins
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -717,34 +720,6 @@ namespace DesignPlanner.Data.Migrations
                     b.ToTable("TaskTypes");
                 });
 
-            modelBuilder.Entity("DesignPlanner.Core.Entities.TaskTypeSkill", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsRequired")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SkillId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TaskTypeId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SkillId");
-
-                    b.HasIndex("TaskTypeId", "SkillId")
-                        .IsUnique();
-
-                    b.ToTable("TaskTypeSkills");
-                });
-
             modelBuilder.Entity("DesignPlanner.Core.Entities.Team", b =>
                 {
                     b.Property<int>("Id")
@@ -964,25 +939,6 @@ namespace DesignPlanner.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DesignPlanner.Core.Entities.TaskTypeSkill", b =>
-                {
-                    b.HasOne("DesignPlanner.Core.Entities.Skill", "Skill")
-                        .WithMany("TaskTypeSkills")
-                        .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DesignPlanner.Core.Entities.TaskType", "TaskType")
-                        .WithMany("TaskTypeSkills")
-                        .HasForeignKey("TaskTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Skill");
-
-                    b.Navigation("TaskType");
-                });
-
             modelBuilder.Entity("DesignPlanner.Core.Entities.Category", b =>
                 {
                     b.Navigation("Projects");
@@ -1015,14 +971,10 @@ namespace DesignPlanner.Data.Migrations
             modelBuilder.Entity("DesignPlanner.Core.Entities.Skill", b =>
                 {
                     b.Navigation("EmployeeSkills");
-
-                    b.Navigation("TaskTypeSkills");
                 });
 
             modelBuilder.Entity("DesignPlanner.Core.Entities.TaskType", b =>
                 {
-                    b.Navigation("TaskTypeSkills");
-
                     b.Navigation("Tasks");
                 });
 

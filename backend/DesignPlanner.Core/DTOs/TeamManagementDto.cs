@@ -103,6 +103,16 @@ namespace DesignPlanner.Core.DTOs
         /// Number of active members in the team
         /// </summary>
         public int ActiveMemberCount { get; set; }
+
+        /// <summary>
+        /// Team manager ID (user with Manager role assigned to this team)
+        /// </summary>
+        public int? ManagerId { get; set; }
+
+        /// <summary>
+        /// Team manager name (full name of the manager)
+        /// </summary>
+        public string? ManagerName { get; set; }
     }
 
     /// <summary>

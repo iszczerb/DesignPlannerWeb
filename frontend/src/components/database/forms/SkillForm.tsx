@@ -20,9 +20,8 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    category: SkillCategory.Technical,
-    description: '',
-    isActive: true
+    category: '',
+    description: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -33,16 +32,14 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
       if (skill && !isCreating) {
         setFormData({
           name: skill.name || '',
-          category: skill.category || SkillCategory.Technical,
-          description: skill.description || '',
-          isActive: skill.isActive ?? true
+          category: skill.category || '',
+          description: skill.description || ''
         });
       } else {
         setFormData({
           name: '',
-          category: SkillCategory.Technical,
-          description: '',
-          isActive: true
+          category: '',
+          description: ''
         });
       }
       setErrors({});
@@ -76,7 +73,7 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
     try {
       const submitData = {
         ...formData,
-        category: parseInt(formData.category.toString()) as SkillCategory
+        category: formData.category || SkillCategory.Technical
       };
 
       const finalData = isCreating
@@ -135,18 +132,22 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
               </div>
 
               <div className="form-group">
-                <label htmlFor="category" className="form-label required">Category</label>
-                <select
-                  id="category"
-                  className="form-select"
-                  value={formData.category}
-                  onChange={(e) => handleInputChange('category', parseInt(e.target.value))}
-                  disabled={loading}
-                >
-                  {Object.entries(SKILL_CATEGORY_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
+                <label htmlFor="category" className="form-label">Skill Type</label>
+                <div className="form-select-wrapper">
+                  <select
+                    id="category"
+                    className="form-select"
+                    value={formData.category}
+                    onChange={(e) => handleInputChange('category', e.target.value as SkillCategory)}
+                    disabled={loading}
+                  >
+                    <option value="">Select skill type (optional)</option>
+                    {Object.entries(SKILL_CATEGORY_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                  <span className="form-select-arrow">▼</span>
+                </div>
               </div>
 
               <div className="form-group form-group-full">
@@ -162,17 +163,6 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
-                    disabled={loading}
-                  />
-                  <span className="form-checkbox-label">Active Skill</span>
-                </label>
-              </div>
             </div>
 
             {errors.submit && (

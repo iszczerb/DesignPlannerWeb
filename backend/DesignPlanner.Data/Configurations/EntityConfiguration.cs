@@ -168,6 +168,25 @@ namespace DesignPlanner.Data.Configurations
         }
     }
 
+    public class TaskTypeSkillConfiguration : IEntityTypeConfiguration<TaskTypeSkill>
+    {
+        public void Configure(EntityTypeBuilder<TaskTypeSkill> builder)
+        {
+            builder.HasOne(tts => tts.TaskType)
+                .WithMany(tt => tt.TaskTypeSkills)
+                .HasForeignKey(tts => tts.TaskTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(tts => tts.Skill)
+                .WithMany(s => s.TaskTypeSkills)
+                .HasForeignKey(tts => tts.SkillId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique constraint to prevent duplicate skills for the same task type
+            builder.HasIndex(tts => new { tts.TaskTypeId, tts.SkillId }).IsUnique();
+        }
+    }
+
     public class CategoryConfiguration : IEntityTypeConfiguration<Category>
     {
         public void Configure(EntityTypeBuilder<Category> builder)

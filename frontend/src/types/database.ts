@@ -427,6 +427,10 @@ export interface Team {
   memberCount: number;
   /** Number of active members in the team */
   activeMemberCount: number;
+  /** Team manager ID (user with Manager role assigned to this team) */
+  managerId?: number;
+  /** Team manager name (full name of the manager) */
+  managerName?: string;
   /** List of team members (when included) */
   members?: TeamMember[];
 }
@@ -510,13 +514,15 @@ export interface Skill {
   /** Skill description */
   description?: string;
   /** Skill category */
-  category?: string;
+  category?: SkillCategory;
   /** Whether the skill is active */
   isActive: boolean;
   /** When the skill was created */
   createdAt: Date;
   /** Number of employees with this skill */
-  employeeCount: number;
+  employeesCount: number;
+  /** Number of task types that require this skill */
+  taskTypesCount: number;
 }
 
 /**
@@ -651,7 +657,9 @@ export interface TaskType {
   isActive: boolean;
   /** When the task type was created */
   createdAt: Date;
-  /** Required skills for this task type */
+  /** Required skills for this task type (skill IDs) */
+  skills: number[];
+  /** Required skills details */
   requiredSkills: RequiredSkill[];
   /** Number of tasks of this type */
   taskCount: number;
@@ -665,10 +673,8 @@ export interface CreateTaskType {
   name: string;
   /** Task type description */
   description?: string;
-  /** Task type color (hex code) */
-  color: string;
-  /** List of required skill IDs */
-  requiredSkillIds?: number[];
+  /** List of skill IDs for this task type */
+  skills: number[];
 }
 
 /**
@@ -681,12 +687,8 @@ export interface UpdateTaskType {
   name: string;
   /** Task type description */
   description?: string;
-  /** Task type color (hex code) */
-  color: string;
-  /** Whether the task type is active */
-  isActive: boolean;
-  /** List of required skill IDs */
-  requiredSkillIds?: number[];
+  /** List of skill IDs for this task type */
+  skills: number[];
 }
 
 /**

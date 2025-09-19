@@ -195,7 +195,7 @@ const UsersTab: React.FC<UsersTabProps> = ({ onEntityCountChange }) => {
     }
     return (
       <span className="team-badge">
-        👥 {teamName} {teamCode && `(${teamCode})`}
+        👥 {teamName}
       </span>
     );
   };

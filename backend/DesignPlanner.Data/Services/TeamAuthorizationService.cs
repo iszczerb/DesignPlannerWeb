@@ -71,9 +71,9 @@ namespace DesignPlanner.Data.Services
                 var targetEmployee = await _context.Employees
                     .FirstOrDefaultAsync(e => e.Id == employeeId);
                 
-                if (targetEmployee != null)
+                if (targetEmployee != null && targetEmployee.TeamId.HasValue)
                 {
-                    return await CanManageTeamAsync(userId, targetEmployee.TeamId);
+                    return await CanManageTeamAsync(userId, targetEmployee.TeamId.Value);
                 }
             }
 
@@ -166,7 +166,7 @@ namespace DesignPlanner.Data.Services
             return await _context.Employees
                 .Include(e => e.User)
                 .Include(e => e.Team)
-                .Where(e => teamIds.Contains(e.TeamId))
+                .Where(e => e.TeamId.HasValue && teamIds.Contains(e.TeamId.Value))
                 .ToListAsync();
         }
 
@@ -178,7 +178,7 @@ namespace DesignPlanner.Data.Services
             return await _context.Employees
                 .Include(e => e.User)
                 .Include(e => e.Team)
-                .Where(e => teamIds.Contains(e.TeamId))
+                .Where(e => e.TeamId.HasValue && teamIds.Contains(e.TeamId.Value))
                 .ToListAsync();
         }
 

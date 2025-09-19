@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../common/DataTable';
 import TeamForm from '../forms/TeamForm';
 import ConfirmDialog from '../../common/ConfirmDialog';
+import ViewMembersModal from '../modals/ViewMembersModal';
 import {
   Team,
   CreateTeamDto,
@@ -23,6 +24,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingTeam, setDeletingTeam] = useState<Team | undefined>();
   const [formLoading, setFormLoading] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 
   useEffect(() => {
     loadTeams();
@@ -94,12 +97,6 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
   // Bulk actions removed - not needed for Teams tab
 
 
-  const getMembersCount = (count: number) => (
-    <span className="count-badge">
-      {count} {count === 1 ? 'member' : 'members'}
-    </span>
-  );
-
   const getManagerBadge = (managerName?: string) => {
     if (!managerName) {
       return <span className="text-muted">No manager assigned</span>;
@@ -110,6 +107,13 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
       </span>
     );
   };
+
+  const getMembersCount = (count: number) => (
+    <span className="count-badge">
+      {count} {count === 1 ? 'member' : 'members'}
+    </span>
+  );
+
 
   const columns: TableColumn<Team>[] = [
     {
@@ -170,30 +174,10 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
             label: 'View Members',
             icon: '👥',
             onClick: (team) => {
-              console.log('View members for team:', team);
-              // TODO: Navigate to team members view
+              setSelectedTeam(team);
+              setShowMembersModal(true);
             },
             variant: 'secondary'
-          },
-          {
-            label: 'Assign Manager',
-            icon: '👑',
-            onClick: (team) => {
-              console.log('Assign manager to team:', team);
-              // TODO: Open manager assignment modal
-            },
-            variant: 'primary',
-            show: (team) => !team.managerId
-          },
-          {
-            label: 'View Schedule',
-            icon: '📅',
-            onClick: (team) => {
-              console.log('View schedule for team:', team);
-              // TODO: Navigate to team schedule
-            },
-            variant: 'secondary',
-            show: (team) => (team.memberCount || 0) > 0
           }
         ]}
       />
@@ -206,7 +190,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
           setEditingTeam(undefined);
         }}
         onSave={handleSave}
-        team={editingTeam}
+        entity={editingTeam}
         isCreating={!editingTeam}
         loading={formLoading}
       />
@@ -223,6 +207,20 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ onEntityCountChange }) => {
         }}
         confirmText="Delete"
         confirmVariant="danger"
+      />
+
+      {/* View Members Modal */}
+      <ViewMembersModal
+        isOpen={showMembersModal}
+        onClose={() => {
+          setShowMembersModal(false);
+          setSelectedTeam(null);
+        }}
+        team={selectedTeam}
+        onRemoveMember={() => {
+          // Reload teams to update member counts
+          loadTeams();
+        }}
       />
     </>
   );

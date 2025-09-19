@@ -23,5 +23,6 @@ namespace DesignPlanner.Core.Entities
 
         // Navigation properties
         public virtual ICollection<EmployeeSkill> EmployeeSkills { get; set; } = new List<EmployeeSkill>();
+        public virtual ICollection<TaskTypeSkill> TaskTypeSkills { get; set; } = new List<TaskTypeSkill>();
     }
 }
