@@ -147,11 +147,12 @@ namespace DesignPlanner.Data.Services
             if (updateDto.EmployeeId.HasValue) assignment.EmployeeId = updateDto.EmployeeId.Value;
             if (updateDto.AssignedDate.HasValue)
             {
-                var dayOfWeek = updateDto.AssignedDate.Value.DayOfWeek;
-                if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
-                {
-                    throw new InvalidOperationException("Cannot assign tasks to weekend dates (Saturday or Sunday)");
-                }
+                // ⚠️ TEMPORARY CHANGE: Weekend validation disabled for Sept 20-21 cleanup
+                // ⚠️ ORIGINAL CODE: var dayOfWeek = updateDto.AssignedDate.Value.DayOfWeek;
+                // if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
+                // {
+                //     throw new InvalidOperationException("Cannot assign tasks to weekend dates (Saturday or Sunday)");
+                // }
                 assignment.AssignedDate = updateDto.AssignedDate.Value.Date;
             }
             if (updateDto.Slot.HasValue) assignment.Slot = updateDto.Slot.Value;
@@ -515,13 +516,13 @@ namespace DesignPlanner.Data.Services
                 if (IsBusinessDay(currentDate))
                 {
                     matrix[currentDate] = new Dictionary<Slot, bool>();
-                    
+
                     foreach (Slot slot in Enum.GetValues<Slot>())
                     {
                         var assignmentCount = assignments
                             .Where(a => a.AssignedDate == currentDate && a.Slot == slot)
                             .Sum(a => a.Count);
-                        
+
                         matrix[currentDate][slot] = assignmentCount < MAX_TASKS_PER_SLOT;
                     }
                 }
@@ -605,12 +606,13 @@ namespace DesignPlanner.Data.Services
             var employee = await _context.Employees.FindAsync(assignment.EmployeeId);
             if (employee == null) return false;
 
-            // Check if assignment date is a weekend (Saturday or Sunday)
-            var dayOfWeek = assignment.AssignedDate.DayOfWeek;
-            if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
-            {
-                return false; // Reject weekend assignments
-            }
+            // ⚠️ TEMPORARY CHANGE: Weekend validation disabled for Sept 20-21 cleanup
+            // ⚠️ ORIGINAL CODE: Check if assignment date is a weekend (Saturday or Sunday)
+            // var dayOfWeek = assignment.AssignedDate.DayOfWeek;
+            // if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
+            // {
+            //     return false; // Reject weekend assignments
+            // }
 
             // Check if task exists and is active
             var task = await _context.ProjectTasks.FindAsync(assignment.TaskId);
@@ -743,12 +745,13 @@ namespace DesignPlanner.Data.Services
         // Private helper methods
         private DateTime SkipWeekendIfNecessary(DateTime date)
         {
-            // If the date falls on a weekend, move to the next Monday
-            if (date.DayOfWeek == DayOfWeek.Saturday)
-                return date.AddDays(2);
-            if (date.DayOfWeek == DayOfWeek.Sunday)
-                return date.AddDays(1);
-            return date;
+            // ⚠️ TEMPORARY CHANGE: Weekend skipping disabled for Sept 20-21 cleanup
+            // ⚠️ ORIGINAL CODE: If the date falls on a weekend, move to the next Monday
+            // if (date.DayOfWeek == DayOfWeek.Saturday)
+            //     return date.AddDays(2);
+            // if (date.DayOfWeek == DayOfWeek.Sunday)
+            //     return date.AddDays(1);
+            return date; // TEMPORARY: Return date as-is without weekend skipping
         }
 
         private DateTime GetWeekStart(DateTime date)
@@ -898,7 +901,7 @@ namespace DesignPlanner.Data.Services
 
                         dayAssignments.Add(dayAssignment);
                     }
-                    
+
                     currentDate = currentDate.AddDays(1);
                 }
 

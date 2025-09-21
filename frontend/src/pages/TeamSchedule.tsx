@@ -15,6 +15,7 @@ import ConfirmationDialog from '../components/calendar/ConfirmationDialog';
 import NotificationManager from '../components/common/NotificationManager';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import DatabaseManagementModal from '../components/database/DatabaseManagementModal';
+import AnalyticsDashboardModal from '../components/analytics/AnalyticsDashboardModal';
 import { TeamViewMode } from '../components/calendar/TeamToggle';
 import {
   CalendarViewType,
@@ -517,6 +518,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const [quickEditNotesOpen, setQuickEditNotesOpen] = useState(false);
   const [currentQuickEditTask, setCurrentQuickEditTask] = useState<AssignmentTaskDto | null>(null);
   const [showDatabaseModal, setShowDatabaseModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [databaseRefreshTrigger, setDatabaseRefreshTrigger] = useState(0);
 
   // Day Details modal state
@@ -633,6 +635,8 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
     if (page === 'database') {
       setShowDatabaseModal(true);
+    } else if (page === 'dashboard') {
+      setShowAnalyticsModal(true);
     } else {
       // TODO: Implement other navigation logic
     }
@@ -2570,19 +2574,19 @@ ${dateInfo}`;
     // Set initial window start to proper business day
     const getBusinessDayWindowStart = (date: Date): Date => {
       const today = new Date(date);
-      
+
       // If today is weekend, move to next Monday
       if (today.getDay() === 0) { // Sunday
         today.setDate(today.getDate() + 1); // Move to Monday
       } else if (today.getDay() === 6) { // Saturday
         today.setDate(today.getDate() + 2); // Move to Monday
       }
-      
+
       // For business days, find the Monday of current week
       const dayOfWeek = today.getDay(); // 1=Monday, 2=Tuesday, ..., 5=Friday
       const monday = new Date(today);
       monday.setDate(today.getDate() - (dayOfWeek - 1)); // Go back to Monday
-      
+
       return monday;
     };
     
@@ -3241,6 +3245,12 @@ ${dateInfo}`;
         onClose={() => setShowDatabaseModal(false)}
         onDataChange={handleDatabaseDataChange}
         calendarRefreshTrigger={databaseRefreshTrigger}
+      />
+
+      {/* Analytics Dashboard Modal */}
+      <AnalyticsDashboardModal
+        open={showAnalyticsModal}
+        onClose={() => setShowAnalyticsModal(false)}
       />
 
       {/* Day Details Modal */}
