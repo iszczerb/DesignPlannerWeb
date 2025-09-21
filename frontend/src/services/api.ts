@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { LoginRequest, LoginResponse, RegisterRequest, ChangePasswordRequest, User } from '../types/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5177/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5199/api';
 
 class ApiService {
   private api: AxiosInstance;
@@ -182,7 +182,13 @@ class ApiService {
   }
 
   async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    console.log(`🚨🚨🚨 API SERVICE: Making PUT request to: ${API_BASE_URL}${url}`);
+    console.log(`🚨🚨🚨 API SERVICE: Request data:`, data);
+
     const response: AxiosResponse<T> = await this.api.put(url, data, config);
+
+    console.log(`🚨🚨🚨 API SERVICE: Response status:`, response.status);
+    console.log(`🚨🚨🚨 API SERVICE: Response data:`, response.data);
     return response.data;
   }
 

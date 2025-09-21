@@ -145,17 +145,21 @@ namespace DesignPlanner.Api.Controllers
 
         // POST: api/schedule/assignments
         [HttpPost("assignments")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize] // Allow any authenticated user to create assignments
         public async Task<ActionResult<AssignmentTaskDto>> CreateAssignment([FromBody] CreateAssignmentDto createDto)
         {
+            _logger.LogInformation($"📥 CreateAssignment called with: TaskId={createDto?.TaskId}, EmployeeId={createDto?.EmployeeId}, ProjectId={createDto?.ProjectId}, TaskTypeId={createDto?.TaskTypeId}, AssignedDate={createDto?.AssignedDate}");
+
             try
             {
                 if (!ModelState.IsValid)
                 {
+                    _logger.LogWarning("❌ ModelState validation failed: {Errors}", string.Join(", ", ModelState.SelectMany(x => x.Value.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))));
                     return BadRequest(ModelState);
                 }
 
                 var assignment = await _scheduleService.CreateAssignmentAsync(createDto);
+                _logger.LogInformation($"✅ Assignment created and returning: TaskTitle={assignment.TaskTitle}, ProjectName={assignment.ProjectName}, ClientCode={assignment.ClientCode}, ClientColor={assignment.ClientColor}");
                 return CreatedAtAction(nameof(GetAssignmentById), new { assignmentId = assignment.AssignmentId }, assignment);
             }
             catch (InvalidOperationException ex)
@@ -171,17 +175,22 @@ namespace DesignPlanner.Api.Controllers
 
         // PUT: api/schedule/assignments
         [HttpPut("assignments")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize] // Allow any authenticated user to update assignments
         public async Task<ActionResult<AssignmentTaskDto>> UpdateAssignment([FromBody] UpdateAssignmentDto updateDto)
         {
+            _logger.LogWarning($"🚨🚨🚨 CONTROLLER: UpdateAssignment called with AssignmentId={updateDto.AssignmentId}, Hours={updateDto.Hours}");
+            Console.WriteLine($"🚨🚨🚨 CONTROLLER: UpdateAssignment called with AssignmentId={updateDto.AssignmentId}, Hours={updateDto.Hours}");
             try
             {
                 if (!ModelState.IsValid)
                 {
+                    Console.WriteLine($"🚨🚨🚨 CONTROLLER: ModelState is INVALID");
                     return BadRequest(ModelState);
                 }
 
+                Console.WriteLine($"🚨🚨🚨 CONTROLLER: ModelState is valid, calling service...");
                 var assignment = await _scheduleService.UpdateAssignmentAsync(updateDto);
+                Console.WriteLine($"🚨🚨🚨 CONTROLLER: Service returned assignment with Hours={assignment.Hours}");
                 return Ok(assignment);
             }
             catch (ArgumentException ex)

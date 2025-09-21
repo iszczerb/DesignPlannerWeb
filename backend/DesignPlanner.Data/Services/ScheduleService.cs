@@ -42,7 +42,7 @@ namespace DesignPlanner.Data.Services
                 EndDate = endDate,
                 ViewType = request.ViewType,
                 Days = GenerateCalendarDays(startDate, endDate),
-                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate),
+                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate, "Mixed"),
                 TaskTypes = taskTypes
             };
 
@@ -65,18 +65,60 @@ namespace DesignPlanner.Data.Services
         // Assignment operations
         public async Task<AssignmentTaskDto> CreateAssignmentAsync(CreateAssignmentDto createDto)
         {
-            if (!await ValidateAssignmentAsync(createDto))
+            int taskId = createDto.TaskId;
+
+            // If TaskId is 0 or null, create a new task from ProjectId and TaskTypeId
+            if (taskId <= 0 && createDto.ProjectId.HasValue && createDto.TaskTypeId.HasValue)
+            {
+                var newTask = new ProjectTask
+                {
+                    ProjectId = createDto.ProjectId.Value,
+                    TaskTypeId = createDto.TaskTypeId.Value,
+                    Title = createDto.Title ?? "New Task",
+                    Description = createDto.Description,
+                    Priority = createDto.Priority ?? TaskPriority.Medium,
+                    Status = createDto.Status ?? DesignPlanner.Core.Enums.TaskStatus.NotStarted,
+                    EstimatedHours = 4, // Default for new tasks, will be recalculated
+                    IsActive = true
+                };
+
+                _context.ProjectTasks.Add(newTask);
+                await _context.SaveChangesAsync();
+                taskId = newTask.Id;
+            }
+
+            // Create a modified DTO for validation with the actual task ID
+            var validationDto = new CreateAssignmentDto
+            {
+                TaskId = taskId,
+                EmployeeId = createDto.EmployeeId,
+                AssignedDate = createDto.AssignedDate,
+                Slot = createDto.Slot,
+                Notes = createDto.Notes
+            };
+
+            if (!await ValidateAssignmentAsync(validationDto))
             {
                 throw new InvalidOperationException("Assignment validation failed");
             }
 
+            // Calculate next SlotOrder for this employee/date/slot combination
+            var maxSlotOrder = await _context.Assignments
+                .Where(a => a.IsActive &&
+                           a.EmployeeId == createDto.EmployeeId &&
+                           a.AssignedDate == createDto.AssignedDate.Date &&
+                           a.Slot == createDto.Slot)
+                .MaxAsync(a => (int?)a.SlotOrder) ?? -1;
+
             var assignment = new Assignment
             {
-                TaskId = createDto.TaskId,
+                TaskId = taskId,
                 EmployeeId = createDto.EmployeeId,
                 AssignedDate = createDto.AssignedDate.Date,
                 Slot = createDto.Slot,
                 Notes = createDto.Notes,
+                Hours = createDto.Hours, // Support custom hours during creation
+                SlotOrder = maxSlotOrder + 1, // New tasks go to the right
                 IsActive = true
             };
 
@@ -88,7 +130,7 @@ namespace DesignPlanner.Data.Services
 
         public async Task<AssignmentTaskDto> UpdateAssignmentAsync(UpdateAssignmentDto updateDto)
         {
-            Console.WriteLine($"DEBUG: UpdateAssignment called with data: AssignmentId={updateDto.AssignmentId}, TaskId={updateDto.TaskId}, Priority={updateDto.Priority}, TaskStatus={updateDto.TaskStatus}, TaskTypeId={updateDto.TaskTypeId}, Notes={updateDto.Notes}");
+            Console.WriteLine($"🚨🚨🚨 RESIZE DEBUG: UpdateAssignment called with data: AssignmentId={updateDto.AssignmentId}, TaskId={updateDto.TaskId}, Hours={updateDto.Hours}, Priority={updateDto.Priority}, TaskStatus={updateDto.TaskStatus}, TaskTypeId={updateDto.TaskTypeId}, Notes={updateDto.Notes}");
             
             var assignment = await _context.Assignments
                 .Include(a => a.Task)
@@ -103,12 +145,32 @@ namespace DesignPlanner.Data.Services
                 assignment.TaskId = updateDto.TaskId.Value;
             }
             if (updateDto.EmployeeId.HasValue) assignment.EmployeeId = updateDto.EmployeeId.Value;
-            if (updateDto.AssignedDate.HasValue) assignment.AssignedDate = updateDto.AssignedDate.Value.Date;
+            if (updateDto.AssignedDate.HasValue)
+            {
+                var dayOfWeek = updateDto.AssignedDate.Value.DayOfWeek;
+                if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
+                {
+                    throw new InvalidOperationException("Cannot assign tasks to weekend dates (Saturday or Sunday)");
+                }
+                assignment.AssignedDate = updateDto.AssignedDate.Value.Date;
+            }
             if (updateDto.Slot.HasValue) assignment.Slot = updateDto.Slot.Value;
             if (updateDto.Notes != null) assignment.Notes = updateDto.Notes;
-            
-            // Note: Hours are now automatically calculated based on slot task count
-            // Custom hours feature has been removed
+
+            // Support custom hours for resize functionality
+            if (updateDto.Hours.HasValue)
+            {
+                Console.WriteLine($"🚨🚨🚨 RESIZE: Updating Hours from {assignment.Hours} to {updateDto.Hours.Value}");
+                assignment.Hours = updateDto.Hours.Value;
+                Console.WriteLine($"🚨🚨🚨 RESIZE: Hours updated! assignment.Hours is now: {assignment.Hours}");
+            }
+
+            // Support column positioning in 4-column grid
+            if (updateDto.ColumnStart.HasValue)
+            {
+                Console.WriteLine($"📍 COLUMN: Updating ColumnStart from {assignment.ColumnStart} to {updateDto.ColumnStart.Value}");
+                assignment.ColumnStart = updateDto.ColumnStart.Value;
+            }
             
             if (updateDto.Priority.HasValue)
             {
@@ -318,7 +380,9 @@ namespace DesignPlanner.Data.Services
                 query = query.Where(a => a.EmployeeId == dateRange.EmployeeId.Value);
             }
 
-            var assignments = await query.ToListAsync();
+            // CRITICAL: Order by SlotOrder to preserve placement order (leftmost first)
+            // This ensures tasks maintain their chronological placement order in slots
+            var assignments = await query.OrderBy(a => a.SlotOrder).ThenBy(a => a.CreatedAt).ToListAsync();
             
             // Group assignments by date and slot to calculate automatic hours
             var result = new List<AssignmentTaskDto>();
@@ -541,6 +605,13 @@ namespace DesignPlanner.Data.Services
             var employee = await _context.Employees.FindAsync(assignment.EmployeeId);
             if (employee == null) return false;
 
+            // Check if assignment date is a weekend (Saturday or Sunday)
+            var dayOfWeek = assignment.AssignedDate.DayOfWeek;
+            if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
+            {
+                return false; // Reject weekend assignments
+            }
+
             // Check if task exists and is active
             var task = await _context.ProjectTasks.FindAsync(assignment.TaskId);
             if (task == null || !task.IsActive) return false;
@@ -737,6 +808,12 @@ namespace DesignPlanner.Data.Services
             {
                 query = query.Where(e => e.Id == employeeId.Value);
             }
+            else
+            {
+                // When showing all employees, show ONLY TeamMember role users
+                // This maintains the current behavior for the general calendar view
+                query = query.Where(e => e.User.Role == UserRole.TeamMember);
+            }
 
             // Note: All employees in database are active by definition
             // if (!includeInactive) { ... }
@@ -762,10 +839,12 @@ namespace DesignPlanner.Data.Services
                 query = query.Where(a => a.EmployeeId == employeeId.Value);
             }
 
-            return await query.ToListAsync();
+            // CRITICAL: Order by SlotOrder to preserve placement order (leftmost first)
+            // This ensures tasks maintain their chronological placement order in slots
+            return await query.OrderBy(a => a.SlotOrder).ThenBy(a => a.CreatedAt).ToListAsync();
         }
 
-        private async Task<List<EmployeeScheduleDto>> BuildEmployeeSchedulesAsync(List<Employee> employees, List<Assignment> assignments, DateTime startDate, DateTime endDate)
+        private async Task<List<EmployeeScheduleDto>> BuildEmployeeSchedulesAsync(List<Employee> employees, List<Assignment> assignments, DateTime startDate, DateTime endDate, string teamName)
         {
             var schedules = new List<EmployeeScheduleDto>();
 
@@ -828,7 +907,8 @@ namespace DesignPlanner.Data.Services
                     EmployeeId = employee.Id,
                     EmployeeName = $"{employee.User.FirstName} {employee.User.LastName}",
                     Role = employee.Position ?? "Employee",
-                    Team = employee.Team?.Name ?? "Unassigned",
+                    Team = teamName,
+                    TeamId = employee.TeamId,
                     DayAssignments = dayAssignments
                 };
 
@@ -850,9 +930,10 @@ namespace DesignPlanner.Data.Services
                 employeeName = $"Employee {assignment.EmployeeId}";
             }
 
-            // Calculate automatic hours: 4 hours divided by number of tasks in the slot
-            var automaticHours = CalculateAutomaticHours(slotTaskCount ?? 1);
-            
+            // Use custom hours if set, otherwise calculate automatic hours
+            var hours = assignment.Hours ?? CalculateAutomaticHours(slotTaskCount ?? 1);
+            Console.WriteLine($"🚨🚨🚨 MAPPING TASK [ID={assignment.Id}]: assignment.Hours={assignment.Hours}, slotTaskCount={slotTaskCount}, finalHours={hours}");
+
             return new AssignmentTaskDto
             {
                 AssignmentId = assignment.Id,
@@ -862,7 +943,7 @@ namespace DesignPlanner.Data.Services
                 ProjectName = assignment.Task.Project.Name,
                 ClientCode = assignment.Task.Project.Client.Code,
                 ClientName = assignment.Task.Project.Client.Name,
-                ClientColor = GetClientColor(assignment.Task.Project.Client.Code),
+                ClientColor = assignment.Task.Project.Client.Color,
                 AssignedDate = assignment.AssignedDate,
                 Slot = assignment.Slot,
                 TaskStatus = assignment.Task.Status,
@@ -872,7 +953,9 @@ namespace DesignPlanner.Data.Services
                 IsActive = assignment.IsActive,
                 EmployeeId = assignment.EmployeeId,
                 EmployeeName = employeeName,
-                Hours = automaticHours // Use automatic calculation
+                Hours = hours, // Use custom hours if available, otherwise automatic
+                SlotOrder = assignment.SlotOrder, // Include placement order for positioning
+                ColumnStart = assignment.ColumnStart // Include column position for 4-column grid
             };
         }
 
@@ -906,19 +989,6 @@ namespace DesignPlanner.Data.Services
             return MapToAssignmentTaskDto(assignment, slotTaskCount);
         }
 
-        private string GetClientColor(string clientCode)
-        {
-            // Default color scheme for clients
-            return clientCode.ToUpper() switch
-            {
-                "AWS" => "#FF9900", // Amazon Orange
-                "MSFT" => "#0078D4", // Microsoft Blue
-                "GOOGLE" => "#4285F4", // Google Blue
-                "EQX" => "#00A9CE", // Equinix Cyan
-                "TATE" => "#E63946", // Tate Red
-                _ => "#6C757D" // Default Gray
-            };
-        }
 
         // Team management operations
         public async Task<List<object>> GetManagerTeamsAsync(int userId)
@@ -934,7 +1004,7 @@ namespace DesignPlanner.Data.Services
                     Name = t.Name,
                     Code = t.Code,
                     Description = t.Description,
-                    Color = ScheduleService.GetTeamColor(t.Code),
+                    Color = "#6b7280", // Simple default gray color
                     MemberCount = t.Members.Count(),
                     IsManaged = true // This should be based on actual manager relationship
                 })
@@ -954,7 +1024,7 @@ namespace DesignPlanner.Data.Services
                     Name = t.Name,
                     Code = t.Code,
                     Description = t.Description,
-                    Color = ScheduleService.GetTeamColor(t.Code),
+                    Color = "#6b7280", // Simple default gray color
                     MemberCount = t.Members.Count(),
                     IsManaged = true // This should be based on actual manager relationship with userId
                 })
@@ -973,15 +1043,30 @@ namespace DesignPlanner.Data.Services
 
         public async Task<CalendarViewDto> GetTeamCalendarViewAsync(ScheduleRequestDto request)
         {
+            Console.WriteLine($"🔍 GetTeamCalendarViewAsync called with TeamId: {request.TeamId}");
+
             var startDate = GetViewStartDate(request.StartDate, request.ViewType);
             var endDate = GetViewEndDate(startDate, request.ViewType);
 
-            // Get employees for specific team
-            var employees = await _context.Employees
-                .Include(e => e.User)
-                .Include(e => e.Team)
-                .Where(e => e.TeamId == request.TeamId)
+            // Get the specific team
+            var team = await _context.Teams
+                .Include(t => t.Members)
+                    .ThenInclude(m => m.User)
+                .FirstOrDefaultAsync(t => t.Id == request.TeamId);
+
+            if (team == null)
+            {
+                throw new ArgumentException($"Team with ID {request.TeamId} not found");
+            }
+
+            // Get all users who manage teams (to include managers in their managed teams)
+            var allManagerUsers = await _context.Users
+                .Include(u => u.Employee)
+                .Where(u => u.ManagedTeamIds != null && u.ManagedTeamIds != "")
                 .ToListAsync();
+
+            // Get employees for this team including managers who manage it
+            var employees = GetTeamEmployeesIncludingManagers(team, allManagerUsers);
 
             var assignments = await GetAssignmentsForDateRangeAsync(startDate, endDate, null, request.TeamId);
 
@@ -1000,7 +1085,7 @@ namespace DesignPlanner.Data.Services
                 EndDate = endDate,
                 ViewType = request.ViewType,
                 Days = GenerateCalendarDays(startDate, endDate),
-                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate),
+                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate, team.Name),
                 TaskTypes = taskTypes
             };
 
@@ -1009,14 +1094,20 @@ namespace DesignPlanner.Data.Services
 
         public async Task<object> GetGlobalCalendarViewAsync(int userId, ScheduleRequestDto request)
         {
+            Console.WriteLine("🔍 ✅ GetGlobalCalendarViewAsync called - CORRECT for Admin users!");
             var startDate = GetViewStartDate(request.StartDate, request.ViewType);
             var endDate = GetViewEndDate(startDate, request.ViewType);
 
-            // Get all teams with their employees
+            // Get all teams with their employees - REMOVED IsActive filter to show all teams
             var teamsWithEmployees = await _context.Teams
                 .Include(t => t.Members)
                     .ThenInclude(m => m.User)
-                .Where(t => t.IsActive)
+                .ToListAsync();
+
+            // Get all users who manage teams (to include managers in their managed teams)
+            var allManagerUsers = await _context.Users
+                .Include(u => u.Employee)
+                .Where(u => u.ManagedTeamIds != null && u.ManagedTeamIds != "")
                 .ToListAsync();
 
             // Get all assignments for the date range
@@ -1033,13 +1124,14 @@ namespace DesignPlanner.Data.Services
                     Id = team.Id,
                     Name = team.Name,
                     Code = team.Code,
-                    Color = ScheduleService.GetTeamColor(team.Code),
+                    Color = "#6b7280", // Simple default gray color
                     IsManaged = true, // This should be based on actual manager relationship with userId
                     Employees = await BuildEmployeeSchedulesAsync(
-                        team.Members.ToList(), 
-                        assignments.Where(a => team.Members.Any(m => m.Id == a.EmployeeId)).ToList(),
-                        startDate, 
-                        endDate
+                        GetTeamEmployeesIncludingManagers(team, allManagerUsers),
+                        assignments.Where(a => GetTeamEmployeeIds(team, allManagerUsers).Contains(a.EmployeeId)).ToList(),
+                        startDate,
+                        endDate,
+                        team.Name
                     )
                 }))
             };
@@ -1047,20 +1139,6 @@ namespace DesignPlanner.Data.Services
             return result;
         }
 
-        private static string GetTeamColor(string teamCode)
-        {
-            // Default color scheme for teams
-            return teamCode.ToUpper() switch
-            {
-                "DEV" => "#10b981", // Green
-                "DESIGN" => "#8b5cf6", // Purple
-                "QA" => "#f59e0b", // Yellow
-                "DEVOPS" => "#ef4444", // Red
-                "PM" => "#3b82f6", // Blue
-                "MARKETING" => "#f97316", // Orange
-                _ => "#6b7280" // Default Gray
-            };
-        }
 
         private async Task<List<Assignment>> GetAssignmentsForDateRangeAsync(DateTime startDate, DateTime endDate, int? employeeId = null, int? teamId = null)
         {
@@ -1084,7 +1162,30 @@ namespace DesignPlanner.Data.Services
                 query = query.Where(a => a.Employee.TeamId == teamId.Value);
             }
 
-            return await query.ToListAsync();
+            // CRITICAL: Order by SlotOrder to preserve placement order (leftmost first)
+            // This ensures tasks maintain their chronological placement order in slots
+            return await query.OrderBy(a => a.SlotOrder).ThenBy(a => a.CreatedAt).ToListAsync();
+        }
+
+        private List<Employee> GetTeamEmployeesIncludingManagers(Team team, List<User> allManagerUsers)
+        {
+            // ONLY include employees with TeamMember role assigned to this team
+            // Managers are NOT team members - they are managers
+            return team.Members
+                .Where(m => m.User.Role == UserRole.TeamMember)
+                .OrderBy(e => e.User.FirstName)
+                .ThenBy(e => e.User.LastName)
+                .ToList();
+        }
+
+        private List<int> GetTeamEmployeeIds(Team team, List<User> allManagerUsers)
+        {
+            // ONLY include employee IDs with TeamMember role assigned to this team
+            // Managers are NOT team members - they are managers
+            return team.Members
+                .Where(m => m.User.Role == UserRole.TeamMember)
+                .Select(m => m.Id)
+                .ToList();
         }
     }
 }

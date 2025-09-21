@@ -189,14 +189,42 @@ const UsersTab: React.FC<UsersTabProps> = ({ onEntityCountChange }) => {
     );
   };
 
-  const getTeamBadge = (teamName?: string, teamCode?: string) => {
-    if (!teamName) {
-      return <span className="text-muted">No team assigned</span>;
+  const getTeamBadges = (teams?: Array<{ id: number; name: string; code: string }>) => {
+    if (!teams || teams.length === 0) {
+      return <span className="text-muted">No teams assigned</span>;
     }
+
+    if (teams.length === 1) {
+      return (
+        <span className="team-badge">
+          👥 {teams[0].name}
+        </span>
+      );
+    }
+
+    if (teams.length <= 3) {
+      return (
+        <div className="teams-badges">
+          {teams.map(team => (
+            <span key={team.id} className="team-badge" style={{ marginRight: '4px', marginBottom: '2px' }}>
+              👥 {team.name}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
     return (
-      <span className="team-badge">
-        👥 {teamName}
-      </span>
+      <div className="teams-badges">
+        {teams.slice(0, 2).map(team => (
+          <span key={team.id} className="team-badge" style={{ marginRight: '4px', marginBottom: '2px' }}>
+            👥 {team.name}
+          </span>
+        ))}
+        <span className="team-badge-more" style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+          +{teams.length - 2} more
+        </span>
+      </div>
     );
   };
 
@@ -287,11 +315,15 @@ const UsersTab: React.FC<UsersTabProps> = ({ onEntityCountChange }) => {
       }
     },
     {
-      key: 'employee.team',
-      label: 'Team',
+      key: 'employee.teams',
+      label: 'Teams',
       sortable: true,
-      width: '180px',
-      render: (value, user) => getTeamBadge(user.employee?.team?.name, user.employee?.team?.code)
+      width: '200px',
+      render: (value, user) => {
+        // Use the new teams array if available, otherwise fallback to primary team
+        const teams = user.employee?.teams || (user.employee?.team ? [user.employee.team] : []);
+        return getTeamBadges(teams);
+      }
     },
     {
       key: 'username',

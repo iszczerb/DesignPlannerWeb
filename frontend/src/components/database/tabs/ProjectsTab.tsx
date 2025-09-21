@@ -16,12 +16,15 @@ import {
   Category
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
+import { projectTaskCountService, ProjectTaskCount } from '../../../services/projectTaskCountService';
 
 interface ProjectsTabProps {
   onEntityCountChange: (count: number) => void;
+  onTaskCountsChange?: (taskCounts: ProjectTaskCount[]) => void;
+  refreshTrigger?: number; // External trigger to refresh task counts
 }
 
-const ProjectsTab: React.FC<ProjectsTabProps> = ({ onEntityCountChange }) => {
+const ProjectsTab: React.FC<ProjectsTabProps> = ({ onEntityCountChange, onTaskCountsChange, refreshTrigger }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,16 +35,26 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({ onEntityCountChange }) => {
   const [formLoading, setFormLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [liveTaskCounts, setLiveTaskCounts] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
     loadProjects();
     loadClients();
     loadCategories();
+    loadLiveTaskCounts();
   }, []);
 
   useEffect(() => {
     onEntityCountChange(Array.isArray(projects) ? projects.length : 0);
   }, [projects]);
+
+  // Respond to external refresh triggers (e.g., from calendar changes)
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      console.log('🔄 PROJECTS TAB - External refresh trigger received:', refreshTrigger);
+      loadLiveTaskCounts();
+    }
+  }, [refreshTrigger]);
 
   const loadClients = async () => {
     try {
@@ -58,6 +71,33 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({ onEntityCountChange }) => {
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load categories:', err);
+    }
+  };
+
+  const loadLiveTaskCounts = async () => {
+    try {
+      console.log('🔄 PROJECTS TAB - loadLiveTaskCounts called');
+      const taskCounts = await projectTaskCountService.getProjectTaskCounts();
+      console.log('📊 PROJECTS TAB - received live task counts:', taskCounts);
+
+      // Convert to Map for efficient lookup
+      const countsMap = new Map<number, number>();
+      taskCounts.forEach(count => {
+        countsMap.set(count.projectId, count.taskCount);
+      });
+
+      setLiveTaskCounts(countsMap);
+
+      // Notify parent component if callback provided
+      if (onTaskCountsChange) {
+        onTaskCountsChange(taskCounts);
+      }
+
+      console.log('✅ PROJECTS TAB - loadLiveTaskCounts completed');
+    } catch (err) {
+      console.error('❌ PROJECTS TAB - error in loadLiveTaskCounts:', err);
+      // On error, clear the counts
+      setLiveTaskCounts(new Map());
     }
   };
 
@@ -223,11 +263,15 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({ onEntityCountChange }) => {
       label: 'Tasks',
       sortable: true,
       width: '80px',
-      render: (value) => (
-        <span className="count-badge">
-          {value || 0}
-        </span>
-      )
+      render: (value, item) => {
+        // Use live task count if available, otherwise fall back to database value
+        const liveCount = liveTaskCounts.get(item.id!) ?? value ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
     }
   ];
 
@@ -286,7 +330,10 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({ onEntityCountChange }) => {
         data={projects}
         loading={loading}
         error={error}
-        onRefresh={loadProjects}
+        onRefresh={() => {
+          loadProjects();
+          loadLiveTaskCounts();
+        }}
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}

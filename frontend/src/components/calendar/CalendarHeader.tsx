@@ -1,10 +1,11 @@
 import React from 'react';
-import { 
-  CalendarViewType, 
-  VIEW_TYPE_LABELS 
+import {
+  CalendarViewType,
+  VIEW_TYPE_LABELS
 } from '../../types/schedule';
 import scheduleService from '../../services/scheduleService';
 import TeamToggle, { TeamViewMode } from './TeamToggle';
+import TeamSelectDropdown, { TeamSelection } from './TeamSelectDropdown';
 import ViewModeIndicator from './ViewModeIndicator';
 
 interface CalendarHeaderProps {
@@ -23,6 +24,9 @@ interface CalendarHeaderProps {
   // Team management props
   teamViewMode?: TeamViewMode;
   onTeamViewModeChange?: (mode: TeamViewMode) => void;
+  // Admin team selection props
+  teamSelection?: TeamSelection;
+  onTeamSelectionChange?: (selection: TeamSelection) => void;
   currentTeamName?: string;
   showTeamControls?: boolean;
   userRole?: string;
@@ -39,6 +43,8 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   employeeFilter,
   teamViewMode = TeamViewMode.MyTeam,
   onTeamViewModeChange,
+  teamSelection,
+  onTeamSelectionChange,
   currentTeamName,
   showTeamControls = false,
   userRole
@@ -237,13 +243,28 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         gap: '8px',
         flexWrap: 'wrap',
       }}>
-        {/* Team toggle (for managers) */}
-        {showTeamControls && onTeamViewModeChange && (userRole === 'Manager' || userRole === 'Admin') && (
-          <TeamToggle
-            mode={teamViewMode}
-            onModeChange={onTeamViewModeChange}
-            disabled={isLoading}
-          />
+        {/* Team controls - Different for Admin vs Manager */}
+        {showTeamControls && (
+          <>
+            {/* Admin users get dropdown for team selection */}
+            {userRole === 'Admin' && onTeamSelectionChange && teamSelection && (
+              <TeamSelectDropdown
+                selectedTeam={teamSelection}
+                onTeamChange={onTeamSelectionChange}
+                userRole={userRole}
+                disabled={isLoading}
+              />
+            )}
+
+            {/* Manager users get toggle for My Team / All Teams */}
+            {userRole === 'Manager' && onTeamViewModeChange && (
+              <TeamToggle
+                mode={teamViewMode}
+                onModeChange={onTeamViewModeChange}
+                disabled={isLoading}
+              />
+            )}
+          </>
         )}
 
         {/* Employee filter (if provided) */}

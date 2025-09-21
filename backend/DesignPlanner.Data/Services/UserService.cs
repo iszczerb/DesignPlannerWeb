@@ -81,7 +81,10 @@ namespace DesignPlanner.Data.Services
                     LastName = request.LastName,
                     Role = request.Role,
                     IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    ManagedTeamIds = request.ManagedTeamIds != null && request.ManagedTeamIds.Any()
+                        ? string.Join(",", request.ManagedTeamIds)
+                        : null
                 };
 
                 _context.Users.Add(user);
@@ -176,6 +179,9 @@ namespace DesignPlanner.Data.Services
                 user.Role = request.Role;
                 user.IsActive = request.IsActive;
                 user.UpdatedAt = DateTime.UtcNow;
+                user.ManagedTeamIds = request.ManagedTeamIds != null && request.ManagedTeamIds.Any()
+                    ? string.Join(",", request.ManagedTeamIds)
+                    : null;
 
                 // Update employee
                 if (user.Employee != null)
@@ -364,11 +370,12 @@ namespace DesignPlanner.Data.Services
             var totalCount = await queryable.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalCount / query.PageSize);
 
-            var users = await queryable
+            var userEntities = await queryable
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
-                .Select(u => MapToUserResponseDto(u))
                 .ToListAsync();
+
+            var users = userEntities.Select(u => MapToUserResponseDto(u)).ToList();
 
             return new UserListResponseDto
             {
@@ -387,7 +394,7 @@ namespace DesignPlanner.Data.Services
         /// <returns>List of active user DTOs</returns>
         public async Task<List<UserResponseDto>> GetActiveUsersAsync(int requestingUserId)
         {
-            var users = await _context.Users
+            var userEntities = await _context.Users
                 .Include(u => u.Employee)
                 .ThenInclude(e => e.Team)
                 .Include(u => u.Employee)
@@ -396,9 +403,9 @@ namespace DesignPlanner.Data.Services
                 .Where(u => u.IsActive)
                 .OrderBy(u => u.FirstName)
                 .ThenBy(u => u.LastName)
-                .Select(u => MapToUserResponseDto(u))
                 .ToListAsync();
 
+            var users = userEntities.Select(u => MapToUserResponseDto(u)).ToList();
             return users;
         }
 
@@ -468,7 +475,7 @@ namespace DesignPlanner.Data.Services
         /// <returns>List of users in the team</returns>
         public async Task<List<UserResponseDto>> GetUsersByTeamAsync(int teamId, int requestingUserId)
         {
-            var users = await _context.Users
+            var userEntities = await _context.Users
                 .Include(u => u.Employee)
                 .ThenInclude(e => e.Team)
                 .Include(u => u.Employee)
@@ -477,9 +484,9 @@ namespace DesignPlanner.Data.Services
                 .Where(u => u.Employee != null && u.Employee.TeamId == teamId)
                 .OrderBy(u => u.FirstName)
                 .ThenBy(u => u.LastName)
-                .Select(u => MapToUserResponseDto(u))
                 .ToListAsync();
 
+            var users = userEntities.Select(u => MapToUserResponseDto(u)).ToList();
             return users;
         }
 
@@ -491,7 +498,7 @@ namespace DesignPlanner.Data.Services
         /// <returns>List of users with the specified role</returns>
         public async Task<List<UserResponseDto>> GetUsersByRoleAsync(UserRole role, int requestingUserId)
         {
-            var users = await _context.Users
+            var queryable = _context.Users
                 .Include(u => u.Employee)
                 .ThenInclude(e => e.Team)
                 .Include(u => u.Employee)
@@ -499,9 +506,10 @@ namespace DesignPlanner.Data.Services
                 .ThenInclude(es => es.Skill)
                 .Where(u => u.Role == role)
                 .OrderBy(u => u.FirstName)
-                .ThenBy(u => u.LastName)
-                .Select(u => MapToUserResponseDto(u))
-                .ToListAsync();
+                .ThenBy(u => u.LastName);
+
+            var userEntities = await queryable.ToListAsync();
+            var users = userEntities.Select(u => MapToUserResponseDto(u)).ToList();
 
             return users;
         }
@@ -511,8 +519,45 @@ namespace DesignPlanner.Data.Services
         /// </summary>
         /// <param name="user">The user entity</param>
         /// <returns>The user response DTO</returns>
-        private static UserResponseDto MapToUserResponseDto(User user)
+        private UserResponseDto MapToUserResponseDto(User user)
         {
+            // Get all teams the user belongs to (primary + managed)
+            var allTeamIds = new List<int>();
+
+            // Add primary team
+            if (user.Employee?.TeamId != null)
+            {
+                allTeamIds.Add(user.Employee.TeamId.Value);
+            }
+
+            // Add managed teams
+            if (!string.IsNullOrEmpty(user.ManagedTeamIds))
+            {
+                var managedIds = user.ManagedTeamIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(id => int.TryParse(id.Trim(), out var teamId) ? teamId : 0)
+                    .Where(id => id > 0)
+                    .ToList();
+                allTeamIds.AddRange(managedIds);
+            }
+
+            // Remove duplicates and get unique team IDs
+            allTeamIds = allTeamIds.Distinct().ToList();
+
+            // Fetch all teams for this user
+            var userTeams = new List<UserTeamDto>();
+            if (allTeamIds.Any())
+            {
+                userTeams = _context.Teams
+                    .Where(t => allTeamIds.Contains(t.Id))
+                    .Select(t => new UserTeamDto
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                        Code = t.Code
+                    })
+                    .ToList();
+            }
+
             return new UserResponseDto
             {
                 Id = user.Id,
@@ -535,13 +580,17 @@ namespace DesignPlanner.Data.Services
                         Name = user.Employee.Team.Name,
                         Code = user.Employee.Team.Code
                     } : null,
+                    Teams = userTeams,
                     Skills = user.Employee.Skills?.Select(es => new UserSkillDto
                     {
                         Id = es.Skill.Id,
                         Name = es.Skill.Name,
                         Category = es.Skill.Category
                     }).ToList() ?? new List<UserSkillDto>()
-                } : null
+                } : null,
+                ManagedTeamIds = !string.IsNullOrEmpty(user.ManagedTeamIds)
+                    ? user.ManagedTeamIds.Split(',').Select(int.Parse).ToList()
+                    : null
             };
         }
     }

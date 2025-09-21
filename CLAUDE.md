@@ -1,5 +1,14 @@
 # CRITICAL ISSUES AND SOLUTIONS
 
+## 0. DATABASE PROTECTION - MOST CRITICAL RULE
+
+### ⚠️ NEVER DELETE DATABASE FILES ⚠️
+**ABSOLUTE RULE: NEVER DELETE designplanner.db FILES UNDER ANY CIRCUMSTANCES**
+- NEVER run commands that delete .db, .db-shm, .db-wal files
+- NEVER suggest database deletion as a solution
+- ALWAYS ask user before any database-related operations
+- If database issues occur, find alternative solutions that preserve data
+
 ## 1. 403 FORBIDDEN ERROR - RECURRING AUTHORIZATION ISSUE
 
 ### THE PROBLEM:
@@ -15,12 +24,12 @@
 ### PERMANENT FIX:
 **IMMEDIATE ACTION REQUIRED:**
 1. **LOGOUT** - Click logout button in the app
-2. **LOGIN AGAIN** with username: `manager` password: `password123`
+2. **LOGIN AGAIN** with username: `admin` password: `password123`
 3. This will generate a NEW JWT token with the correct Manager role
 
 ### BACKEND VERIFICATION:
-- DatabaseSeeder.cs correctly creates manager with `UserRole.Manager` (line 148)
-- The manager user (ID=1, username="manager") has the correct role
+- DatabaseSeeder.cs correctly creates admin with `UserRole.Admin` (line 148)
+- The admin user (ID=1, username="admin") has the correct role
 
 ### IF PROBLEM PERSISTS:
 1. Clear browser localStorage: Open DevTools Console and run:
@@ -29,7 +38,7 @@
    location.reload();
    ```
 
-2. Verify role in backend by calling: `GET http://localhost:5105/api/dev/fix-manager-role`
+2. Verify role in backend by calling: `GET http://localhost:5199/api/dev/debug-users`
 
 3. Alternative fix - Remove role restriction from endpoint (NOT RECOMMENDED for production):
    ```csharp
@@ -76,7 +85,7 @@
 Before testing any feature:
 - [ ] Backend is running
 - [ ] Frontend is running
-- [ ] You're logged in as manager
+- [ ] You're logged in as admin
 - [ ] Your JWT token is fresh (logout/login if unsure)
 
 ## 6. KEY ENDPOINTS AND ROLES:
@@ -91,9 +100,9 @@ Before testing any feature:
 ## 7. DEFAULT USERS:
 
 ```
-Username: manager
+Username: admin
 Password: password123
-Role: Manager (can see all teams and schedules)
+Role: Admin (can see all teams and schedules)
 
 Username: alex.smith
 Password: password123

@@ -91,6 +91,11 @@ namespace DesignPlanner.Core.DTOs
         /// List of skill IDs for this user (optional)
         /// </summary>
         public List<int> SkillIds { get; set; } = new();
+
+        /// <summary>
+        /// List of team IDs that this user manages (for Manager/Admin roles)
+        /// </summary>
+        public List<int>? ManagedTeamIds { get; set; }
     }
 
     /// <summary>
@@ -157,6 +162,11 @@ namespace DesignPlanner.Core.DTOs
         /// Whether the user is active
         /// </summary>
         public bool IsActive { get; set; } = true;
+
+        /// <summary>
+        /// List of team IDs that this user manages (for Manager/Admin roles)
+        /// </summary>
+        public List<int>? ManagedTeamIds { get; set; }
     }
 
     /// <summary>
@@ -213,6 +223,11 @@ namespace DesignPlanner.Core.DTOs
         /// Employee information
         /// </summary>
         public UserEmployeeDto? Employee { get; set; }
+
+        /// <summary>
+        /// List of team IDs that this user manages (for Manager/Admin roles)
+        /// </summary>
+        public List<int>? ManagedTeamIds { get; set; }
     }
 
     /// <summary>
@@ -241,9 +256,14 @@ namespace DesignPlanner.Core.DTOs
         public string? PhoneNumber { get; set; }
 
         /// <summary>
-        /// Team information
+        /// Team information (primary team)
         /// </summary>
         public UserTeamDto? Team { get; set; }
+
+        /// <summary>
+        /// All teams the user belongs to (primary + managed)
+        /// </summary>
+        public List<UserTeamDto> Teams { get; set; } = new();
 
         /// <summary>
         /// List of employee skills

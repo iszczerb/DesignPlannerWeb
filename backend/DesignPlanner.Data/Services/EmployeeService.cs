@@ -80,6 +80,14 @@ namespace DesignPlanner.Data.Services
             employee.User.FirstName = request.FirstName;
             employee.User.LastName = request.LastName;
             employee.User.Role = request.Role;
+
+            // Update managed teams for managers
+            if (request.ManagedTeamIds != null &&
+                (employee.User.Role == UserRole.Manager || employee.User.Role == UserRole.Admin))
+            {
+                employee.User.ManagedTeamIds = string.Join(",", request.ManagedTeamIds);
+            }
+
             // employee.User.UpdatedAt = DateTime.UtcNow; // Disabled to prevent data regeneration
 
             // Update employee

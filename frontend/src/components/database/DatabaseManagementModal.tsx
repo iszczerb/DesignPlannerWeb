@@ -31,7 +31,9 @@ interface Tab {
 const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
   isOpen,
   onClose,
-  initialTab = EntityType.Clients
+  initialTab = EntityType.Clients,
+  onDataChange,
+  calendarRefreshTrigger
 }) => {
   const [activeTab, setActiveTab] = useState<EntityType>(initialTab);
   const [isLoading, setIsLoading] = useState(false);
@@ -168,6 +170,10 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
     handleEntityCountChange(EntityType.Clients, count);
   }, [handleEntityCountChange]);
 
+  const handleClientsDataChange = useCallback(() => {
+    onDataChange?.();
+  }, [onDataChange]);
+
   const handleProjectsCountChange = useCallback((count: number) => {
     handleEntityCountChange(EntityType.Projects, count);
   }, [handleEntityCountChange]);
@@ -195,9 +201,9 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
   const renderTabContent = () => {
     switch (activeTab) {
       case EntityType.Clients:
-        return <ClientsTab onEntityCountChange={handleClientsCountChange} />;
+        return <ClientsTab onEntityCountChange={handleClientsCountChange} onDataChange={handleClientsDataChange} />;
       case EntityType.Projects:
-        return <ProjectsTab onEntityCountChange={handleProjectsCountChange} />;
+        return <ProjectsTab onEntityCountChange={handleProjectsCountChange} refreshTrigger={calendarRefreshTrigger} />;
       case EntityType.Users:
         return <UsersTab onEntityCountChange={handleUsersCountChange} />;
       case EntityType.Teams:

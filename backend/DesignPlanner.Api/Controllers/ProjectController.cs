@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using DesignPlanner.Core.DTOs;
 using DesignPlanner.Core.Services;
 using DesignPlanner.Core.Enums;
+using DesignPlanner.Data.Context;
 
 namespace DesignPlanner.Api.Controllers
 {
@@ -17,11 +19,13 @@ namespace DesignPlanner.Api.Controllers
     {
         private readonly IProjectService _projectService;
         private readonly ILogger<ProjectController> _logger;
+        private readonly ApplicationDbContext _context;
 
-        public ProjectController(IProjectService projectService, ILogger<ProjectController> logger)
+        public ProjectController(IProjectService projectService, ILogger<ProjectController> logger, ApplicationDbContext context)
         {
             _projectService = projectService;
             _logger = logger;
+            _context = context;
         }
 
         /// <summary>
@@ -214,6 +218,119 @@ namespace DesignPlanner.Api.Controllers
             {
                 _logger.LogError(ex, "Error deleting project {ProjectId}", id);
                 return StatusCode(500, "An error occurred while deleting the project");
+            }
+        }
+
+        /// <summary>
+        /// Get all clients for task creation
+        /// </summary>
+        /// <returns>List of clients</returns>
+        [HttpGet("clients")]
+        public async Task<ActionResult<List<object>>> GetClients()
+        {
+            try
+            {
+                var clients = await _context.Clients
+                    .Where(c => c.IsActive)
+                    .Select(c => new {
+                        id = c.Id,
+                        code = c.Code,
+                        name = c.Name
+                    })
+                    .ToListAsync();
+
+                return Ok(clients);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving clients");
+                return StatusCode(500, "An error occurred while retrieving clients");
+            }
+        }
+
+        /// <summary>
+        /// Get projects by client ID for task creation
+        /// </summary>
+        /// <param name="clientId">Client ID</param>
+        /// <returns>List of projects for the client</returns>
+        [HttpGet("clients/{clientId}/projects")]
+        public async Task<ActionResult<List<object>>> GetProjectsByClientForTasks(int clientId)
+        {
+            try
+            {
+                var projects = await _context.Projects
+                    .Where(p => p.ClientId == clientId)
+                    .Select(p => new {
+                        id = p.Id,
+                        name = p.Name,
+                        clientName = p.Client.Name,
+                        clientId = p.ClientId
+                    })
+                    .ToListAsync();
+
+                return Ok(projects);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving projects for client {ClientId}", clientId);
+                return StatusCode(500, "An error occurred while retrieving client projects");
+            }
+        }
+
+        /// <summary>
+        /// Get all task types for task creation
+        /// </summary>
+        /// <returns>List of task types</returns>
+        [HttpGet("task-types")]
+        public async Task<ActionResult<List<object>>> GetTaskTypes()
+        {
+            try
+            {
+                var taskTypes = await _context.TaskTypes
+                    .Select(tt => new {
+                        id = tt.Id,
+                        name = tt.Name
+                    })
+                    .ToListAsync();
+
+                return Ok(taskTypes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving task types");
+                return StatusCode(500, "An error occurred while retrieving task types");
+            }
+        }
+
+        /// <summary>
+        /// Get project tasks by project ID for task creation
+        /// </summary>
+        /// <param name="projectId">Project ID</param>
+        /// <returns>List of project tasks</returns>
+        [HttpGet("{projectId}/tasks")]
+        public async Task<ActionResult<List<object>>> GetProjectTasks(int projectId)
+        {
+            try
+            {
+                var projectTasks = await _context.ProjectTasks
+                    .Include(pt => pt.TaskType)
+                    .Where(pt => pt.ProjectId == projectId)
+                    .Select(pt => new {
+                        id = pt.Id,
+                        title = pt.Title,
+                        taskTypeId = pt.TaskTypeId,
+                        taskTypeName = pt.TaskType.Name,
+                        priority = (int)pt.Priority,
+                        status = (int)pt.Status
+                    })
+                    .ToListAsync();
+
+                return Ok(projectTasks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving project tasks for project {ProjectId}", projectId);
+                return StatusCode(500, "An error occurred while retrieving project tasks");
             }
         }
 

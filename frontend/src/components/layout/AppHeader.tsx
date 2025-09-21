@@ -59,6 +59,19 @@ const DesignPlannerLogo = styled('img')(({ theme }) => ({
   display: 'block',
 }));
 
+const ClickableLogoContainer = styled(Box)(({ theme }) => ({
+  cursor: 'pointer',
+  borderRadius: '8px',
+  padding: '4px',
+  transition: 'background-color 0.2s ease',
+  '&:hover': {
+    backgroundColor: alpha('#3498db', 0.1),
+  },
+  '&:active': {
+    transform: 'scale(0.98)',
+  },
+}));
+
 const TateLogo = styled('img')(({ theme }) => ({
   height: 36,
   width: 'auto',
@@ -146,6 +159,8 @@ interface AppHeaderProps {
   onDateChange?: (date: Date) => void;
   currentViewType?: 'Daily' | 'Weekly' | 'Biweekly' | 'Monthly';
   onViewTypeChange?: (viewType: 'Daily' | 'Weekly' | 'Biweekly' | 'Monthly') => void;
+  // Logo click handler
+  onLogoClick?: () => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
@@ -161,7 +176,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   currentDate = new Date(),
   onDateChange,
   currentViewType = 'Weekly',
-  onViewTypeChange
+  onViewTypeChange,
+  onLogoClick
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
@@ -286,14 +302,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       <Toolbar sx={{ minHeight: '64px', px: 3 }}>
         {/* DesignPlanner Logo Section */}
         <LogoContainer>
-          <DesignPlannerLogo 
-            src="/assets/logos/design-planner-logo.png" 
-            alt="Design Planner"
-            onError={(e) => {
-              console.error('Failed to load DesignPlanner logo');
-              e.currentTarget.style.display = 'none';
-            }}
-          />
+          <ClickableLogoContainer
+            onClick={onLogoClick}
+            title="Go to current week"
+          >
+            <DesignPlannerLogo
+              src="/assets/logos/design-planner-logo.png"
+              alt="Design Planner"
+              onError={(e) => {
+                console.error('Failed to load DesignPlanner logo');
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </ClickableLogoContainer>
         </LogoContainer>
 
         {/* Navigation Buttons - Dashboard always visible, others in burger menu on mobile */}

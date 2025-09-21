@@ -26,17 +26,10 @@ namespace DesignPlanner.Data.Services
         /// <returns>The created team DTO</returns>
         public async Task<TeamResponseDto?> CreateTeamAsync(CreateTeamRequestDto request, int createdByUserId)
         {
-            // Check if team code already exists
-            if (await IsTeamCodeExistsAsync(request.Code))
-            {
-                throw new ArgumentException($"Team code '{request.Code}' is already in use");
-            }
-
             var team = new Team
             {
                 Name = request.Name,
                 Description = request.Description,
-                Code = request.Code.ToUpper(),
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -60,15 +53,8 @@ namespace DesignPlanner.Data.Services
             if (team == null)
                 throw new ArgumentException("Team not found");
 
-            // Check if team code already exists (excluding current team)
-            if (await IsTeamCodeExistsAsync(request.Code, teamId))
-            {
-                throw new ArgumentException($"Team code '{request.Code}' is already in use");
-            }
-
             team.Name = request.Name;
             team.Description = request.Description;
-            team.Code = request.Code.ToUpper();
             team.IsActive = request.IsActive;
 
             await _context.SaveChangesAsync();
@@ -89,8 +75,8 @@ namespace DesignPlanner.Data.Services
                 return false;
 
             // Check if team has members (all employees in DB are active)
-            var hasMembers = await _context.Employees
-                .AnyAsync(e => e.TeamId == teamId);
+            var memberCount = await GetTeamMemberCountAsync(teamId);
+            var hasMembers = memberCount > 0;
 
             if (hasMembers)
                 throw new InvalidOperationException("Cannot delete team with members. Please reassign members first.");
@@ -129,7 +115,6 @@ namespace DesignPlanner.Data.Services
                 var searchTerm = query.SearchTerm.ToLower();
                 queryable = queryable.Where(t =>
                     t.Name.ToLower().Contains(searchTerm) ||
-                    t.Code.ToLower().Contains(searchTerm) ||
                     (t.Description != null && t.Description.ToLower().Contains(searchTerm)));
             }
 
@@ -141,9 +126,6 @@ namespace DesignPlanner.Data.Services
             // Apply sorting
             queryable = query.SortBy.ToLower() switch
             {
-                "code" => query.SortDirection.ToLower() == "desc"
-                    ? queryable.OrderByDescending(t => t.Code)
-                    : queryable.OrderBy(t => t.Code),
                 "name" => query.SortDirection.ToLower() == "desc"
                     ? queryable.OrderByDescending(t => t.Name)
                     : queryable.OrderBy(t => t.Name),
@@ -193,8 +175,8 @@ namespace DesignPlanner.Data.Services
             // If deactivating, check for members (all employees in DB are active)
             if (!isActive && team.IsActive)
             {
-                var hasMembers = await _context.Employees
-                    .AnyAsync(e => e.TeamId == teamId);
+                var memberCount = await GetTeamMemberCountAsync(teamId);
+                var hasMembers = memberCount > 0;
 
                 if (hasMembers)
                     throw new InvalidOperationException("Cannot deactivate team with members. Please reassign members first.");
@@ -227,44 +209,34 @@ namespace DesignPlanner.Data.Services
             return teams;
         }
 
-        /// <summary>
-        /// Checks if a team code is already in use
-        /// </summary>
-        /// <param name="code">The team code to check</param>
-        /// <param name="excludeTeamId">Optional team ID to exclude from the check (for updates)</param>
-        /// <returns>True if the code is already in use</returns>
-        public async Task<bool> IsTeamCodeExistsAsync(string code, int? excludeTeamId = null)
-        {
-            var query = _context.Teams.Where(t => t.Code.ToLower() == code.ToLower());
-
-            if (excludeTeamId.HasValue)
-            {
-                query = query.Where(t => t.Id != excludeTeamId.Value);
-            }
-
-            return await query.AnyAsync();
-        }
+        // Method removed - Code field is no longer used
 
         /// <summary>
         /// Gets total team members count (including inactive)
+        /// ONLY counts employees with TeamMember role - managers are NOT counted as members
         /// </summary>
         /// <param name="teamId">ID of the team</param>
         /// <returns>Total number of members in the team</returns>
         public async Task<int> GetTeamMemberCountAsync(int teamId)
         {
+            // Only count employees with TeamMember role assigned to this team
+            // Managers are managers, not members - they should not be counted as team members
             return await _context.Employees
-                .CountAsync(e => e.TeamId == teamId);
+                .Include(e => e.User)
+                .Where(e => e.TeamId == teamId && e.User.Role == Core.Enums.UserRole.TeamMember)
+                .CountAsync();
         }
 
         /// <summary>
         /// Gets team members count (all employees in DB are active)
+        /// ONLY counts employees with TeamMember role - managers are NOT counted as members
         /// </summary>
         /// <param name="teamId">ID of the team</param>
         /// <returns>Number of members in the team</returns>
         public async Task<int> GetActiveTeamMemberCountAsync(int teamId)
         {
-            return await _context.Employees
-                .CountAsync(e => e.TeamId == teamId);
+            // Since all employees in DB are active, this is the same as GetTeamMemberCountAsync
+            return await GetTeamMemberCountAsync(teamId);
         }
 
         /// <summary>
@@ -277,25 +249,33 @@ namespace DesignPlanner.Data.Services
             var memberCount = await GetTeamMemberCountAsync(team.Id);
             var activeMemberCount = await GetActiveTeamMemberCountAsync(team.Id);
 
-            // Find the team manager (user with Admin or Manager role assigned to this team)
+            // Find the team manager - properly parse ManagedTeamIds field
             var manager = await _context.Users
                 .Include(u => u.Employee)
-                .FirstOrDefaultAsync(u => u.Employee != null &&
-                                        u.Employee.TeamId == team.Id &&
-                                        (u.Role == Core.Enums.UserRole.Admin || u.Role == Core.Enums.UserRole.Manager));
+                .Where(u => (u.Role == Core.Enums.UserRole.Admin || u.Role == Core.Enums.UserRole.Manager) &&
+                           u.ManagedTeamIds != null)
+                .ToListAsync();
+
+            // Filter in memory to properly parse comma-separated team IDs
+            manager = manager.Where(u =>
+                u.ManagedTeamIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(id => int.TryParse(id.Trim(), out var teamId) ? teamId : 0)
+                    .Contains(team.Id))
+                .ToList();
+
+            var teamManager = manager.FirstOrDefault();
 
             return new TeamDetailDto
             {
                 Id = team.Id,
                 Name = team.Name,
                 Description = team.Description,
-                Code = team.Code,
                 IsActive = team.IsActive,
                 CreatedAt = team.CreatedAt,
                 MemberCount = memberCount,
                 ActiveMemberCount = activeMemberCount,
-                ManagerId = manager?.Id,
-                ManagerName = manager != null ? $"{manager.FirstName} {manager.LastName}" : null
+                ManagerId = teamManager?.Id,
+                ManagerName = teamManager != null ? $"{teamManager.FirstName} {teamManager.LastName}" : null
             };
         }
     }

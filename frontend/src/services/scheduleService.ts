@@ -49,7 +49,13 @@ class ScheduleService {
   }
 
   async updateAssignment(assignment: UpdateAssignmentDto): Promise<AssignmentTaskDto> {
-    return apiService.put<AssignmentTaskDto>(`${this.baseUrl}/assignments`, assignment);
+    console.log(`🚨🚨🚨 SCHEDULE SERVICE: Making PUT request to ${this.baseUrl}/assignments`);
+    console.log(`🚨🚨🚨 SCHEDULE SERVICE: Request data:`, assignment);
+
+    const result = await apiService.put<AssignmentTaskDto>(`${this.baseUrl}/assignments`, assignment);
+
+    console.log(`🚨🚨🚨 SCHEDULE SERVICE: Response received:`, result);
+    return result;
   }
 
   // Move task to different slot/employee/date

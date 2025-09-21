@@ -452,7 +452,7 @@ const TeamMemberListModal: React.FC<TeamMemberListProps> = ({
                         gap: '4px',
                         marginTop: '4px',
                       }}>
-                        {member.skills.slice(0, 3).map((skill, skillIndex) => (
+                        {(member.skills || []).slice(0, 3).map((skill, skillIndex) => (
                           <span
                             key={skill || `skill-${skillIndex}`}
                             style={{
@@ -467,7 +467,7 @@ const TeamMemberListModal: React.FC<TeamMemberListProps> = ({
                             {SKILL_TYPE_LABELS[skill]}
                           </span>
                         ))}
-                        {member.skills.length > 3 && (
+                        {(member.skills || []).length > 3 && (
                           <span style={{
                             padding: '2px 6px',
                             borderRadius: '4px',
@@ -476,7 +476,7 @@ const TeamMemberListModal: React.FC<TeamMemberListProps> = ({
                             fontSize: '0.6875rem',
                             fontWeight: '500',
                           }}>
-                            +{member.skills.length - 3}
+                            +{(member.skills || []).length - 3}
                           </span>
                         )}
                       </div>

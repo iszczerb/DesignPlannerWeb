@@ -37,6 +37,10 @@ namespace DesignPlanner.Core.Entities
 
         public DateTime? LastLoginAt { get; set; }
 
+        // Managed teams for Manager/Admin roles (comma-separated team IDs)
+        [MaxLength(500)]
+        public string? ManagedTeamIds { get; set; }
+
         // Navigation property
         public Employee? Employee { get; set; }
     }

@@ -26,6 +26,9 @@ namespace DesignPlanner.Data.Migrations
                     b.Property<DateTime>("AssignedDate")
                         .HasColumnType("date");
 
+                    b.Property<int?>("ColumnStart")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -43,6 +46,9 @@ namespace DesignPlanner.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Slot")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SlotOrder")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("TaskId")
@@ -151,53 +157,6 @@ namespace DesignPlanner.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Clients");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Code = "AWS",
-                            Color = "#0066CC",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Amazon Web Services"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Code = "MSFT",
-                            Color = "#0066CC",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Microsoft"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Code = "GOOGLE",
-                            Color = "#0066CC",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Google"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Code = "EQX",
-                            Color = "#0066CC",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Equinix"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Code = "TATE",
-                            Color = "#0066CC",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Tate"
-                        });
                 });
 
             modelBuilder.Entity("DesignPlanner.Core.Entities.Employee", b =>
@@ -623,72 +582,6 @@ namespace DesignPlanner.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Skills");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Category = "Technical",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "C#"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Category = "Technical",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "JavaScript"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Category = "Technical",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "React"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Category = "Design",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "UI/UX Design"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Category = "Management",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Project Management"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Category = "Technical",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Database Design"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Category = "Technical",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "API Development"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Category = "Technical",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Testing"
-                        });
                 });
 
             modelBuilder.Entity("DesignPlanner.Core.Entities.TaskType", b =>
@@ -752,7 +645,6 @@ namespace DesignPlanner.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Code")
-                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
@@ -805,6 +697,10 @@ namespace DesignPlanner.Data.Migrations
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ManagedTeamIds")
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")

@@ -12,12 +12,15 @@ import {
   Project
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
+import { categoryTaskCountService, CategoryTaskCount } from '../../../services/categoryTaskCountService';
 
 interface CategoriesTabProps {
   onEntityCountChange: (count: number) => void;
+  onTaskCountsChange?: (taskCounts: CategoryTaskCount[]) => void;
+  refreshTrigger?: number; // External trigger to refresh task counts
 }
 
-const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) => {
+const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange, onTaskCountsChange, refreshTrigger }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,10 +30,12 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingCategory, setDeletingCategory] = useState<Category | undefined>();
   const [formLoading, setFormLoading] = useState(false);
+  const [liveTaskCounts, setLiveTaskCounts] = useState<Map<number, { taskCount: number; projectCount: number }>>(new Map());
 
   useEffect(() => {
     loadCategories();
     loadProjects();
+    loadLiveTaskCounts();
   }, []);
 
   useEffect(() => {
@@ -56,12 +61,50 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
     }
   }, [projects]);
 
+  // Respond to external refresh triggers (e.g., from calendar changes)
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      console.log('🔄 CATEGORIES TAB - External refresh trigger received:', refreshTrigger);
+      loadLiveTaskCounts();
+    }
+  }, [refreshTrigger]);
+
   const loadProjects = async () => {
     try {
       const data = await databaseService.getProjects();
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load projects:', err);
+    }
+  };
+
+  const loadLiveTaskCounts = async () => {
+    try {
+      console.log('🔄 CATEGORIES TAB - loadLiveTaskCounts called');
+      const taskCounts = await categoryTaskCountService.getCategoryTaskCounts();
+      console.log('📂 CATEGORIES TAB - received live task counts:', taskCounts);
+
+      // Convert to Map for efficient lookup
+      const countsMap = new Map<number, { taskCount: number; projectCount: number }>();
+      taskCounts.forEach(count => {
+        countsMap.set(count.categoryId, {
+          taskCount: count.taskCount,
+          projectCount: count.projectCount
+        });
+      });
+
+      setLiveTaskCounts(countsMap);
+
+      // Notify parent component if callback provided
+      if (onTaskCountsChange) {
+        onTaskCountsChange(taskCounts);
+      }
+
+      console.log('✅ CATEGORIES TAB - loadLiveTaskCounts completed');
+    } catch (err) {
+      console.error('❌ CATEGORIES TAB - error in loadLiveTaskCounts:', err);
+      // On error, clear the counts
+      setLiveTaskCounts(new Map());
     }
   };
 
@@ -105,6 +148,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
       setEditingCategory(undefined);
       await loadCategories();
       await loadProjects(); // Reload projects to trigger project count recalculation
+      await loadLiveTaskCounts(); // Refresh live counts after changes
     } catch (err) {
       throw err; // Let the form handle the error
     } finally {
@@ -121,6 +165,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
       setDeletingCategory(undefined);
       await loadCategories();
       await loadProjects(); // Reload projects to trigger project count recalculation
+      await loadLiveTaskCounts(); // Refresh live counts after deletion
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete category');
     }
@@ -171,8 +216,31 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
       key: 'projectCount',
       label: 'Projects',
       sortable: true,
-      width: '100px',
-      render: (value) => getProjectsCount(value || 0)
+      width: '80px',
+      render: (value, item) => {
+        // Use live project count if available, otherwise fall back to database value
+        const liveCount = liveTaskCounts.get(item.id!)?.projectCount ?? value ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'taskCount',
+      label: 'Tasks',
+      sortable: true,
+      width: '80px',
+      render: (value, item) => {
+        // Use live task count from assignments
+        const liveCount = liveTaskCounts.get(item.id!)?.taskCount ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
     },
   ];
 
@@ -187,7 +255,11 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({ onEntityCountChange }) =>
         data={categories}
         loading={loading}
         error={error}
-        onRefresh={loadCategories}
+        onRefresh={() => {
+          loadCategories();
+          loadProjects();
+          loadLiveTaskCounts();
+        }}
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}

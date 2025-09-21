@@ -185,7 +185,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
       onContextMenu={handleContextMenu}
       onMouseEnter={() => !isDragging && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      title={showTooltip ? `${task.projectCode} - ${task.taskTitle}\nClient: ${task.clientName}\nType: ${task.taskTypeName}\nStatus: ${STATUS_LABELS[task.taskStatus]}\nPriority: ${PRIORITY_LABELS[task.priority]}${task.dueDate ? `\nDue: ${new Date(task.dueDate).toLocaleDateString()}` : ''}${task.notes ? `\nNotes: ${task.notes}` : ''}${isDraggable ? '\n\n(Drag to move to another slot)\n(Right-click for menu)' : '\n\n(Right-click for menu)'}` : undefined}
+      title={showTooltip ? `${task.projectName} - ${task.taskTitle}\nClient: ${task.clientName}\nType: ${task.taskTypeName}\nStatus: ${STATUS_LABELS[task.taskStatus]}\nPriority: ${PRIORITY_LABELS[task.priority]}${task.dueDate ? `\nDue: ${new Date(task.dueDate).toLocaleDateString()}` : ''}${task.notes ? `\nNotes: ${task.notes}` : ''}${isDraggable ? '\n\n(Drag to move to another slot)\n(Right-click for menu)' : '\n\n(Right-click for menu)'}` : undefined}
       whileHover={!isDragging && isDraggable ? { scale: 1.02 } : {}}
       whileTap={isDraggable ? { scale: 0.98 } : {}}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
@@ -203,7 +203,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
           fontSize: size === 'small' ? '0.6875rem' : (size === 'large' ? '0.875rem' : '0.75rem'),
           lineHeight: '1.1',
         }}>
-          {task.projectCode}
+          {task.projectName}
         </span>
         
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>

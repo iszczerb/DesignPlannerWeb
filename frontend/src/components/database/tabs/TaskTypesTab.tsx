@@ -12,12 +12,15 @@ import {
   Skill
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
+import { taskTypeTaskCountService, TaskTypeTaskCount } from '../../../services/taskTypeTaskCountService';
 
 interface TaskTypesTabProps {
   onEntityCountChange: (count: number) => void;
+  onTaskCountsChange?: (taskCounts: TaskTypeTaskCount[]) => void;
+  refreshTrigger?: number; // External trigger to refresh task counts
 }
 
-const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
+const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange, onTaskCountsChange, refreshTrigger }) => {
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,25 +29,74 @@ const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingTaskType, setDeletingTaskType] = useState<TaskType | undefined>();
   const [formLoading, setFormLoading] = useState(false);
+  const [liveTaskCounts, setLiveTaskCounts] = useState<Map<number, { taskCount: number; projectCount: number }>>(new Map());
 
   useEffect(() => {
     loadTaskTypes();
+    loadLiveTaskCounts();
   }, []);
 
   useEffect(() => {
     onEntityCountChange(Array.isArray(taskTypes) ? taskTypes.length : 0);
   }, [taskTypes]);
 
+  // Respond to external refresh triggers (e.g., from calendar changes)
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      console.log('🔄 TASK TYPES TAB - External refresh trigger received:', refreshTrigger);
+      loadLiveTaskCounts();
+    }
+  }, [refreshTrigger]);
+
   const loadTaskTypes = async () => {
+    console.log('🔄 TASK TYPES TAB - loadTaskTypes called');
     try {
       setLoading(true);
       setError(null);
+      console.log('🚀 TASK TYPES TAB - calling databaseService.getTaskTypes...');
       const data = await databaseService.getTaskTypes();
-      setTaskTypes(data);
+      console.log('📊 TASK TYPES TAB - getTaskTypes returned:', data);
+      console.log('📊 TASK TYPES TAB - data is array:', Array.isArray(data));
+      console.log('📊 TASK TYPES TAB - data length:', data?.length);
+      const taskTypesArray = Array.isArray(data) ? data : [];
+      console.log('📋 TASK TYPES TAB - setting task types to:', taskTypesArray);
+      setTaskTypes(taskTypesArray);
+      console.log('✅ TASK TYPES TAB - loadTaskTypes completed successfully');
     } catch (err) {
+      console.log('❌ TASK TYPES TAB - error in loadTaskTypes:', err);
       setError(err instanceof Error ? err.message : 'Failed to load task types');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLiveTaskCounts = async () => {
+    try {
+      console.log('🔄 TASK TYPES TAB - loadLiveTaskCounts called');
+      const taskCounts = await taskTypeTaskCountService.getTaskTypeTaskCounts();
+      console.log('📊 TASK TYPES TAB - received live task counts:', taskCounts);
+
+      // Convert to Map for efficient lookup
+      const countsMap = new Map<number, { taskCount: number; projectCount: number }>();
+      taskCounts.forEach(count => {
+        countsMap.set(count.taskTypeId, {
+          taskCount: count.taskCount,
+          projectCount: count.projectCount
+        });
+      });
+
+      setLiveTaskCounts(countsMap);
+
+      // Notify parent component if callback provided
+      if (onTaskCountsChange) {
+        onTaskCountsChange(taskCounts);
+      }
+
+      console.log('✅ TASK TYPES TAB - loadLiveTaskCounts completed');
+    } catch (err) {
+      console.error('❌ TASK TYPES TAB - error in loadLiveTaskCounts:', err);
+      // On error, clear the counts
+      setLiveTaskCounts(new Map());
     }
   };
 
@@ -64,17 +116,26 @@ const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
   };
 
   const handleSave = async (data: CreateTaskTypeDto | UpdateTaskTypeDto) => {
+    console.log('🟢 TASK TYPES TAB - handleSave called with data:', data);
     try {
       setFormLoading(true);
       if (editingTaskType) {
+        console.log('📝 TASK TYPES TAB - updating existing task type');
         await databaseService.updateTaskType(data as UpdateTaskTypeDto);
       } else {
-        await databaseService.createTaskType(data as CreateTaskTypeDto);
+        console.log('➕ TASK TYPES TAB - creating new task type');
+        console.log('🚀 TASK TYPES TAB - calling databaseService.createTaskType...');
+        const result = await databaseService.createTaskType(data as CreateTaskTypeDto);
+        console.log('✅ TASK TYPES TAB - createTaskType returned:', result);
       }
       setShowForm(false);
       setEditingTaskType(undefined);
+      console.log('🔄 TASK TYPES TAB - reloading task types...');
       await loadTaskTypes();
+      await loadLiveTaskCounts(); // Refresh live counts after changes
+      console.log('✅ TASK TYPES TAB - handleSave completed successfully');
     } catch (err) {
+      console.log('❌ TASK TYPES TAB - error in handleSave:', err);
       throw err; // Let the form handle the error
     } finally {
       setFormLoading(false);
@@ -89,6 +150,7 @@ const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
       setShowDeleteConfirm(false);
       setDeletingTaskType(undefined);
       await loadTaskTypes();
+      await loadLiveTaskCounts(); // Refresh live counts after deletion
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete task type');
     }
@@ -155,22 +217,45 @@ const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
       key: 'description',
       label: 'Description',
       sortable: true,
-      width: '300px',
+      width: '250px',
       render: (value) => value || '-'
     },
     {
       key: 'skills',
       label: 'Skills',
       sortable: false,
-      width: '250px',
+      width: '200px',
       render: (value) => getSkillsBadges(value)
     },
     {
       key: 'projectCount',
       label: 'Projects',
       sortable: true,
-      width: '100px',
-      render: (value) => getProjectsCount(value || 0)
+      width: '80px',
+      render: (value, item) => {
+        // Use live project count if available, otherwise fall back to database value
+        const liveCount = liveTaskCounts.get(item.id!)?.projectCount ?? value ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'taskCount',
+      label: 'Tasks',
+      sortable: true,
+      width: '80px',
+      render: (value, item) => {
+        // Use live task count from assignments
+        const liveCount = liveTaskCounts.get(item.id!)?.taskCount ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
     }
   ];
 
@@ -186,7 +271,10 @@ const TaskTypesTab: React.FC<TaskTypesTabProps> = ({ onEntityCountChange }) => {
         data={taskTypes}
         loading={loading}
         error={error}
-        onRefresh={loadTaskTypes}
+        onRefresh={() => {
+          loadTaskTypes();
+          loadLiveTaskCounts();
+        }}
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}

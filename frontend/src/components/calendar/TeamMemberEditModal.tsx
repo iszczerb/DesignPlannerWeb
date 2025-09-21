@@ -26,7 +26,8 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
     skills: [] as SkillType[],
     startDate: '',
     notes: '',
-    isActive: true
+    isActive: true,
+    managedTeamIds: [] as number[] // For managers - teams they manage
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,7 +53,8 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
               skills: member.skills || [],
               startDate: member.startDate || new Date().toISOString().split('T')[0],
               notes: member.notes || '',
-              isActive: member.isActive ?? true
+              isActive: member.isActive ?? true,
+              managedTeamIds: member.managedTeamIds || []
             });
           } else {
             // Creating new member
@@ -64,7 +66,8 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
               skills: [],
               startDate: '',
               notes: '',
-              isActive: true
+              isActive: true,
+              managedTeamIds: []
             });
           }
         } catch (error) {
@@ -129,7 +132,8 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
         skills: formData.skills,
         startDate: formData.startDate || undefined,
         notes: formData.notes.trim() || undefined,
-        isActive: formData.isActive
+        isActive: formData.isActive,
+        managedTeamIds: formData.managedTeamIds
       };
       onSave(updateDto);
     }
@@ -141,6 +145,15 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
       skills: prev.skills.includes(skill)
         ? prev.skills.filter(s => s !== skill)
         : [...prev.skills, skill]
+    }));
+  };
+
+  const handleManagedTeamToggle = (teamId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      managedTeamIds: prev.managedTeamIds.includes(teamId)
+        ? prev.managedTeamIds.filter(id => id !== teamId)
+        : [...prev.managedTeamIds, teamId]
     }));
   };
 
@@ -490,7 +503,93 @@ const TeamMemberEditModal: React.FC<TeamMemberEditModalProps> = ({
               </div>
             </div>
 
-
+            {/* Managed Teams - Only show for Manager/Admin roles */}
+            {(formData.role === 'Manager' || formData.role === 'Admin') && (
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  color: '#374151',
+                }}>
+                  Managed Teams
+                </h3>
+                <p style={{
+                  fontSize: '0.875rem',
+                  color: '#6b7280',
+                  marginBottom: '12px',
+                }}>
+                  Select the teams this manager will oversee
+                </p>
+                {isLoadingTeams ? (
+                  <div style={{
+                    padding: '20px',
+                    textAlign: 'center',
+                    color: '#6b7280',
+                    fontSize: '0.875rem',
+                  }}>
+                    Loading teams...
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                    gap: '8px',
+                  }}>
+                    {availableTeams.map(team => (
+                      <motion.div
+                        key={team.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleManagedTeamToggle(team.id)}
+                        style={{
+                          padding: '12px 16px',
+                          border: formData.managedTeamIds.includes(team.id) ? '2px solid #10b981' : '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          backgroundColor: formData.managedTeamIds.includes(team.id) ? '#ecfdf5' : 'white',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        <span style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '3px',
+                          backgroundColor: formData.managedTeamIds.includes(team.id) ? '#10b981' : '#d1d5db',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          {formData.managedTeamIds.includes(team.id) && (
+                            <span style={{ color: 'white', fontSize: '8px' }}>✓</span>
+                          )}
+                        </span>
+                        <span style={{
+                          fontSize: '0.875rem',
+                          fontWeight: formData.managedTeamIds.includes(team.id) ? '600' : '500',
+                          color: formData.managedTeamIds.includes(team.id) ? '#047857' : '#374151',
+                        }}>
+                          {team.name}
+                        </span>
+                      </motion.div>
+                    ))}
+                    {availableTeams.length === 0 && !isLoadingTeams && (
+                      <div style={{
+                        padding: '20px',
+                        textAlign: 'center',
+                        color: '#ef4444',
+                        fontSize: '0.875rem',
+                      }}>
+                        No teams available. Please contact your administrator.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Notes */}
             <div style={{ marginBottom: '24px' }}>

@@ -108,8 +108,8 @@ builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-// Minimal initialization service for essential setup only
-builder.Services.AddScoped<IMinimalInitializer, MinimalInitializer>();
+// SEEDING COMPLETELY DISABLED - DO NOT REGISTER SEEDING SERVICES
+// builder.Services.AddScoped<IMinimalInitializer, MinimalInitializer>();
 
 var app = builder.Build();
 
@@ -125,9 +125,9 @@ using (var scope = app.Services.CreateScope())
         await context.Database.MigrateAsync();
         logger.LogInformation("Database ready.");
 
-        // Initialize essential data (manager user and default team)
-        var initializer = scope.ServiceProvider.GetRequiredService<IMinimalInitializer>();
-        await initializer.InitializeAsync();
+        // SEEDING DISABLED - DO NOT CREATE ANY DATA
+        // var initializer = scope.ServiceProvider.GetRequiredService<IMinimalInitializer>();
+        // await initializer.InitializeAsync();
     }
     catch (Exception ex)
     {

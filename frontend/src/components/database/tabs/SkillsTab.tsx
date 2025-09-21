@@ -14,12 +14,15 @@ import {
   SKILL_CATEGORY_COLORS
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
+import { skillTaskCountService, SkillTaskCount } from '../../../services/skillTaskCountService';
 
 interface SkillsTabProps {
   onEntityCountChange: (count: number) => void;
+  onTaskCountsChange?: (taskCounts: SkillTaskCount[]) => void;
+  refreshTrigger?: number; // External trigger to refresh task counts
 }
 
-const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
+const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange, onTaskCountsChange, refreshTrigger }) => {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,25 +34,75 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
   const [showViewTaskTypesModal, setShowViewTaskTypesModal] = useState(false);
   const [showAddToTaskTypeModal, setShowAddToTaskTypeModal] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [liveTaskCounts, setLiveTaskCounts] = useState<Map<number, { taskCount: number; projectCount: number; taskTypeCount: number }>>(new Map());
 
   useEffect(() => {
     loadSkills();
+    loadLiveTaskCounts();
   }, []);
 
   useEffect(() => {
     onEntityCountChange(Array.isArray(skills) ? skills.length : 0);
   }, [skills]);
 
+  // Respond to external refresh triggers (e.g., from calendar changes)
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      console.log('🔄 SKILLS TAB - External refresh trigger received:', refreshTrigger);
+      loadLiveTaskCounts();
+    }
+  }, [refreshTrigger]);
+
   const loadSkills = async () => {
+    console.log('🔄 SKILLS TAB - loadSkills called');
     try {
       setLoading(true);
       setError(null);
+      console.log('🚀 SKILLS TAB - calling databaseService.getSkills...');
       const data = await databaseService.getSkills();
-      setSkills(data);
+      console.log('🛠️ SKILLS TAB - getSkills returned:', data);
+      console.log('🛠️ SKILLS TAB - data is array:', Array.isArray(data));
+      console.log('🛠️ SKILLS TAB - data length:', data?.length);
+      const skillsArray = Array.isArray(data) ? data : [];
+      console.log('🛠️ SKILLS TAB - setting skills to:', skillsArray);
+      setSkills(skillsArray);
+      console.log('✅ SKILLS TAB - loadSkills completed successfully');
     } catch (err) {
+      console.log('❌ SKILLS TAB - error in loadSkills:', err);
       setError(err instanceof Error ? err.message : 'Failed to load skills');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLiveTaskCounts = async () => {
+    try {
+      console.log('🔄 SKILLS TAB - loadLiveTaskCounts called');
+      const taskCounts = await skillTaskCountService.getSkillTaskCounts();
+      console.log('🛠️ SKILLS TAB - received live task counts:', taskCounts);
+
+      // Convert to Map for efficient lookup
+      const countsMap = new Map<number, { taskCount: number; projectCount: number; taskTypeCount: number }>();
+      taskCounts.forEach(count => {
+        countsMap.set(count.skillId, {
+          taskCount: count.taskCount,
+          projectCount: count.projectCount,
+          taskTypeCount: count.taskTypeCount
+        });
+      });
+
+      setLiveTaskCounts(countsMap);
+
+      // Notify parent component if callback provided
+      if (onTaskCountsChange) {
+        onTaskCountsChange(taskCounts);
+      }
+
+      console.log('✅ SKILLS TAB - loadLiveTaskCounts completed');
+    } catch (err) {
+      console.error('❌ SKILLS TAB - error in loadLiveTaskCounts:', err);
+      // On error, clear the counts
+      setLiveTaskCounts(new Map());
     }
   };
 
@@ -69,17 +122,26 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
   };
 
   const handleSave = async (data: CreateSkillDto | UpdateSkillDto) => {
+    console.log('🟢 SKILLS TAB - handleSave called with data:', data);
     try {
       setFormLoading(true);
       if (editingSkill) {
+        console.log('📝 SKILLS TAB - updating existing skill');
         await databaseService.updateSkill(data as UpdateSkillDto);
       } else {
-        await databaseService.createSkill(data as CreateSkillDto);
+        console.log('➕ SKILLS TAB - creating new skill');
+        console.log('🚀 SKILLS TAB - calling databaseService.createSkill...');
+        const result = await databaseService.createSkill(data as CreateSkillDto);
+        console.log('✅ SKILLS TAB - createSkill returned:', result);
       }
       setShowForm(false);
       setEditingSkill(undefined);
+      console.log('🔄 SKILLS TAB - reloading skills...');
       await loadSkills();
+      await loadLiveTaskCounts(); // Refresh live counts after changes
+      console.log('✅ SKILLS TAB - handleSave completed successfully');
     } catch (err) {
+      console.log('❌ SKILLS TAB - error in handleSave:', err);
       throw err; // Let the form handle the error
     } finally {
       setFormLoading(false);
@@ -94,6 +156,7 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
       setShowDeleteConfirm(false);
       setDeletingSkill(undefined);
       await loadSkills();
+      await loadLiveTaskCounts(); // Refresh live counts after deletion
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete skill');
     }
@@ -129,25 +192,63 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
       key: 'category',
       label: 'Type',
       sortable: true,
-      width: '150px',
+      width: '120px',
       render: (value) => getCategoryBadge(value)
     },
     {
       key: 'description',
       label: 'Description',
       sortable: false,
-      width: '300px',
+      width: '220px',
       render: (value) => {
         if (!value) return '-';
-        return value.length > 60 ? `${value.substring(0, 60)}...` : value;
+        return value.length > 50 ? `${value.substring(0, 50)}...` : value;
       }
     },
     {
       key: 'taskTypesCount',
       label: 'Task Types',
       sortable: true,
-      width: '120px',
-      render: (value) => getTaskTypesCount(value || 0)
+      width: '90px',
+      render: (value, item) => {
+        // Use live task type count if available, otherwise fall back to database value
+        const liveCount = liveTaskCounts.get(item.id!)?.taskTypeCount ?? value ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'projectCount',
+      label: 'Projects',
+      sortable: true,
+      width: '80px',
+      render: (value, item) => {
+        // Use live project count from assignments
+        const liveCount = liveTaskCounts.get(item.id!)?.projectCount ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'taskCount',
+      label: 'Tasks',
+      sortable: true,
+      width: '80px',
+      render: (value, item) => {
+        // Use live task count from assignments
+        const liveCount = liveTaskCounts.get(item.id!)?.taskCount ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
     }
   ];
 
@@ -161,7 +262,10 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
         data={skills}
         loading={loading}
         error={error}
-        onRefresh={loadSkills}
+        onRefresh={() => {
+          loadSkills();
+          loadLiveTaskCounts();
+        }}
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}
@@ -181,7 +285,10 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
               setShowViewTaskTypesModal(true);
             },
             variant: 'secondary',
-            show: (skill) => (skill.taskTypesCount || 0) > 0
+            show: (skill) => {
+              const liveCount = liveTaskCounts.get(skill.id!)?.taskTypeCount ?? skill.taskTypesCount ?? 0;
+              return liveCount > 0;
+            }
           },
           {
             label: 'Add to Task Type',
@@ -232,6 +339,7 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
         skill={selectedSkill}
         onRemoveFromTaskType={() => {
           loadSkills(); // Refresh skills to update counts
+          loadLiveTaskCounts(); // Refresh live counts too
         }}
       />
 
@@ -245,6 +353,7 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange }) => {
         skill={selectedSkill}
         onTaskTypesUpdated={() => {
           loadSkills(); // Refresh skills to update counts
+          loadLiveTaskCounts(); // Refresh live counts too
         }}
       />
     </>

@@ -1049,6 +1049,10 @@ export interface DatabaseManagementModalProps {
   onClose: () => void;
   /** Initial tab to show */
   initialTab?: EntityType;
+  /** Optional callback when data changes (e.g., client colors updated) */
+  onDataChange?: () => void;
+  /** Trigger from calendar to refresh task counts */
+  calendarRefreshTrigger?: number;
 }
 
 /**
@@ -1290,8 +1294,10 @@ export interface UserEmployee {
   position?: string;
   /** Employee phone number */
   phoneNumber?: string;
-  /** Team information */
+  /** Team information (primary team) */
   team?: UserTeam;
+  /** All teams the user belongs to (primary + managed) */
+  teams: UserTeam[];
   /** List of employee skills */
   skills: UserSkill[];
 }
@@ -1320,6 +1326,8 @@ export interface User {
   lastLoginAt?: Date;
   /** Employee information */
   employee?: UserEmployee;
+  /** Team IDs that this user manages (for Manager/Admin roles) */
+  managedTeamIds?: number[];
 }
 
 /**
@@ -1338,8 +1346,8 @@ export interface CreateUserDto {
   role: UserRole;
   /** Team ID for employee assignment (required) */
   teamId: number;
-  /** Management team ID (for managers only) */
-  managedTeamId?: number;
+  /** Management team IDs (for managers only) */
+  managedTeamIds?: number[];
   /** Employee position (optional) */
   position?: string;
   /** List of skill IDs for this user (optional) */
@@ -1362,8 +1370,8 @@ export interface UpdateUserDto {
   role: UserRole;
   /** Team ID for employee assignment (required) */
   teamId: number;
-  /** Management team ID (for managers only) */
-  managedTeamId?: number;
+  /** Management team IDs (for managers only) */
+  managedTeamIds?: number[];
   /** Employee position (optional) */
   position?: string;
   /** List of skill IDs for this user (optional) */

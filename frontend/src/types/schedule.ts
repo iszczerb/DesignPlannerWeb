@@ -126,7 +126,6 @@ export interface AssignmentTaskDto {
   taskTitle: string;
   taskName?: string; // Alias for taskTitle for backward compatibility
   taskTypeName: string;
-  projectCode: string;
   projectName: string;
   clientCode: string;
   clientName: string;
@@ -141,6 +140,8 @@ export interface AssignmentTaskDto {
   employeeId: number;
   employeeName: string;
   hours?: number; // Custom hours for this task (if not set, will be calculated automatically)
+  columnStart?: number; // Which column task starts at (0-3), calculated automatically if not set
+  slotOrder?: number; // Placement order within the slot (0 = leftmost, 1 = second from left, etc.)
 }
 
 // Request DTOs
@@ -158,13 +159,14 @@ export interface CreateAssignmentDto {
   assignedDate: string;
   slot: Slot;
   notes?: string;
-  estimatedHours?: number;
   projectId?: number;
   taskTypeId?: number;
   priority?: TaskPriority;
   status?: TaskStatus;
   title?: string;
   description?: string;
+  hours?: number; // Duration in hours (1-4)
+  columnStart?: number; // Starting column position (0-3)
 }
 
 export interface UpdateAssignmentDto {
@@ -175,6 +177,7 @@ export interface UpdateAssignmentDto {
   slot?: Slot;
   notes?: string;
   hours?: number;
+  columnStart?: number; // Starting column position (0-3)
   priority?: TaskPriority;
   dueDate?: string;
 }
@@ -241,6 +244,7 @@ export interface TeamMemberDto {
   startDate: string;
   isActive: boolean;
   notes?: string;
+  managedTeamIds?: number[]; // For managers - teams they manage
 }
 
 export interface CreateTeamMemberDto {
@@ -264,6 +268,7 @@ export interface UpdateTeamMemberDto {
   startDate?: string;
   isActive?: boolean;
   notes?: string;
+  managedTeamIds?: number[]; // For managers - teams they manage
 }
 
 export interface TeamMemberListDto {

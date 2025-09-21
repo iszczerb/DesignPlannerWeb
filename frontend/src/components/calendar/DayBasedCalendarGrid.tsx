@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SimplifiedEmployeeRow from './SimplifiedEmployeeRow';
+import TeamDetailsModal from './TeamDetailsModal';
 import {
   EmployeeCalendarDto,
   CalendarDayDto,
@@ -12,6 +13,28 @@ import {
   LEAVE_TYPE_LABELS
 } from '../../types/schedule';
 import { DragItem } from '../../types/dragDrop';
+import {
+  migrateTasksToColumns,
+  getTaskHours,
+  getTaskColumnStart,
+  getTaskWidthPercentage,
+  getTaskLeftPercentage,
+  optimizeLayoutAfterResize,
+  calculateOptimalPlacement,
+  getMaxAvailableDuration,
+  autoReflowTasks,
+  smartResizeForNewTask,
+  calculateOptimalLayoutWithNewTask,
+  getTotalUsedHours,
+  calculateActualHours,
+  calculateActualColumnStart
+} from '../../utils/taskLayoutHelpers';
+import {
+  calculateDropColumn,
+  calculateColumnBasedRearrangement,
+  addColumnGuides,
+  removeColumnGuides
+} from '../../utils/columnDropHelpers';
 
 interface DayBasedCalendarGridProps {
   employees: EmployeeCalendarDto[];
@@ -37,18 +60,22 @@ interface DayBasedCalendarGridProps {
   onSetBankHoliday?: (date: Date) => void;
   onSetLeave?: (date: Date) => void;
   onClearBlocking?: (date: Date) => void;
+  onDayViewDetails?: (date: Date, day: CalendarDayDto) => void;
   selectedTaskIds?: number[];
   selectedSlots?: Array<{ date: Date; slot: Slot; employeeId: number; }>;
   onSlotFocus?: (date: Date, slot: Slot, employeeId: number, event?: React.MouseEvent) => void;
   selectedDays?: string[]; // Array of date strings (toDateString() format)
   onDayClick?: (date: Date, event?: React.MouseEvent) => void;
   // Team management props
-  onAddNewMember?: (teamId: number) => void;
-  onManageTeam?: () => void;
+  onTeamViewDetails?: (teamId: number, teamName: string, teamMembers: EmployeeCalendarDto[]) => void;
+  onTeamFilter?: (action: 'toggle' | 'clear', teamName?: string) => void;
+  selectedTeamFilters?: string[];
   // Individual employee management props
   onEmployeeView?: (employee: any) => void;
   onEmployeeEdit?: (employee: any) => void;
   onEmployeeDelete?: (employeeId: number) => void;
+  // Refresh callback for actions that need to reload calendar data
+  onRefresh?: () => void;
 }
 
 const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
@@ -75,16 +102,19 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   onSetBankHoliday,
   onSetLeave,
   onClearBlocking,
+  onDayViewDetails,
   selectedTaskIds = [],
   selectedSlots = [],
   onSlotFocus,
   selectedDays = [],
   onDayClick,
-  onAddNewMember,
-  onManageTeam,
+  onTeamViewDetails,
+  onTeamFilter,
+  selectedTeamFilters = [],
   onEmployeeView,
   onEmployeeEdit,
-  onEmployeeDelete
+  onEmployeeDelete,
+  onRefresh
 }) => {
   // State management for hover and context menus
   const [hoveredSlot, setHoveredSlot] = useState<{
@@ -92,9 +122,407 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     date: string;
     isAM: boolean;
   } | null>(null);
+
+  // State for tracking hovered columns in the 4-column grid
+  const [hoveredColumn, setHoveredColumn] = useState<{
+    employeeId: number;
+    date: string;
+    isAM: boolean;
+    column: number;
+  } | null>(null);
+
+  // State for tracking hovered resize handles
+  const [hoveredResizeHandle, setHoveredResizeHandle] = useState<{
+    taskId: number;
+    side: 'left' | 'right';
+  } | null>(null);
+
+  // State for tracking active resize operation
+  const [resizingTask, setResizingTask] = useState<{
+    taskId: number;
+    side: 'left' | 'right';
+    originalHours: number;
+    originalColumnStart: number;
+    startX: number;
+    currentHours: number;
+    currentColumnStart: number;
+  } | null>(null);
+
+  // Helper function to find available columns for a task
+  const findAvailableColumns = (
+    existingTasks: AssignmentTaskDto[],
+    requiredHours: number
+  ): number | null => {
+    const occupied = new Array(4).fill(false);
+
+    // Mark occupied columns
+    migrateTasksToColumns(existingTasks).forEach((task, taskIndex) => {
+      const start = getTaskColumnStart(task, taskIndex, existingTasks.length);
+      const hours = getTaskHours(task, taskIndex, existingTasks.length);
+      const end = start + hours;
+      for (let i = start; i < end && i < 4; i++) {
+        occupied[i] = true;
+      }
+    });
+
+    // Find first available space that fits
+    for (let i = 0; i <= 4 - requiredHours; i++) {
+      let canFit = true;
+      for (let j = i; j < i + requiredHours; j++) {
+        if (occupied[j]) {
+          canFit = false;
+          break;
+        }
+      }
+      if (canFit) return i;
+    }
+
+    return null; // No space available
+  };
+
+  // Intelligent drop validation with auto-resizing
+  const canDropTask = (
+    task: AssignmentTaskDto,
+    targetSlotTasks: AssignmentTaskDto[]
+  ): {
+    canDrop: boolean;
+    smartLayout?: AssignmentTaskDto[];
+    tasksToUpdate?: { assignmentId: number; newHours: number }[];
+    newTaskHours?: number;
+  } => {
+    const taskHours = task.hours || 1; // Default to 1 hour for new tasks
+
+    console.log('🎯 Smart drop analysis:', {
+      incomingTaskHours: taskHours,
+      currentSlotTasks: targetSlotTasks.length,
+      currentTotalHours: getTotalUsedHours(targetSlotTasks)
+    });
+
+    // Use the smart layout calculator
+    const layoutResult = calculateOptimalLayoutWithNewTask(
+      targetSlotTasks,
+      {
+        assignmentId: task.assignmentId,
+        taskTitle: task.taskTitle,
+        taskDescription: task.taskDescription,
+        priority: task.priority,
+        taskStatus: task.taskStatus,
+        assignedDate: task.assignedDate,
+        slot: task.slot
+      },
+      taskHours
+    );
+
+    console.log('🧠 Smart layout result:', {
+      canPlace: layoutResult.canPlace,
+      tasksToUpdate: layoutResult.tasksToUpdate,
+      finalLayoutLength: layoutResult.finalLayout.length
+    });
+
+    return {
+      canDrop: layoutResult.canPlace,
+      smartLayout: layoutResult.finalLayout,
+      tasksToUpdate: layoutResult.tasksToUpdate,
+      newTaskHours: layoutResult.newTaskHours
+    };
+  };
+
+  // NEW: Column-based drop handler
+  const handleColumnBasedDrop = async (
+    e: React.DragEvent<HTMLDivElement>,
+    slotData: any,
+    dateObj: Date,
+    isAM: boolean,
+    employee: EmployeeCalendarDto
+  ) => {
+    e.preventDefault();
+    e.currentTarget.style.backgroundColor = 'transparent';
+    removeColumnGuides(e.currentTarget);
+
+    const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
+    if (!dragData || dragData.type !== 'task') {
+      return;
+    }
+
+    // Calculate which column (0-3) the drop occurred in
+    const targetColumn = calculateDropColumn(e.clientX, e.currentTarget);
+
+    console.log('🎯 Column-based drop:', {
+      targetColumn,
+      existingTasks: slotData?.tasks?.length || 0,
+      draggedTask: dragData.task.taskTitle
+    });
+
+    // Get existing tasks, defaulting to empty array
+    const existingTasks = slotData?.tasks || [];
+
+    // Apply column-based rearrangement logic
+    const rearrangementResult = calculateColumnBasedRearrangement(
+      existingTasks,
+      dragData.task,
+      targetColumn
+    );
+
+    if (!rearrangementResult.canDrop) {
+      console.log('❌ Drop rejected:', rearrangementResult.reason);
+      return;
+    }
+
+    console.log('✅ Drop accepted! New arrangement:', rearrangementResult.newArrangement);
+
+    // CRITICAL: Update the dragged task with its new position from the arrangement
+    const droppedTaskInArrangement = rearrangementResult.newArrangement.find(
+      t => t.assignmentId === dragData.task.assignmentId
+    );
+
+    if (droppedTaskInArrangement) {
+      // Update drag data with the calculated position
+      dragData.task.columnStart = droppedTaskInArrangement.columnStart;
+      dragData.task.hours = droppedTaskInArrangement.hours;
+
+      console.log('📍 Updated task position:', {
+        taskId: dragData.task.assignmentId,
+        columnStart: droppedTaskInArrangement.columnStart,
+        hours: droppedTaskInArrangement.hours
+      });
+    }
+
+    // Call the original drop handler with updated task data
+    onTaskDrop?.(dragData, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+
+    // Update all other tasks in the slot with their new positions
+    if (rearrangementResult.newArrangement.length > 1) {
+      console.log('🔄 Updating other tasks in slot with new positions...');
+
+      // Import the schedule service dynamically
+      const { default: scheduleService } = await import('../../services/scheduleService');
+
+      // Update ALL tasks in the new arrangement (except the dropped one)
+      // This ensures compression changes are always saved to backend
+      for (const task of rearrangementResult.newArrangement) {
+        if (task.assignmentId !== dragData.task.assignmentId) {
+          console.log(`📦 FORCE UPDATING task ${task.assignmentId}: column ${task.columnStart}, hours ${task.hours} (ensuring compression is saved)`);
+
+          await scheduleService.updateAssignment({
+            assignmentId: task.assignmentId,
+            columnStart: task.columnStart,
+            hours: task.hours
+          });
+        }
+      }
+
+      // Refresh to show the updated positions
+      setTimeout(() => {
+        console.log('🔄 Refreshing after column-based rearrangement...');
+        onRefresh?.();
+      }, 200);
+    }
+  };
+
+  // Helper function to check if a task can be resized
+  const canResizeTask = (task: AssignmentTaskDto, side: 'left' | 'right', allSlotTasks: AssignmentTaskDto[]): boolean => {
+    const currentHours = task.hours || 4;
+    const currentColumnStart = task.columnStart || 0;
+
+    // CRITICAL: Don't show resize handles when slot has 4 tasks (no more space)
+    if (allSlotTasks.length >= 4) {
+      return false;
+    }
+
+    if (side === 'left') {
+      // Can resize left if task can be made smaller (> 1 hour)
+      return currentHours > 1;
+    } else {
+      // Can resize right if task can be made smaller or larger within bounds
+      const currentEnd = currentColumnStart + currentHours;
+      return currentHours > 1 || currentEnd < 4;
+    }
+  };
+
+  // Handle resize start
+  const handleResizeStart = (e: React.MouseEvent, task: AssignmentTaskDto, side: 'left' | 'right') => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const currentHours = task.hours || 4;
+    const currentColumnStart = task.columnStart || 0;
+
+    setResizingTask({
+      taskId: task.assignmentId,
+      side,
+      originalHours: currentHours,
+      originalColumnStart: currentColumnStart,
+      startX: e.clientX,
+      currentHours: currentHours,
+      currentColumnStart: currentColumnStart
+    });
+
+    console.log(`🔄 Starting ${side.toUpperCase()} resize for task "${task.taskTitle}" - Current: ${currentHours}h at column ${currentColumnStart}`);
+  };
+
+  // Handle resize during mouse move
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!resizingTask) return;
+
+    const deltaX = e.clientX - resizingTask.startX;
+    const columnWidth = 80; // Approximate column width in pixels (adjust based on actual slot width)
+    const columnsChanged = Math.round(deltaX / columnWidth);
+
+    let newHours = resizingTask.originalHours;
+    let newColumnStart = resizingTask.originalColumnStart;
+
+    if (resizingTask.side === 'left') {
+      // Resizing from left: adjust column start and hours
+      const adjustment = Math.max(-resizingTask.originalColumnStart, Math.min(resizingTask.originalHours - 1, columnsChanged));
+      newColumnStart = resizingTask.originalColumnStart + adjustment;
+      newHours = resizingTask.originalHours - adjustment;
+    } else {
+      // Resizing from right: adjust hours only
+      const maxHours = 4 - resizingTask.originalColumnStart;
+      newHours = Math.max(1, Math.min(maxHours, resizingTask.originalHours + columnsChanged));
+    }
+
+    // Validate bounds
+    newHours = Math.max(1, Math.min(4, newHours));
+    newColumnStart = Math.max(0, Math.min(3, newColumnStart));
+
+    // Ensure task doesn't exceed slot boundaries
+    if (newColumnStart + newHours > 4) {
+      if (resizingTask.side === 'left') {
+        newColumnStart = 4 - newHours;
+      } else {
+        newHours = 4 - newColumnStart;
+      }
+    }
+
+    // Update current state for visual feedback
+    setResizingTask(prev => prev ? {
+      ...prev,
+      currentHours: newHours,
+      currentColumnStart: newColumnStart
+    } : null);
+
+    console.log(`🔄 Resizing: ${newHours}h at column ${newColumnStart}`);
+  };
+
+  // Handle bulk task resizing during smart drops
+  const handleBulkTaskResize = async (tasksToUpdate: { assignmentId: number; newHours: number }[]) => {
+    try {
+      console.log('🔄 Starting bulk task resize for smart drop:', tasksToUpdate);
+
+      // Import schedule service
+      const { default: scheduleService } = await import('../../services/scheduleService');
+
+      // Update each task individually (can be optimized to bulk update later)
+      const updatePromises = tasksToUpdate.map(async (taskUpdate) => {
+        console.log(`📤 Updating task ${taskUpdate.assignmentId} to ${taskUpdate.newHours} hours`);
+
+        const updateData = {
+          assignmentId: taskUpdate.assignmentId,
+          hours: taskUpdate.newHours
+        };
+
+        return scheduleService.updateAssignment(updateData);
+      });
+
+      // Execute all updates in parallel
+      const results = await Promise.all(updatePromises);
+      console.log('✅ Bulk resize completed:', results);
+
+      // Refresh calendar after bulk update
+      if (onRefresh) {
+        setTimeout(() => {
+          console.log('🔄 Refreshing calendar after bulk resize...');
+          onRefresh();
+        }, 100); // Small delay to ensure API calls complete
+      }
+
+    } catch (error) {
+      console.error('❌ Bulk task resize failed:', error);
+      // TODO: Show error message to user
+    }
+  };
+
+  // Handle resize end
+  const handleResizeEnd = async () => {
+    console.log(`🔥 RESIZE END CALLED - resizingTask:`, resizingTask);
+
+    if (!resizingTask) {
+      console.log(`❌ No resizingTask state - aborting resize end`);
+      return;
+    }
+
+    const { taskId, currentHours, currentColumnStart, originalHours, originalColumnStart } = resizingTask;
+    console.log(`📊 RESIZE DATA: taskId=${taskId}, currentHours=${currentHours}, originalHours=${originalHours}, currentColumnStart=${currentColumnStart}, originalColumnStart=${originalColumnStart}`);
+
+    // Only update if something actually changed
+    if (currentHours !== originalHours || currentColumnStart !== originalColumnStart) {
+      try {
+        console.log(`✅ STARTING API CALL: Persisting resize for task ${taskId}: ${currentHours}h at column ${currentColumnStart}`);
+
+        // Import scheduleService at the component level
+        const { default: scheduleService } = await import('../../services/scheduleService');
+        console.log(`📦 ScheduleService imported successfully`);
+
+        // Prepare API call data
+        const updateData = {
+          assignmentId: taskId,
+          hours: currentHours
+        };
+        console.log(`📤 SENDING UPDATE DATA:`, updateData);
+
+        // Update the task via API (backend only supports hours, not columnStart)
+        const apiResponse = await scheduleService.updateAssignment(updateData);
+        console.log(`✅ API RESPONSE:`, apiResponse);
+        console.log(`🔄 Task ${taskId} resize persisted successfully - hours in response: ${apiResponse.hours}`);
+        console.log(`🔍 CRITICAL CHECK - originalHours in response: ${apiResponse.hours}, expectedHours: ${currentHours}`);
+
+        // Trigger a refresh of the calendar data
+        if (onRefresh) {
+          console.log(`🔄 CALLING onRefresh() to reload calendar data`);
+          onRefresh();
+          console.log(`🔄 onRefresh() called successfully`);
+        } else {
+          console.warn('⚠️ No onRefresh callback provided - task will appear unchanged until page refresh');
+        }
+
+      } catch (error) {
+        console.error(`❌ RESIZE API FAILED for task ${taskId}:`, error);
+        console.error(`❌ Error details:`, error?.message, error?.response?.data);
+        // TODO: Show error toast to user
+      }
+    } else {
+      console.log(`ℹ️ No changes to persist for task ${taskId} - currentHours=${currentHours}, originalHours=${originalHours}`);
+    }
+
+    console.log(`🧹 CLEARING resizingTask state`);
+    setResizingTask(null);
+    console.log(`🔥 RESIZE END COMPLETED`);
+  };
+
+  // Add global mouse event listeners for resize
+  React.useEffect(() => {
+    if (resizingTask) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+      };
+    }
+  }, [resizingTask]);
   const [hoveredTask, setHoveredTask] = useState<number | null>(null);
   const [contextMenus, setContextMenus] = useState<NodeListOf<Element> | null>(null);
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Team details modal state
+  const [showTeamDetailsModal, setShowTeamDetailsModal] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<{
+    id: number;
+    name: string;
+    members: EmployeeCalendarDto[];
+  } | null>(null);
   const [teamHeaderHovered, setTeamHeaderHovered] = useState(false);
 
   // Cleanup context menus
@@ -233,51 +661,116 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     header.style.backgroundColor = '#f9fafb';
     contextMenu.appendChild(header);
 
+    // Get unique structural teams from employees
+    const structuralTeams = [...new Set(employees.map(emp => emp.team))].filter(team => team && team !== '');
+
     const menuItems = [
       {
-        label: '➕ Add New Member',
-        action: () => onAddNewMember?.(employees[0]?.teamId || 1),
-        icon: '➕'
+        label: '📊 View Team Details',
+        action: () => {
+          // For admin view, show all employees from all structural teams
+          const teamName = 'Admin View - All Members';
+          const teamId = 1;
+
+          // Show ALL employees (admin can see everyone)
+          setSelectedTeam({
+            id: teamId,
+            name: teamName,
+            members: employees
+          });
+          setShowTeamDetailsModal(true);
+        },
+        icon: '📊'
       },
+      // Add separator
+      { label: '─────────────────', action: () => {}, icon: '' },
       {
-        label: '⚙️ Manage Team',
-        action: () => onManageTeam?.(),
-        icon: '⚙️'
-      }
+        label: '🏠 Clear All Filters',
+        action: () => {
+          if (onTeamFilter) {
+            onTeamFilter('clear');
+          }
+        },
+        icon: '🏠'
+      },
+      // Add separator
+      { label: '─────────────────', action: () => {}, icon: '' },
+      // Add checkbox options for each structural team
+      ...structuralTeams.map(teamName => ({
+        label: teamName,
+        action: () => {
+          if (onTeamFilter) {
+            onTeamFilter('toggle', teamName);
+          }
+        },
+        icon: selectedTeamFilters.includes(teamName) ? '☑️' : '☐',
+        isCheckbox: true,
+        isSelected: selectedTeamFilters.includes(teamName)
+      }))
     ];
 
     menuItems.forEach((item, index) => {
       const menuItem = document.createElement('div');
       menuItem.style.padding = '12px 16px';
       menuItem.style.cursor = 'pointer';
-      menuItem.style.transition = 'background-color 0.2s';
+      menuItem.style.transition = 'all 0.2s';
       menuItem.style.display = 'flex';
       menuItem.style.alignItems = 'center';
       menuItem.style.gap = '12px';
       menuItem.style.fontSize = '0.875rem';
-      menuItem.style.color = '#374151';
+
+      // Handle separator
+      if (item.label.includes('─')) {
+        menuItem.style.padding = '4px 16px';
+        menuItem.style.cursor = 'default';
+        menuItem.style.borderBottom = '1px solid #e5e7eb';
+        menuItem.style.margin = '4px 0';
+        menuItem.textContent = '';
+        contextMenu.appendChild(menuItem);
+        return;
+      }
+
+      // Style for checkbox items vs regular items
+      if (item.isCheckbox) {
+        menuItem.style.color = item.isSelected ? '#1e40af' : '#374151';
+        menuItem.style.backgroundColor = item.isSelected ? '#eff6ff' : 'transparent';
+        menuItem.style.fontWeight = item.isSelected ? '600' : '400';
+      } else {
+        menuItem.style.color = '#374151';
+        menuItem.style.backgroundColor = 'transparent';
+      }
 
       // Icon
       const iconSpan = document.createElement('span');
       iconSpan.textContent = item.icon;
       iconSpan.style.fontSize = '1rem';
+      iconSpan.style.minWidth = '20px';
       menuItem.appendChild(iconSpan);
 
-      // Label
+      // Label - don't remove emoji for new format
       const labelSpan = document.createElement('span');
-      labelSpan.textContent = item.label.substring(2); // Remove emoji from label
+      labelSpan.textContent = item.isCheckbox ? item.label : (item.label.includes(' ') ? item.label.substring(2) : item.label);
       menuItem.appendChild(labelSpan);
 
       menuItem.addEventListener('mouseenter', () => {
-        menuItem.style.backgroundColor = '#f9fafb';
+        if (item.isCheckbox) {
+          menuItem.style.backgroundColor = item.isSelected ? '#dbeafe' : '#f3f4f6';
+        } else {
+          menuItem.style.backgroundColor = '#f9fafb';
+        }
       });
       menuItem.addEventListener('mouseleave', () => {
-        menuItem.style.backgroundColor = 'transparent';
+        if (item.isCheckbox) {
+          menuItem.style.backgroundColor = item.isSelected ? '#eff6ff' : 'transparent';
+        } else {
+          menuItem.style.backgroundColor = 'transparent';
+        }
       });
       menuItem.addEventListener('click', (e) => {
         e.stopPropagation();
         item.action();
-        if (document.body.contains(contextMenu)) {
+        // Keep menu open for checkbox items to allow multi-selection
+        if (!item.isCheckbox && document.body.contains(contextMenu)) {
           document.body.removeChild(contextMenu);
         }
       });
@@ -550,21 +1043,18 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             if (!isReadOnly) {
               e.preventDefault();
               e.currentTarget.style.backgroundColor = '#f0f9ff';
+              addColumnGuides(e.currentTarget);
             }
           }}
           onDragLeave={(e) => {
             if (!isReadOnly) {
               e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
+              removeColumnGuides(e.currentTarget);
             }
           }}
           onDrop={(e) => {
             if (!isReadOnly) {
-              e.preventDefault();
-              e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
-              const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
-              if (dragData && dragData.type === 'task') {
-                onTaskDrop?.(dragData, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
-              }
+              handleColumnBasedDrop(e, null, dateObj, isAM, employee);
             }
           }}
         >
@@ -675,21 +1165,18 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             if (!isReadOnly) {
               e.preventDefault();
               e.currentTarget.style.backgroundColor = '#f0f9ff';
+              addColumnGuides(e.currentTarget);
             }
           }}
           onDragLeave={(e) => {
             if (!isReadOnly) {
               e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
+              removeColumnGuides(e.currentTarget);
             }
           }}
           onDrop={(e) => {
             if (!isReadOnly) {
-              e.preventDefault();
-              e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
-              const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
-              if (dragData && dragData.type === 'task') {
-                onTaskDrop?.(dragData, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
-              }
+              handleColumnBasedDrop(e, null, dateObj, isAM, employee);
             }
           }}
         >
@@ -774,16 +1261,11 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       <div
         style={{
           flex: 1,
-          display: 'flex',
-          flexWrap: 'nowrap',
-          gap: '1px',
+          display: 'block', // Changed from 'flex' to support absolute positioning
           padding: '1px',
-          alignContent: 'center',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
           height: '100%',
           overflow: 'hidden',
-          position: 'relative',
+          position: 'relative', // Essential for absolute positioned children
           transition: 'all 0.2s ease-in-out',
           backgroundColor: isSelected ? '#dbeafe' : (isHovered ? '#fafbff' : 'transparent'),
           border: isSelected ? '3px solid #3b82f6' : 'none',
@@ -799,32 +1281,53 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
         })}
         onMouseLeave={() => setHoveredSlot(null)}
         onDragOver={(e) => {
-          if (!isReadOnly && slotData.tasks.length < 4) {
+          if (!isReadOnly) {
+            // For now, allow all drag overs - we'll validate on drop
+            // TODO: Enhance with better visual feedback when we have access to drag data
             e.preventDefault();
             e.currentTarget.style.backgroundColor = '#f0f9ff';
+            addColumnGuides(e.currentTarget);
           }
         }}
         onDragLeave={(e) => {
           if (!isReadOnly) {
             e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
+            removeColumnGuides(e.currentTarget);
           }
         }}
         onDrop={(e) => {
-          if (!isReadOnly && slotData.tasks.length < 4) {
-            e.preventDefault();
-            e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
-            const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
-            if (dragData && dragData.type === 'task') {
-              onTaskDrop?.(dragData, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
-            }
+          if (!isReadOnly) {
+            handleColumnBasedDrop(e, slotData, dateObj, isAM, employee);
           }
         }}>
-        {tasksToShow.map((task) => (
-          <div
-            key={task.assignmentId}
-            data-task-card="true"
-            draggable={!isReadOnly}
-            onDragStart={(e) => {
+        {/* Auto-reflow tasks to ensure left-aligned positioning */}
+        {autoReflowTasks(tasksToShow).map((task, taskIndex) => {
+          // Calculate actual hours and column position based on visual layout
+          let actualHours = calculateActualHours(task, taskIndex, tasksToShow.length);
+          let actualColumnStart = calculateActualColumnStart(task, taskIndex, tasksToShow.length);
+
+          // Use resizing state for visual feedback if this task is being resized
+          if (resizingTask && resizingTask.taskId === task.assignmentId) {
+            actualHours = resizingTask.currentHours;
+            actualColumnStart = resizingTask.currentColumnStart;
+          }
+
+          const actualWidth = getTaskWidthPercentage(actualHours);
+          const actualLeft = getTaskLeftPercentage(actualColumnStart);
+
+          // Validate bounds to prevent visual cropping
+          const boundedWidth = Math.min(actualWidth, 100 - actualLeft);
+          const boundedLeft = Math.min(actualLeft, 100);
+
+          const finalWidth = boundedWidth;
+          const finalLeft = boundedLeft;
+
+          return (
+            <div
+              key={task.assignmentId}
+              data-task-card="true"
+              draggable={!isReadOnly}
+              onDragStart={(e) => {
               if (!isReadOnly) {
                 const dragData = {
                   type: 'task',
@@ -978,30 +1481,40 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               setTimeout(() => document.addEventListener('click', removeMenu), 0);
             }}
             style={{
-              backgroundColor: getTaskColor(task.taskId || 0),
+              backgroundColor: task.clientColor || '#f8f9fa',
               color: '#ffffff',
-              border: selectedTaskIds.includes(task.assignmentId)
-                ? '3px solid #3b82f6'
-                : `2px solid ${getTaskBorderColor(task.taskId || 0)}`,
+              border: resizingTask && resizingTask.taskId === task.assignmentId
+                ? '3px dashed #10b981' // Green dashed border during resize
+                : selectedTaskIds.includes(task.assignmentId)
+                  ? '3px solid #3b82f6'
+                  : `2px solid ${task.clientColor || '#dee2e6'}`,
               borderRadius: '4px',
               fontSize: '0.625rem',
               fontWeight: '500',
               cursor: isReadOnly ? 'pointer' : 'grab',
               display: 'flex',
               flexDirection: 'column',
-              width: tasksToShow.length === 1 ? 'calc(100% - 4px)' :
-                     tasksToShow.length === 2 ? 'calc(50% - 2px)' :
-                     tasksToShow.length === 3 ? 'calc(33.33% - 2px)' :
-                     'calc(25% - 2px)',
+              position: 'absolute', // NEW: Absolute positioning for column system
+              top: 0, // NEW: Ensure tasks align at top of container
+              width: `${finalWidth}%`, // NEW: Column-based width with bounds checking
+              left: `${finalLeft}%`, // NEW: Column-based position with bounds checking
               height: '62px',
-              boxShadow: selectedTaskIds.includes(task.assignmentId)
-                ? '0 4px 12px rgba(59, 130, 246, 0.3)'
-                : '0 1px 2px rgba(0,0,0,0.1)',
-              overflow: 'hidden',
-              position: 'relative',
+              boxShadow: resizingTask && resizingTask.taskId === task.assignmentId
+                ? '0 6px 16px rgba(16, 185, 129, 0.4)' // Green glow during resize
+                : selectedTaskIds.includes(task.assignmentId)
+                  ? '0 4px 12px rgba(59, 130, 246, 0.3)'
+                  : '0 1px 2px rgba(0,0,0,0.1)',
+              overflow: 'hidden', // Hidden overflow for clean task appearance
               flexShrink: 0,
-              transform: selectedTaskIds.includes(task.assignmentId) ? 'scale(1.02)' : 'scale(1)',
-              transition: 'all 0.2s ease-in-out'
+              transform: resizingTask && resizingTask.taskId === task.assignmentId
+                ? 'scale(1.05)' // Slightly larger during resize
+                : selectedTaskIds.includes(task.assignmentId)
+                  ? 'scale(1.02)'
+                  : 'scale(1)',
+              opacity: resizingTask && resizingTask.taskId === task.assignmentId ? 0.9 : 1, // Slight transparency during resize
+              transition: resizingTask && resizingTask.taskId === task.assignmentId
+                ? 'none' // No transition during resize for immediate feedback
+                : 'all 0.2s ease-in-out'
             }}
           >
             {/* Top colored section with project code */}
@@ -1011,7 +1524,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               fontSize: '0.7rem',
               textAlign: 'center',
             }}>
-              {task.projectCode || 'PROJ'}
+              {task.projectName || 'PROJ'}
             </div>
             <div style={{ 
               fontSize: '0.6rem', 
@@ -1131,8 +1644,63 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                 </button>
               </div>
             )}
+
+            {/* Resize Handles - Show on hover for all tasks */}
+            {hoveredTask === task.assignmentId && !isReadOnly && (
+              <>
+                {/* Left resize handle - only if can resize left */}
+                {canResizeTask(task, 'left', tasksToShow) && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '-2px',
+                      top: 0,
+                      width: '6px',
+                      height: '100%',
+                      cursor: 'ew-resize',
+                      backgroundColor: hoveredResizeHandle?.taskId === task.assignmentId && hoveredResizeHandle?.side === 'left'
+                        ? '#3b82f6' : 'rgba(59, 130, 246, 0.6)',
+                      borderRadius: '2px 0 0 2px',
+                      opacity: hoveredResizeHandle?.taskId === task.assignmentId && hoveredResizeHandle?.side === 'left' ? 1 : 0.8,
+                      transition: 'all 0.2s ease-in-out',
+                      zIndex: 110
+                    }}
+                    onMouseEnter={() => setHoveredResizeHandle({ taskId: task.assignmentId, side: 'left' })}
+                    onMouseLeave={() => setHoveredResizeHandle(null)}
+                    onMouseDown={(e) => handleResizeStart(e, task, 'left')}
+                    title={`Resize task from left edge (Current: ${actualHours}h)`}
+                  />
+                )}
+
+                {/* Right resize handle - only if can resize right */}
+                {canResizeTask(task, 'right', tasksToShow) && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: '-2px',
+                      top: 0,
+                      width: '6px',
+                      height: '100%',
+                      cursor: 'ew-resize',
+                      backgroundColor: hoveredResizeHandle?.taskId === task.assignmentId && hoveredResizeHandle?.side === 'right'
+                        ? '#3b82f6' : 'rgba(59, 130, 246, 0.6)',
+                      borderRadius: '0 2px 2px 0',
+                      opacity: hoveredResizeHandle?.taskId === task.assignmentId && hoveredResizeHandle?.side === 'right' ? 1 : 0.8,
+                      transition: 'all 0.2s ease-in-out',
+                      zIndex: 110
+                    }}
+                    onMouseEnter={() => setHoveredResizeHandle({ taskId: task.assignmentId, side: 'right' })}
+                    onMouseLeave={() => setHoveredResizeHandle(null)}
+                    onMouseDown={(e) => handleResizeStart(e, task, 'right')}
+                    title={`Resize task from right edge (Current: ${actualHours}h)`}
+                  />
+                )}
+              </>
+            )}
           </div>
-        ))}
+        );
+        })}
+
         {hasMoreTasks && (
           <div style={{
             fontSize: '0.6875rem',
@@ -1210,6 +1778,85 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               </button>
             )}
           </div>
+        )}
+
+        {/* 4-Column Visual Grid - Background only, no interaction */}
+        {!isReadOnly && (
+          <>
+            {/* Subtle column dividers - always visible */}
+            {[1, 2, 3].map(col => (
+              <div
+                key={`divider-${col}`}
+                style={{
+                  position: 'absolute',
+                  left: `${col * 25}%`,
+                  width: '1px',
+                  height: '100%',
+                  top: 0,
+                  backgroundColor: 'rgba(200, 200, 200, 0.2)',
+                  pointerEvents: 'none',
+                  zIndex: 0
+                }}
+              />
+            ))}
+
+            {/* Column hover zones - only for EMPTY slots */}
+            {tasksToShow.length === 0 && [0, 1, 2, 3].map(col => (
+              <div
+                key={`hover-${col}`}
+                style={{
+                  position: 'absolute',
+                  left: `${col * 25}%`,
+                  width: '25%',
+                  height: '100%',
+                  top: 0,
+                  zIndex: 1,
+                  pointerEvents: 'auto',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={() => setHoveredColumn({
+                  employeeId: employee.employeeId,
+                  date: day.date,
+                  isAM: isAM,
+                  column: col
+                })}
+                onMouseLeave={() => setHoveredColumn(null)}
+                onClick={() => {
+                  console.log(`🎯 Clicked column ${col + 1}/4 in empty slot ${employee.employeeName} ${day.date} ${isAM ? 'AM' : 'PM'}`);
+                  console.log(`Column ${col + 1} represents hour ${col + 1} of this time slot`);
+                  // TODO: Handle column click for task creation with specific hour positioning
+                }}
+              />
+            ))}
+
+            {/* Hover indicator for columns - only show for empty slots */}
+            {tasksToShow.length === 0 && hoveredColumn?.employeeId === employee.employeeId &&
+             hoveredColumn?.date === day.date &&
+             hoveredColumn?.isAM === isAM && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${hoveredColumn.column * 25}%`,
+                  width: '25%',
+                  height: '100%',
+                  top: 0,
+                  backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                  border: '2px dashed #3b82f6',
+                  borderRadius: '4px',
+                  pointerEvents: 'none',
+                  zIndex: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  color: '#3b82f6'
+                }}
+              >
+                H{hoveredColumn.column + 1}
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -1374,15 +2021,21 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           title={isReadOnly ? 'Team' : 'Right-click for team management options'}
         >
           <span>Team</span>
-          {!isReadOnly && teamHeaderHovered && (
+          {selectedTeamFilters.length > 0 && (
             <div style={{
+              fontSize: '10px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              borderRadius: '50%',
+              width: '16px',
+              height: '16px',
               display: 'flex',
               alignItems: 'center',
-              gap: '2px',
-              fontSize: '0.75rem',
-              color: '#6b7280',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              marginLeft: '6px'
             }}>
-              <span style={{ fontSize: '0.6875rem' }}>⚙️</span>
+              {selectedTeamFilters.length}
             </div>
           )}
           {!isReadOnly && (
@@ -1488,6 +2141,11 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               }
 
               const menuItems = [
+                {
+                  label: `📊 View Day Details`,
+                  action: () => onDayViewDetails?.(dayDate, day),
+                  description: 'View comprehensive statistics and breakdown for this day'
+                },
                 {
                   label: `🏦 Set Bank Holiday${daysCount > 1 ? ` (${daysCount})` : ''}`,
                   action: () => onSetBankHoliday?.(dayDate),
@@ -1596,6 +2254,20 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Team Details Modal */}
+      {selectedTeam && (
+        <TeamDetailsModal
+          isOpen={showTeamDetailsModal}
+          onClose={() => {
+            setShowTeamDetailsModal(false);
+            setSelectedTeam(null);
+          }}
+          teamId={selectedTeam.id}
+          teamName={selectedTeam.name}
+          teamMembers={selectedTeam.members}
+        />
+      )}
     </div>
   );
 };

@@ -15,13 +15,6 @@ namespace DesignPlanner.Core.DTOs
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
-        /// Team code (e.g., TEAM01, STR, BIM)
-        /// </summary>
-        [Required(ErrorMessage = "Team code is required")]
-        [StringLength(10, MinimumLength = 2, ErrorMessage = "Team code must be between 2 and 10 characters")]
-        public string Code { get; set; } = string.Empty;
-
-        /// <summary>
         /// Team description
         /// </summary>
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
@@ -39,13 +32,6 @@ namespace DesignPlanner.Core.DTOs
         [Required(ErrorMessage = "Team name is required")]
         [StringLength(100, MinimumLength = 2, ErrorMessage = "Team name must be between 2 and 100 characters")]
         public string Name { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Team code (e.g., TEAM01, STR, BIM)
-        /// </summary>
-        [Required(ErrorMessage = "Team code is required")]
-        [StringLength(10, MinimumLength = 2, ErrorMessage = "Team code must be between 2 and 10 characters")]
-        public string Code { get; set; } = string.Empty;
 
         /// <summary>
         /// Team description
@@ -73,11 +59,6 @@ namespace DesignPlanner.Core.DTOs
         /// Team name
         /// </summary>
         public string Name { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Team code (e.g., TEAM01, STR, BIM)
-        /// </summary>
-        public string Code { get; set; } = string.Empty;
 
         /// <summary>
         /// Team description
@@ -129,11 +110,6 @@ namespace DesignPlanner.Core.DTOs
         /// Team name
         /// </summary>
         public string Name { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Team code
-        /// </summary>
-        public string Code { get; set; } = string.Empty;
 
         /// <summary>
         /// Whether the team is active

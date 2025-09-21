@@ -29,6 +29,14 @@ namespace DesignPlanner.Core.Entities
         // Custom hours for this specific assignment (nullable - if null, use task's estimated hours)
         public double? Hours { get; set; }
 
+        // Order within the slot (0 = leftmost, 1 = second from left, etc.)
+        // This ensures proper placement order regardless of creation time
+        public int SlotOrder { get; set; } = 0;
+
+        // Column position within the 4-column grid (0-3)
+        // This specifies the exact column where the task starts
+        public int? ColumnStart { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

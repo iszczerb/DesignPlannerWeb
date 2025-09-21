@@ -3,10 +3,8 @@ import AppHeader from '../components/layout/AppHeader';
 import DayBasedCalendarGrid from '../components/calendar/DayBasedCalendarGrid';
 import TaskCreationModal from '../components/calendar/TaskCreationModal';
 import TaskDetailsModal from '../components/calendar/TaskDetailsModal';
+import DayDetailsModal from '../components/calendar/DayDetailsModal';
 import SetLeaveModal from '../components/calendar/SetLeaveModal';
-import TeamMemberViewModal from '../components/calendar/TeamMemberViewModal';
-import TeamMemberEditModal from '../components/calendar/TeamMemberEditModal';
-import TeamMemberListModal from '../components/calendar/TeamMemberListModal';
 import BulkEditModal, { BulkEditData } from '../components/calendar/BulkEditModal';
 import QuickEditTaskType from '../components/calendar/QuickEditTaskType';
 import QuickEditStatus from '../components/calendar/QuickEditStatus';
@@ -37,13 +35,12 @@ import {
 import { DragItem } from '../types/dragDrop';
 import teamService, { TeamInfo } from '../services/teamService';
 import scheduleService from '../services/scheduleService';
-import { enhanceScheduleEmployeeWithTeamData, createTeamMember, updateTeamMember } from '../services/teamMemberUtils';
 import { employeeService } from '../services/employeeService';
+import projectService, { TaskTypeOption } from '../services/projectService';
 import { CreateEmployeeRequest } from '../types/employee';
 import { UserRole } from '../types/auth';
 import { useAppDispatch } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
-import { storeUpdatedMember, applyStoredTeamMemberChanges, storeDeletedMember, clearAllStoredChanges } from '../services/teamMemberPersistence';
 
 // Mock user context (in real app, this would come from auth context)
 interface UserContext {
@@ -362,6 +359,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const [teams, setTeams] = useState<TeamInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [teamFilters, setTeamFilters] = useState<string[]>([]); // empty array = show all teams
   
   // Task creation modal state
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -519,55 +517,39 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const [quickEditNotesOpen, setQuickEditNotesOpen] = useState(false);
   const [currentQuickEditTask, setCurrentQuickEditTask] = useState<AssignmentTaskDto | null>(null);
   const [showDatabaseModal, setShowDatabaseModal] = useState(false);
+  const [databaseRefreshTrigger, setDatabaseRefreshTrigger] = useState(0);
+
+  // Day Details modal state
+  const [dayDetailsModalOpen, setDayDetailsModalOpen] = useState(false);
+  const [selectedDayData, setSelectedDayData] = useState<{ date: Date; day: any } | null>(null);
+
+  // Task types for Quick Edit modals
+  const [taskTypes, setTaskTypes] = useState<TaskTypeOption[]>([]);
 
   // Captured tasks for quick edit (to preserve selection when modal opens)
   const [capturedQuickEditTasks, setCapturedQuickEditTasks] = useState<AssignmentTaskDto[]>([]);
 
-  // Team member management modal states
-  const [teamMemberViewModal, setTeamMemberViewModal] = useState<{
-    isOpen: boolean;
-    member: any;
-  }>({ isOpen: false, member: null });
 
-  const [teamMemberEditModal, setTeamMemberEditModal] = useState<{
-    isOpen: boolean;
-    member: any;
-    mode: 'create' | 'edit';
-    teamId?: number;
-  }>({ isOpen: false, member: null, mode: 'create', teamId: undefined });
 
-  const [teamMemberListModal, setTeamMemberListModal] = useState<{
-    isOpen: boolean;
-    teamId?: number;
-  }>({ isOpen: false, teamId: undefined });
 
-  // Memoize enhanced employees to prevent random data changes on re-render
+  // ✅ DATABASE ONLY - Use pure database employees without enhancement
   const enhancedEmployees = useMemo(() => {
     if (!calendarData?.employees) return [];
-
-    // Enhance with team data
-    return calendarData.employees.map(emp => enhanceScheduleEmployeeWithTeamData(emp));
+    return calendarData.employees; // Pure database data only
   }, [calendarData?.employees]);
 
-  // Team member management handlers
-  const handleEmployeeView = useCallback((employee: any) => {
-    const enhancedEmployee = enhanceScheduleEmployeeWithTeamData(employee);
-    setTeamMemberViewModal({ isOpen: true, member: enhancedEmployee });
-  }, []);
 
+  // Team member editing/creation removed - DATABASE-ONLY operations
   const handleEmployeeEdit = useCallback((employee: any) => {
-    const enhancedEmployee = enhanceScheduleEmployeeWithTeamData(employee);
-    setTeamMemberEditModal({ isOpen: true, member: enhancedEmployee, mode: 'edit', teamId: enhancedEmployee?.teamId });
+    console.log('🔍 Employee edit disabled - schedule view is read-only');
   }, []);
-
 
   const handleTeamAddMember = useCallback((teamId: number) => {
-    console.log('🔍 handleTeamAddMember called with teamId:', teamId);
-    setTeamMemberEditModal({ isOpen: true, member: null, mode: 'create', teamId: teamId });
+    console.log('🔍 Team member creation disabled - schedule view is read-only');
   }, []);
 
   const handleTeamManage = useCallback((teamId: number) => {
-    setTeamMemberListModal({ isOpen: true, teamId });
+    console.log('🔍 Team management disabled - schedule view is read-only');
   }, []);
 
   // Confirmation dialog state
@@ -603,9 +585,47 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   // Mock user context
   const [userContext] = useState<UserContext>({
     id: 1,
-    role: 'Manager', // or 'Admin', 'TeamMember'
-    name: 'John Manager'
+    role: 'Admin', // Updated to Admin role
+    name: 'I S' // Updated to match database admin user
   });
+
+  // Filter employees based on selected team
+  const filteredEmployees = useMemo(() => {
+    if (!calendarData?.employees) {
+      console.log('🔍 filteredEmployees: No calendar data or employees');
+      return [];
+    }
+
+    // console.log('🔍 filteredEmployees: Total employees:', calendarData.employees.length);
+    // console.log('🔍 filteredEmployees: teamFilters:', teamFilters);
+    // console.log('🔍 filteredEmployees: Employee teams:', calendarData.employees.map(emp => emp.team));
+
+    if (teamFilters.length === 0) {
+      // console.log('🔍 filteredEmployees: No filters, showing all employees');
+      return calendarData.employees; // Show all if no filters
+    }
+
+    const filtered = calendarData.employees.filter(employee => teamFilters.includes(employee.team));
+    // console.log('🔍 filteredEmployees: After filtering:', filtered.length, 'employees');
+    return filtered;
+  }, [calendarData?.employees, teamFilters]);
+
+  // Team filter callback for multi-selection
+  const handleTeamFilter = useCallback((action: 'toggle' | 'clear', teamName?: string) => {
+    if (action === 'clear') {
+      setTeamFilters([]);
+    } else if (action === 'toggle' && teamName) {
+      setTeamFilters(prev => {
+        if (prev.includes(teamName)) {
+          // Remove team from filters
+          return prev.filter(t => t !== teamName);
+        } else {
+          // Add team to filters
+          return [...prev, teamName];
+        }
+      });
+    }
+  }, []);
 
   // Navigation and user menu handlers
   const handleNavigation = (page: string) => {
@@ -658,10 +678,22 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     }
   };
 
-  // Derived state
-  const managedTeam = teams.find(team => team.isManaged);
-  const managedTeamId = managedTeam?.id;
-  const currentTeamName = managedTeam?.name;
+  // Derived state - Smart team selection based on user role
+  const getDefaultTeamForUser = () => {
+    if (userContext.role === 'Admin') {
+      // Admin users should see ALL teams - return null to indicate "show all"
+      return null;
+    }
+
+    // For Manager/TeamMember users, use their managed team
+    const managedTeam = teams.find(team => team.isManaged);
+    return managedTeam;
+  };
+
+  const managedTeam = getDefaultTeamForUser();
+  // CRITICAL FIX: Admin users should NEVER have a managedTeamId
+  const managedTeamId = userContext.role === 'Admin' ? undefined : managedTeam?.id;
+  const currentTeamName = userContext.role === 'Admin' ? 'All Teams' : (managedTeam?.name || 'No Team');
 
   /**
    * Get all tasks in the same slot as the given task
@@ -691,10 +723,14 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const loadTeams = useCallback(async () => {
     try {
       setError(null);
-      
+      console.log('🏢 LoadTeams called for role:', userContext.role);
+
       if (userContext.role === 'Manager' || userContext.role === 'Admin') {
+        console.log('🏢 Calling getAllTeamsWithManagedStatus...');
         const allTeams = await teamService.getAllTeamsWithManagedStatus();
+        console.log('🏢 Teams received:', allTeams);
         setTeams(allTeams);
+        console.log('🏢 Teams state updated');
       } else {
         // For regular team members, we might load just their team
         setTeams([]);
@@ -707,9 +743,23 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   }, [userContext.role]);
 
   /**
+   * Load task types for Quick Edit modals
+   */
+  const loadTaskTypes = useCallback(async () => {
+    try {
+      const taskTypesData = await projectService.getTaskTypes();
+      setTaskTypes(taskTypesData);
+    } catch (error) {
+      console.error('Failed to load task types:', error);
+      setTaskTypes([]);
+    }
+  }, []);
+
+  /**
    * Load calendar data based on current view mode and parameters
    */
   const loadCalendarData = useCallback(async (teamId?: number, mode?: TeamViewMode) => {
+    // console.log('🚨🚨🚨🚨🚨 loadCalendarData CALLED! 🚨🚨🚨🚨🚨');
     try {
       setIsLoading(true);
       setError(null);
@@ -722,21 +772,42 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('🔍 loadCalendarData: Sending request with windowStartDate:', windowStartDate);
       console.log('🔍 loadCalendarData: Request viewType:', viewType);
+      console.log('📅 LoadCalendarData called with:', { teamId, mode });
+      console.log('📅 Current teamViewMode:', teamViewMode);
+      console.log('📅 DEBUG: userContext.role:', userContext.role);
+      console.log('🚨🚨🚨 CACHE BUSTER 12345 - NEW ROLE LOGIC IMPLEMENTED! 🚨🚨🚨');
 
       let data: CalendarViewDto;
 
       const currentMode = mode || teamViewMode;
 
-      if (currentMode === TeamViewMode.MyTeam && teamId) {
-        // Load specific team data
-        request.teamId = teamId;
-        data = await teamService.getTeamCalendarView(teamId, request);
-      } else if (currentMode === TeamViewMode.AllTeams) {
-        // Load global view with all teams
+      // EXACT ROLE-BASED ACCESS CONTROL:
+      // Admin = ALL TeamMember users from ALL teams (global view)
+      // Manager = Only TeamMember users from their managed team
+      // TeamMember = ONLY THEIR OWN ROW (not their whole team!)
+
+
+      if (userContext.role === 'Admin') {
+        // Admin users always get global view with ALL TeamMember users from ALL teams
         const globalView = await teamService.getGlobalCalendarView(request);
         data = teamService.transformGlobalViewToCalendarData(globalView);
+      } else if (userContext.role === 'Manager') {
+        // Manager users see only TeamMember users from their managed team
+        if (teamId) {
+          console.log('📅 ✅ MANAGER USER: Loading TeamMember users from managed team:', teamId);
+          request.teamId = teamId;
+          data = await teamService.getTeamCalendarView(teamId, request);
+        } else {
+          console.log('📅 ❌ MANAGER USER: No managed team found, using fallback');
+          data = await scheduleService.getCalendarView(request);
+        }
+      } else if (userContext.role === 'TeamMember') {
+        // TeamMember users see ONLY THEIR OWN ROW
+        console.log('📅 ✅ TEAMMEMBER USER: Loading ONLY own schedule row');
+        data = await scheduleService.getCalendarView(request);
       } else {
-        // Fallback to regular calendar view
+        // Fallback for unknown roles
+        console.log('📅 ❌ UNKNOWN ROLE: Using fallback calendar view');
         data = await scheduleService.getCalendarView(request);
       }
 
@@ -747,20 +818,14 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       // Always merge stored leave data (this persists through navigation and refresh!)
       const dataWithStoredLeaves = mergeStoredLeaveData(data);
 
-      // Only add mock data in development and if no real leave data exists
-      const shouldAddMockData = process.env.NODE_ENV === 'development' && !localStorage.getItem('hasUserCreatedLeave') && loadLeaveDataFromStorage().length === 0;
-      const finalData = shouldAddMockData ? addMockLeaveData(dataWithStoredLeaves) : dataWithStoredLeaves;
+      // Disable mock data completely to avoid conflicts with real data
+      const finalData = dataWithStoredLeaves;
 
       console.log('🔍 loadCalendarData: Final data with persistent leaves:', finalData);
 
-      // Apply stored team member changes to persist edits through calendar reloads
-      console.log('🔍 Applying stored team member changes...');
-      const updatedEmployees = applyStoredTeamMemberChanges(finalData.employees, finalData.days);
-      console.log('🔍 Team member changes applied. Employee count:', updatedEmployees.length);
-      const dataWithTeamChanges = {
-        ...finalData,
-        employees: updatedEmployees
-      };
+      // ✅ DATABASE ONLY - No more localStorage team member mixing
+      console.log('🔍 Using PURE DATABASE DATA - no localStorage mixing');
+      const dataWithTeamChanges = finalData;
 
       // No more local task assignments - all tasks come from backend
       const dataWithLocalAssignments = dataWithTeamChanges;
@@ -793,44 +858,15 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     );
   }, [loadCalendarData, managedTeamId]);
 
-  /**
-   * TEMPORARY: Clear all stored team member changes (for debugging)
-   */
-  const clearStoredTeamMembers = useCallback(() => {
-    console.log('🧹 Clearing all stored team member changes...');
-    clearAllStoredChanges();
-    console.log('🧹 All stored team member changes cleared!');
-    // Reload calendar to see clean data
-    loadCalendarData();
-  }, [loadCalendarData]);
-
-  // Make this available globally for console access
-  useEffect(() => {
-    (window as any).clearStoredTeamMembers = clearStoredTeamMembers;
-    return () => {
-      delete (window as any).clearStoredTeamMembers;
-    };
-  }, [clearStoredTeamMembers]);
 
   /**
-   * Handle employee deletion
+   * Handle employee deletion - DATABASE ONLY
    */
   const handleEmployeeDelete = useCallback(async (employeeId: number) => {
     try {
-      // Check if this is a fake ID (newly added member) or real database ID
-      const isFakeId = employeeId > 1000000000000; // Timestamp-based IDs are very large
-
-      if (isFakeId) {
-        // This is a locally added member - just remove from persistence
-        console.log('🔍 Deleting locally added member with fake ID:', employeeId);
-        storeDeletedMember(employeeId);
-      } else {
-        // This is a real database employee - call backend API
-        console.log('🔍 Deleting real database member with ID:', employeeId);
-        await employeeService.deleteEmployee(employeeId);
-        // Also store in persistence to persist the deletion
-        storeDeletedMember(employeeId);
-      }
+      // Only handle real database employees - no fake IDs or localStorage
+      console.log('🔍 Deleting database employee with ID:', employeeId);
+      await employeeService.deleteEmployee(employeeId);
 
       // Reload calendar data to reflect changes
       await loadCalendarData();
@@ -846,8 +882,63 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
    * Handle data fetching requests
    */
   const handleFetchTeamData = useCallback((teamId?: number, mode?: TeamViewMode) => {
-    loadCalendarData(teamId, mode);
-  }, [loadCalendarData]);
+    // CRITICAL FIX: Admin users should never pass teamId
+    const effectiveTeamId = userContext.role === 'Admin' ? undefined : teamId;
+    const effectiveMode = mode || (userContext.role === 'Admin' ? TeamViewMode.AllTeams : teamViewMode);
+    loadCalendarData(effectiveTeamId, effectiveMode);
+  }, [loadCalendarData, userContext.role, teamViewMode]);
+
+  /**
+   * Handle database data changes (e.g., client color updates)
+   */
+  const handleDatabaseDataChange = useCallback(() => {
+    // Refresh calendar data when database changes occur (e.g., client colors updated)
+    loadCalendarData(
+      teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+      teamViewMode
+    );
+  }, [loadCalendarData, teamViewMode, managedTeamId]);
+
+  /**
+   * Trigger database refresh for Projects tab when calendar tasks change
+   */
+  const triggerDatabaseRefresh = useCallback(() => {
+    console.log('🔄 TEAM SCHEDULE - Triggering database refresh for Projects tab');
+    setDatabaseRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  /**
+   * Handle logo click - go to current week
+   */
+  const handleLogoClick = useCallback(() => {
+    console.log('🏠 TEAM SCHEDULE - Logo clicked, navigating to current week');
+    const today = new Date();
+
+    // Calculate business day window start for current week
+    const getBusinessDayWindowStart = (date: Date): Date => {
+      const targetDate = new Date(date);
+
+      // If today is weekend, move to next Monday
+      if (targetDate.getDay() === 0) { // Sunday
+        targetDate.setDate(targetDate.getDate() + 1); // Move to Monday
+      } else if (targetDate.getDay() === 6) { // Saturday
+        targetDate.setDate(targetDate.getDate() + 2); // Move to Monday
+      }
+
+      return targetDate;
+    };
+
+    // Set view to Weekly and go to current week
+    setViewType(CalendarViewType.Week);
+    setCurrentDate(today);
+
+    // Calculate window start for the current week
+    const windowStart = getBusinessDayWindowStart(today);
+    setWindowStartDate(windowStart);
+    setLastNavigatedDate(today);
+
+    console.log('🎯 Navigated to current week:', today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+  }, []);
 
   /**
    * Handle task clicks - disabled for now (use right-click context menu instead)
@@ -909,39 +1000,216 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   }, [toggleSlotSelection]);
 
   /**
+   * Left-pack remaining tasks in source slot after a task is removed
+   */
+  const leftPackSourceSlot = useCallback(async (
+    employeeId: number,
+    date: Date,
+    slot: Slot,
+    removedTaskId: number
+  ) => {
+    try {
+      console.log('🔍 Finding remaining tasks in source slot for left-packing...');
+
+      // Find all tasks in the source slot (excluding the removed task)
+      const dateStr = date.toDateString();
+      const employee = calendarData.employees.find(emp => emp.employeeId === employeeId);
+      if (!employee) {
+        console.log('❌ Employee not found for left-packing');
+        return;
+      }
+
+      const dayAssignment = employee.dayAssignments.find(day =>
+        new Date(day.date).toDateString() === dateStr
+      );
+      if (!dayAssignment) {
+        console.log('❌ Day assignment not found for left-packing');
+        return;
+      }
+
+      const slotData = slot === Slot.Morning ? dayAssignment.morningSlot : dayAssignment.afternoonSlot;
+      if (!slotData || !slotData.tasks) {
+        console.log('❌ Slot data not found for left-packing');
+        return;
+      }
+
+      // Get remaining tasks (exclude the removed task)
+      const remainingTasks = slotData.tasks.filter(task => task.assignmentId !== removedTaskId);
+
+      console.log('🔍 Remaining tasks for left-packing:', {
+        totalRemaining: remainingTasks.length,
+        tasks: remainingTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
+      });
+
+      if (remainingTasks.length === 0) {
+        console.log('✅ No remaining tasks to left-pack');
+        return;
+      }
+
+      // Import the compression function
+      const { smartCompressAndPosition } = await import('../utils/columnDropHelpers');
+
+      // Apply left-packing (no compression needed, just positioning)
+      const leftPackedTasks = smartCompressAndPosition(remainingTasks);
+
+      console.log('📦 Left-packed arrangement:', {
+        tasks: leftPackedTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
+      });
+
+      // Update each task's position
+      for (const task of leftPackedTasks) {
+        console.log(`📦 UPDATING task ${task.assignmentId}: column ${task.columnStart}, hours ${task.hours}`);
+
+        await scheduleService.updateAssignment({
+          assignmentId: task.assignmentId,
+          columnStart: task.columnStart,
+          hours: task.hours
+        });
+      }
+
+      console.log('✅ Source slot left-packing completed');
+
+    } catch (error) {
+      console.error('❌ Error during source slot left-packing:', error);
+    }
+  }, [calendarData]);
+
+  /**
+   * Left-pack tasks directly from captured task data
+   */
+  const leftPackSourceSlotDirect = useCallback(async (remainingTasks: any[]) => {
+    try {
+      if (remainingTasks.length === 0) {
+        console.log('✅ No remaining tasks to left-pack');
+        return;
+      }
+
+      console.log('🔍 Left-packing captured tasks:', {
+        totalRemaining: remainingTasks.length,
+        tasks: remainingTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
+      });
+
+      // Import the compression function
+      const { smartCompressAndPosition } = await import('../utils/columnDropHelpers');
+
+      // Apply left-packing (no compression needed, just positioning)
+      const leftPackedTasks = smartCompressAndPosition(remainingTasks);
+
+      console.log('📦 Left-packed arrangement:', {
+        tasks: leftPackedTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
+      });
+
+      // Update each task's position
+      for (const task of leftPackedTasks) {
+        console.log(`📦 UPDATING task ${task.assignmentId}: column ${task.columnStart}, hours ${task.hours}`);
+
+        await scheduleService.updateAssignment({
+          assignmentId: task.assignmentId,
+          columnStart: task.columnStart,
+          hours: task.hours
+        });
+      }
+
+      console.log('✅ Direct left-packing completed');
+
+    } catch (error) {
+      console.error('❌ Error during direct left-packing:', error);
+    }
+  }, []);
+
+  /**
    * Handle task drag and drop
    */
   const handleTaskDrop = useCallback(async (
-    dragItem: DragItem, 
-    targetDate: Date, 
-    targetSlot: Slot, 
+    dragItem: DragItem,
+    targetDate: Date,
+    targetSlot: Slot,
     targetEmployeeId: number
   ) => {
     try {
-      console.log('Task drop:', { dragItem, targetDate, targetSlot, targetEmployeeId });
-      
+      console.log('Task drop:', {
+        dragItem,
+        targetDate,
+        targetSlot,
+        targetEmployeeId,
+        columnStart: dragItem.task.columnStart,
+        hours: dragItem.task.hours
+      });
+
+      // Detect if task is moving to a different slot
+      const originalDate = new Date(dragItem.task.assignedDate);
+      const isMovingToNewSlot = (
+        dragItem.task.employeeId !== targetEmployeeId ||
+        originalDate.toDateString() !== targetDate.toDateString() ||
+        dragItem.task.slot !== targetSlot
+      );
+
+      console.log('🔍 Movement detection:', {
+        originalEmployee: dragItem.task.employeeId,
+        targetEmployee: targetEmployeeId,
+        originalDate: originalDate.toDateString(),
+        targetDate: targetDate.toDateString(),
+        originalSlot: dragItem.task.slot,
+        targetSlot: targetSlot,
+        isMovingToNewSlot
+      });
+
+      // CRITICAL: Get source slot tasks BEFORE moving the task
+      let sourceSlotTasks: any[] = [];
+      if (isMovingToNewSlot) {
+        console.log('🔍 Capturing source slot tasks before move...');
+
+        const sourceEmployee = calendarData?.employees.find(emp => emp.employeeId === dragItem.task.employeeId);
+        if (sourceEmployee) {
+          const sourceDayAssignment = sourceEmployee.dayAssignments.find(day =>
+            new Date(day.date).toDateString() === originalDate.toDateString()
+          );
+          if (sourceDayAssignment) {
+            const sourceSlotData = dragItem.task.slot === Slot.Morning ?
+              sourceDayAssignment.morningSlot : sourceDayAssignment.afternoonSlot;
+            if (sourceSlotData?.tasks) {
+              sourceSlotTasks = sourceSlotData.tasks.filter(t => t.assignmentId !== dragItem.task.assignmentId);
+              console.log('🔍 Captured source slot tasks:', {
+                totalTasks: sourceSlotData.tasks.length,
+                remainingAfterMove: sourceSlotTasks.length,
+                tasks: sourceSlotTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
+              });
+            }
+          }
+        }
+      }
+
       // Format the target date as YYYY-MM-DD for API
       const year = targetDate.getFullYear();
       const month = String(targetDate.getMonth() + 1).padStart(2, '0');
       const day = String(targetDate.getDate()).padStart(2, '0');
       const targetDateString = `${year}-${month}-${day}`;
-      
-      // Move the assignment using the schedule service
-      await scheduleService.moveAssignment(
-        dragItem.task.assignmentId,
-        targetEmployeeId,
-        targetDateString,
-        targetSlot
-      );
-      
-      console.log('Task moved successfully');
-      
+
+      // Update the assignment with its new position and column placement
+      await scheduleService.updateAssignment({
+        assignmentId: dragItem.task.assignmentId,
+        employeeId: targetEmployeeId,
+        assignedDate: targetDateString,
+        slot: targetSlot,
+        // CRITICAL: Preserve column position from drag operation
+        columnStart: dragItem.task.columnStart,
+        hours: dragItem.task.hours
+      });
+
+      console.log('Task moved successfully with column position');
+
+      // If task moved to a different slot, left-pack the remaining tasks in the source slot
+      if (isMovingToNewSlot && sourceSlotTasks.length > 0) {
+        console.log('🔄 Left-packing source slot after task removal...');
+        await leftPackSourceSlotDirect(sourceSlotTasks);
+      }
+
       // Refresh the calendar data to show the moved task
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
         teamViewMode
       );
-      
+
     } catch (error) {
       console.error('Error moving task:', error);
       alert('Failed to move task. Please try again.');
@@ -1043,20 +1311,18 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
    */
   const handleTaskAssignmentCreate = useCallback(async (assignment: CreateAssignmentDto) => {
     try {
-      console.log('Creating task assignment:', assignment);
-      
+
       // Call the real API to create the assignment
       const createdAssignment = await scheduleService.createAssignment(assignment);
-      console.log('Assignment created successfully:', createdAssignment);
-      
+
       // Refresh the calendar data using the same logic as loadCalendarData
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
         teamViewMode
       );
-      
+
     } catch (error) {
-      console.error('Error creating task assignment:', error);
+      console.error('❌ [DEBUG] Error creating task assignment:', error);
       throw error; // Re-throw so modal can show error
     }
   }, [teamViewMode, managedTeamId, loadCalendarData]);
@@ -1079,8 +1345,47 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const handleTaskDelete = useCallback(async (assignmentId: number) => {
     try {
       console.log('Delete assignment:', assignmentId);
+
+      // IMPORTANT: Get task data before deleting for left-packing
+      let taskData: { employeeId: number; date: Date; slot: Slot } | null = null;
+
+      // Find the task in calendar data before deletion
+      for (const employee of calendarData.employees) {
+        for (const dayAssignment of employee.dayAssignments) {
+          const date = new Date(dayAssignment.date);
+
+          // Check morning slot
+          if (dayAssignment.morningSlot?.tasks) {
+            const task = dayAssignment.morningSlot.tasks.find(t => t.assignmentId === assignmentId);
+            if (task) {
+              taskData = { employeeId: employee.employeeId, date, slot: Slot.Morning };
+              break;
+            }
+          }
+
+          // Check afternoon slot
+          if (dayAssignment.afternoonSlot?.tasks) {
+            const task = dayAssignment.afternoonSlot.tasks.find(t => t.assignmentId === assignmentId);
+            if (task) {
+              taskData = { employeeId: employee.employeeId, date, slot: Slot.Afternoon };
+              break;
+            }
+          }
+        }
+        if (taskData) break;
+      }
+
+      console.log('🔍 Task found for deletion:', taskData);
+
+      // Delete the task
       await scheduleService.deleteAssignment(assignmentId);
-      
+
+      // Left-pack the slot after deletion
+      if (taskData) {
+        console.log('🔄 Left-packing slot after task deletion...');
+        await leftPackSourceSlot(taskData.employeeId, taskData.date, taskData.slot, assignmentId);
+      }
+
       // Refresh calendar data
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
@@ -1090,7 +1395,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       console.error('Error deleting assignment:', error);
       alert('Failed to delete assignment. Please try again.');
     }
-  }, [teamViewMode, managedTeamId, loadCalendarData]);
+  }, [teamViewMode, managedTeamId, loadCalendarData, calendarData, leftPackSourceSlot]);
 
   /**
    * Handle task view - view task details
@@ -1479,6 +1784,11 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       });
     }
   }, [capturedQuickEditTasks, updateTasksInCalendarData, showNotification]);
+
+  const handleDayViewDetails = useCallback((date: Date, day: any) => {
+    setSelectedDayData({ date, day });
+    setDayDetailsModalOpen(true);
+  }, []);
 
   /**
    * Detect all task conflicts for bank holiday setting
@@ -2223,9 +2533,22 @@ ${dateInfo}`;
     const initialWindowStart = getBusinessDayWindowStart(currentDate);
     console.log('🎯 Initial window start set to:', initialWindowStart, '(', initialWindowStart.toLocaleDateString('en-US', { weekday: 'long' }), ')');
     setWindowStartDate(initialWindowStart);
-    
+
     loadTeams();
+    loadTaskTypes();
   }, []); // Only run once on mount
+
+  // Set teamViewMode based on user role
+  useEffect(() => {
+    console.log('🔍 ROLE DETECTION - userContext.role:', userContext.role, 'type:', typeof userContext.role);
+    if (userContext.role === 'Admin') {
+      console.log('🔍 Setting Admin user to AllTeams mode');
+      setTeamViewMode(TeamViewMode.AllTeams);
+    } else {
+      console.log('🔍 Setting non-Admin user to MyTeam mode');
+      setTeamViewMode(TeamViewMode.MyTeam);
+    }
+  }, [userContext.role]);
 
   // Load calendar data when ONLY essential dependencies change (not windowStartDate or viewType!)
   useEffect(() => {
@@ -2465,12 +2788,13 @@ ${dateInfo}`;
                          viewType === CalendarViewType.BiWeek ? 'Biweekly' : 
                          viewType === CalendarViewType.Day ? 'Daily' : 'Monthly'}
         onViewTypeChange={(newViewType) => {
-          const calendarViewType = newViewType === 'Weekly' ? CalendarViewType.Week : 
+          const calendarViewType = newViewType === 'Weekly' ? CalendarViewType.Week :
                                    newViewType === 'Biweekly' ? CalendarViewType.BiWeek :
-                                   newViewType === 'Daily' ? CalendarViewType.Day : 
+                                   newViewType === 'Daily' ? CalendarViewType.Day :
                                    CalendarViewType.Month;
           handleViewTypeChange(calendarViewType);
         }}
+        onLogoClick={handleLogoClick}
       />
 
       {/* Error Display */}
@@ -2502,7 +2826,7 @@ ${dateInfo}`;
         ) : calendarData ? (
           <DayBasedCalendarGrid
             key={`${windowStartDate.getTime()}-${calendarData.days[0]?.date || ''}`}
-            employees={calendarData.employees}
+            employees={filteredEmployees}
             days={calendarData.days}
             onTaskClick={handleTaskClick}
             onSlotClick={handleSlotClick}
@@ -2518,12 +2842,14 @@ ${dateInfo}`;
             onSetBankHoliday={handleSetBankHoliday}
             onSetLeave={handleSetLeave}
             onClearBlocking={handleClearBlocking}
+            onDayViewDetails={handleDayViewDetails}
             selectedTaskIds={selectedTasks.map(task => task.assignmentId)}
             selectedSlots={selectedSlots}
             onSlotFocus={handleSlotFocus}
             selectedDays={selectedDays.map(d => d.toDateString())}
             onDayClick={handleDayClick}
             onBulkEdit={() => setBulkEditModalOpen(true)}
+            onRefresh={loadCalendarData}
             onQuickEditTaskType={(task) => {
               console.log('QuickEdit TaskType clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
 
@@ -2657,11 +2983,9 @@ ${dateInfo}`;
                 }
               });
             }}
-            onEmployeeView={handleEmployeeView}
-            onEmployeeEdit={handleEmployeeEdit}
-            onEmployeeDelete={handleEmployeeDelete}
-            onAddNewMember={handleTeamAddMember}
-            onManageTeam={() => handleTeamManage(1)}
+            onTeamFilter={handleTeamFilter}
+            selectedTeamFilters={teamFilters}
+            onRefresh={handleRefresh}
           />
         ) : (
           <div style={{ 
@@ -2685,9 +3009,11 @@ ${dateInfo}`;
           fontSize: '0.75rem',
           color: '#6b7280',
         }}>
-          Debug: View Mode: {teamViewMode}, Teams: {teams.length}, 
-          Managed Team: {currentTeamName || 'None'}, 
-          Employees: {calendarData?.employees.length || 0}
+          Debug: View Mode: {teamViewMode}, Teams: {teams.length},
+          Managed Team: {currentTeamName || 'None'},
+          Total Employees: {calendarData?.employees.length || 0},
+          Filtered Employees: {filteredEmployees.length},
+          Team Filters: {JSON.stringify(teamFilters)}
         </div>
       )}
 
@@ -2704,6 +3030,48 @@ ${dateInfo}`;
           initialSlot={taskModalData.slot}
           employeeId={taskModalData.employeeId}
           employeeName={taskModalData.employeeName}
+          existingSlotTasks={(() => {
+            // Find existing tasks in the target slot
+            console.log('🔍 TEAMSCHEDULE SLOT CALCULATION:', {
+              hasCalendarData: !!calendarData,
+              employeeId: taskModalData.employeeId,
+              slot: taskModalData.slot,
+              originalDate: taskModalData.date,
+              dateISO: taskModalData.date.toISOString(),
+              dateFormatted: taskModalData.date.toISOString().split('T')[0],
+              dateLocalString: taskModalData.date.toLocaleDateString()
+            });
+
+            if (!calendarData) {
+              console.log('❌ No calendar data');
+              return [];
+            }
+
+            const employee = calendarData.employees.find(emp => emp.employeeId === taskModalData.employeeId);
+            console.log('👤 Found employee:', employee ? `Yes (${employee.employeeName})` : 'No');
+            if (!employee) return [];
+
+            // Fix timezone issue: use local date instead of UTC to avoid day shift
+            const year = taskModalData.date.getFullYear();
+            const month = String(taskModalData.date.getMonth() + 1).padStart(2, '0');
+            const day = String(taskModalData.date.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+            console.log('📅 Looking for date:', dateStr);
+            console.log('📅 Available dates in assignments:', employee.dayAssignments.map(d => ({
+              original: d.date,
+              formatted: d.date.split('T')[0]
+            })));
+
+            const dayAssignment = employee.dayAssignments.find(day => day.date.split('T')[0] === dateStr);
+            console.log('📅 Found day assignment:', dayAssignment ? 'Yes' : 'No');
+            if (!dayAssignment) return [];
+
+            const slotData = taskModalData.slot === 1 ? dayAssignment.morningSlot : dayAssignment.afternoonSlot;
+            console.log(`⏰ ${taskModalData.slot === 1 ? 'Morning' : 'Afternoon'} slot data:`, slotData);
+            console.log('📋 Slot tasks:', slotData?.tasks || []);
+
+            return slotData?.tasks || [];
+          })()}
         />
       )}
 
@@ -2727,14 +3095,14 @@ ${dateInfo}`;
         selectedTasks={selectedTasks}
         onClose={() => setBulkEditModalOpen(false)}
         onSave={handleBulkEdit}
-        taskTypes={calendarData?.taskTypes || []}
+        taskTypes={taskTypes}
       />
 
       {/* Quick Edit Modals */}
       <QuickEditTaskType
         isOpen={quickEditTaskTypeOpen}
         selectedTasks={capturedQuickEditTasks}
-        taskTypes={calendarData?.taskTypes || []}
+        taskTypes={taskTypes}
         onClose={() => { setQuickEditTaskTypeOpen(false); setCurrentQuickEditTask(null); setCapturedQuickEditTasks([]); }}
         onSave={handleQuickEditTaskType}
       />
@@ -2797,216 +3165,7 @@ ${dateInfo}`;
         />
       )}
 
-      {/* Team Member Modals */}
-      <TeamMemberViewModal
-        isOpen={teamMemberViewModal.isOpen}
-        member={teamMemberViewModal.member}
-        onClose={() => {
-          setTeamMemberViewModal({ isOpen: false, member: null });
-          // Reopen the manage team modal to maintain navigation flow
-          setTeamMemberListModal({ isOpen: true, teamId: teamMemberListModal.teamId });
-        }}
-        onEdit={(member) => {
-          setTeamMemberViewModal({ isOpen: false, member: null });
-          setTeamMemberEditModal({ isOpen: true, member, mode: 'edit', teamId: member?.teamId });
-        }}
-        onDelete={(employeeId) => {
-          setTeamMemberViewModal({ isOpen: false, member: null });
-          handleEmployeeDelete(employeeId);
-        }}
-      />
 
-      <TeamMemberEditModal
-        isOpen={teamMemberEditModal.isOpen}
-        member={teamMemberEditModal.member}
-        isCreating={teamMemberEditModal.mode === 'create'}
-        onClose={() => {
-          const currentTeamId = teamMemberEditModal.teamId;
-          setTeamMemberEditModal({ isOpen: false, member: null, mode: 'create', teamId: undefined });
-          // Reopen manage modal when closing edit modal
-          if (currentTeamId) {
-            setTeamMemberListModal({ isOpen: true, teamId: currentTeamId });
-          }
-        }}
-        onSave={async (memberData) => {
-          console.log('Save team member:', memberData);
-          console.log('🔍 Modal mode:', teamMemberEditModal.mode);
-          console.log('🔍 Modal member:', teamMemberEditModal.member);
-
-          try {
-            if (teamMemberEditModal.mode === 'create') {
-              // Create new employee in backend
-              const createData = memberData as CreateTeamMemberDto;
-
-              // Generate unique username from name with timestamp
-              const baseUsername = `${createData.firstName.toLowerCase()}.${createData.lastName.toLowerCase()}`.replace(/[^a-z.]/g, '');
-              const username = `${baseUsername}.${Date.now().toString().slice(-4)}`;
-              const password = 'TempPassword123!';
-
-              // Use the team ID from existing employees if teamId is null
-              const effectiveTeamId = teamMemberEditModal.teamId || calendarData?.employees?.[0]?.teamId || 1;
-
-              const createEmployeeRequest: CreateEmployeeRequest = {
-                username,
-                password,
-                firstName: createData.firstName,
-                lastName: createData.lastName,
-                role: UserRole.TeamMember,
-                employeeId: createData.employeeId,
-                position: createData.role,
-                hireDate: createData.startDate,
-                teamId: effectiveTeamId
-              };
-
-              console.log('🔍 teamMemberEditModal.teamId:', teamMemberEditModal.teamId);
-              console.log('🔍 Creating employee with request:', createEmployeeRequest);
-
-              try {
-                const newEmployee = await employeeService.createEmployee(createEmployeeRequest);
-
-                // Reload calendar data to reflect the new employee
-                await loadCalendarData();
-
-                // Show success notification
-                showNotification({ type: 'success', title: 'Success', message: 'Team member created successfully!' });
-
-                // Close edit modal and reopen manage modal on success
-                setTeamMemberEditModal({ isOpen: false, member: null, mode: 'create', teamId: undefined });
-                setTeamMemberListModal({ isOpen: true, teamId: teamMemberEditModal.teamId });
-              } catch (error: any) {
-                console.error('Failed to create employee:', error);
-                console.error('🔍 Error response:', error.response?.data);
-                console.error('🔍 Validation errors:', error.response?.data?.errors);
-                if (error.response?.data?.errors) {
-                  console.error('🔍 Detailed validation errors:', JSON.stringify(error.response.data.errors, null, 2));
-                }
-                showNotification({ type: 'error', title: 'Error', message: `Failed to create team member: ${error.response?.data?.message || error.message}` });
-                return; // Don't close modal on error
-              }
-            } else if (teamMemberEditModal.mode === 'edit' && teamMemberEditModal.member) {
-              // Update existing member via API
-              const updateData = memberData as UpdateTeamMemberDto;
-
-              console.log('🔍 Updating employee with data:', updateData);
-
-              // Find the employee in the current data to get the database ID
-              const currentEmployee = calendarData?.employees.find(emp => emp.employeeId === updateData.employeeId);
-              if (!currentEmployee) {
-                throw new Error(`Employee not found in current data. Looking for employeeId: ${updateData.employeeId}`);
-              }
-
-              console.log('🔍 Found current employee:', currentEmployee);
-
-              const updateRequest = {
-                firstName: updateData.firstName || currentEmployee.firstName || 'Unknown',
-                lastName: updateData.lastName || currentEmployee.lastName || 'Employee',
-                role: UserRole.TeamMember,
-                teamId: updateData.teamId || 1,
-                position: updateData.role,
-                hireDate: updateData.startDate,
-                isActive: updateData.isActive ?? true
-              };
-
-              console.log('🔍 Sending update request to API:', {
-                employeeId: currentEmployee.employeeId,
-                request: updateRequest
-              });
-
-              try {
-                console.log('🔍 About to call employeeService.updateEmployee with:', currentEmployee.employeeId, updateRequest);
-                const result = await employeeService.updateEmployee(currentEmployee.employeeId, updateRequest);
-                console.log('🔍 employeeService.updateEmployee returned:', result);
-                console.log('🔍 Update API response:', result);
-
-                // Store the updated member in persistence to survive calendar reloads
-                const persistedMember: TeamMemberDto = {
-                  employeeId: updateData.employeeId,
-                  employeeName: `${result.firstName} ${result.lastName}`,
-                  firstName: result.firstName,
-                  lastName: result.lastName,
-                  role: result.employee?.position || updateData.role || 'Team Member',
-                  team: currentEmployee.team, // Keep current team name
-                  teamType: currentEmployee.teamType || 1,
-                  teamId: updateData.teamId || currentEmployee.teamId || 1,
-                  skills: updateData.skills || [],
-                  startDate: updateData.startDate || currentEmployee.startDate || new Date().toISOString().split('T')[0],
-                  isActive: true,
-                  notes: updateData.notes
-                };
-                storeUpdatedMember(persistedMember);
-                console.log('🔍 Stored updated member in persistence:', persistedMember);
-
-                // Update the local calendar data directly instead of reloading from server
-                if (calendarData && result) {
-                  const updatedCalendarData = {
-                    ...calendarData,
-                    employees: calendarData.employees.map(emp =>
-                      emp.employeeId === updateData.employeeId
-                        ? {
-                            ...emp,
-                            firstName: result.firstName,
-                            lastName: result.lastName,
-                            employeeName: `${result.firstName} ${result.lastName}`,
-                            role: result.employee?.position || updateData.role || 'Team Member',
-                            startDate: updateData.startDate || emp.startDate,
-                            teamType: emp.teamType,
-                            skills: updateData.skills || emp.skills,
-                            notes: updateData.notes
-                          }
-                        : emp
-                    )
-                  };
-                  setCalendarData(updatedCalendarData);
-                  console.log('🔍 Updated local calendar data without server reload');
-                }
-
-                // Show success notification
-                showNotification({ type: 'success', title: 'Success', message: 'Team member updated successfully!' });
-
-                // Close edit modal and reopen manage modal on success
-                setTeamMemberEditModal({ isOpen: false, member: null, mode: 'create', teamId: undefined });
-                setTeamMemberListModal({ isOpen: true, teamId: teamMemberEditModal.teamId });
-              } catch (error: any) {
-                console.error('Failed to update employee:', error);
-                console.error('🔍 Update Error response:', error.response?.data);
-                console.error('🔍 Update Validation errors:', error.response?.data?.errors);
-                if (error.response?.data?.errors) {
-                  console.error('🔍 Update Detailed validation errors:', JSON.stringify(error.response.data.errors, null, 2));
-                }
-                showNotification({ type: 'error', title: 'Error', message: `Failed to update team member: ${error.response?.data?.message || error.message}` });
-                return; // Don't close modal on error
-              }
-            }
-          } catch (error) {
-            console.error('Error saving team member:', error);
-            showNotification({ type: 'error', title: 'Error', message: 'Failed to save team member. Please try again.' });
-          }
-        }}
-      />
-
-      <TeamMemberListModal
-        isOpen={teamMemberListModal.isOpen}
-        teamId={teamMemberListModal.teamId}
-        onClose={() => setTeamMemberListModal({ isOpen: false, teamId: undefined })}
-        onCreateMember={() => {
-          const currentTeamId = teamMemberListModal.teamId;
-          setTeamMemberListModal({ isOpen: false, teamId: undefined });
-          setTeamMemberEditModal({ isOpen: true, member: null, mode: 'create', teamId: currentTeamId });
-        }}
-        onViewMember={(member) => {
-          setTeamMemberListModal({ isOpen: false, teamId: undefined });
-          setTeamMemberViewModal({ isOpen: true, member });
-        }}
-        onEditMember={(member) => {
-          const currentTeamId = teamMemberListModal.teamId;
-          setTeamMemberListModal({ isOpen: false, teamId: undefined });
-          setTeamMemberEditModal({ isOpen: true, member, mode: 'edit', teamId: currentTeamId });
-        }}
-        onDeleteMember={(employeeId) => {
-          handleEmployeeDelete(employeeId);
-        }}
-        members={enhancedEmployees}
-      />
 
       {/* Confirmation Dialog */}
       <ConfirmDialog
@@ -3024,7 +3183,22 @@ ${dateInfo}`;
       <DatabaseManagementModal
         isOpen={showDatabaseModal}
         onClose={() => setShowDatabaseModal(false)}
+        onDataChange={handleDatabaseDataChange}
+        calendarRefreshTrigger={databaseRefreshTrigger}
       />
+
+      {/* Day Details Modal */}
+      {selectedDayData && (
+        <DayDetailsModal
+          isOpen={dayDetailsModalOpen}
+          onClose={() => {
+            setDayDetailsModalOpen(false);
+            setSelectedDayData(null);
+          }}
+          day={selectedDayData.day}
+          employees={calendarData?.employees || []}
+        />
+      )}
     </div>
   );
 };

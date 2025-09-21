@@ -65,14 +65,6 @@ namespace DesignPlanner.Core.Services
         Task<List<TeamDto>> GetActiveTeamsAsync(int requestingUserId);
 
         /// <summary>
-        /// Checks if a team code is already in use
-        /// </summary>
-        /// <param name="code">The team code to check</param>
-        /// <param name="excludeTeamId">Optional team ID to exclude from the check (for updates)</param>
-        /// <returns>True if the code is already in use</returns>
-        Task<bool> IsTeamCodeExistsAsync(string code, int? excludeTeamId = null);
-
-        /// <summary>
         /// Gets team members count
         /// </summary>
         /// <param name="teamId">ID of the team</param>

@@ -196,7 +196,7 @@ const TeamMemberViewModal: React.FC<TeamMemberViewModalProps> = ({
                 flexWrap: 'wrap',
                 gap: '8px',
               }}>
-                {member.skills.map(skill => (
+                {(member.skills || []).map(skill => (
                   <span
                     key={skill}
                     style={{
@@ -385,7 +385,7 @@ const TeamMemberViewModal: React.FC<TeamMemberViewModalProps> = ({
       <ConfirmationDialog
         isOpen={showDeleteConfirm}
         title="Delete Team Member"
-        message={`Are you sure you want to delete ${member.firstName} ${member.lastName}?\n\nTeam: ${TEAM_TYPE_LABELS[member.teamType]}\nRole: ${member.role}\nSkills: ${member.skills.map(s => SKILL_TYPE_LABELS[s]).join(', ')}\n\nThis action cannot be undone and will:\n• Remove the member from all teams and assignments\n• Delete all associated schedule data\n• Remove access to all systems and projects`}
+        message={`Are you sure you want to delete ${member.firstName} ${member.lastName}?\n\nTeam: ${TEAM_TYPE_LABELS[member.teamType]}\nRole: ${member.role}\nSkills: ${(member.skills || []).map(s => SKILL_TYPE_LABELS[s]).join(', ')}\n\nThis action cannot be undone and will:\n• Remove the member from all teams and assignments\n• Delete all associated schedule data\n• Remove access to all systems and projects`}
         confirmText="Delete Member"
         cancelText="Cancel"
         type="danger"

@@ -35,9 +35,11 @@ const ViewMembersModal: React.FC<ViewMembersModalProps> = ({
       setError(null);
 
       // Get all users and filter by team
+      // ONLY include TeamMember role users (role === 3)
+      // Managers are managers, not team members - they should not appear as members
       const response = await databaseService.getUsers();
       const teamMembers = response.users.filter(user =>
-        user.employee?.team?.id === team.id
+        user.employee?.team?.id === team.id && user.role === 3
       );
 
       setMembers(teamMembers);

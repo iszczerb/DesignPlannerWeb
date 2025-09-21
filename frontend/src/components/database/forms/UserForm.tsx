@@ -70,6 +70,19 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
           managementLevel = ManagementLevel.None; // Team Member
         }
 
+        // Combine employee's primary team with managed teams
+        let initialTeams: number[] = [];
+
+        // Add employee's primary team
+        if (user.employee?.team?.id) {
+          initialTeams.push(user.employee.team.id);
+        }
+
+        // Add managed teams if user is a manager
+        if (user.managedTeamIds && user.managedTeamIds.length > 0) {
+          initialTeams = [...new Set([...initialTeams, ...user.managedTeamIds])];
+        }
+
         setFormData({
           username: user.username || '',
           password: '', // Never populate password for editing
@@ -78,7 +91,7 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
           role: user.employee?.position || '',
           managementLevel: managementLevel,
           teamId: user.employee?.team?.id || 0,
-          teamIds: user.employee?.team?.id ? [user.employee.team.id] : [], // Start with primary team
+          teamIds: initialTeams,
         });
       } else {
         setFormData({
@@ -170,9 +183,26 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
         backendRole = UserRole.TeamMember; // Team Member
       }
 
+      // For Manager/Admin roles, ALL selected teams are managed teams
+      // For TeamMember role, no managed teams
+      const managedTeamIds = (backendRole === UserRole.Manager || backendRole === UserRole.Admin)
+        ? formData.teamIds
+        : undefined;
+
       const submitData = isCreating
-        ? { ...formData, role: backendRole, position: formData.role } as CreateUserDto
-        : { ...formData, id: user!.id!, role: backendRole, position: formData.role } as UpdateUserDto;
+        ? {
+            ...formData,
+            role: backendRole,
+            position: formData.role,
+            managedTeamIds: managedTeamIds
+          } as CreateUserDto
+        : {
+            ...formData,
+            id: user!.id!,
+            role: backendRole,
+            position: formData.role,
+            managedTeamIds: managedTeamIds
+          } as UpdateUserDto;
       await onSave(submitData);
     } catch (error) {
       if (error instanceof Error) {
@@ -347,9 +377,6 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
                           />
                           <span className="skill-label">
                             {team.name}
-                            {formData.teamIds.length > 0 && formData.teamIds[0] === team.id && (
-                              <span className="primary-indicator"> (Primary)</span>
-                            )}
                           </span>
                         </label>
                       ))}

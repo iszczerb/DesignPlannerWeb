@@ -32,7 +32,6 @@ interface ExtendedCalendarGridProps extends CalendarGridProps {
   collapsedTeams?: Set<number>;
   onToggleTeamCollapse?: (teamId: number) => void;
   // Team member management props
-  onEmployeeView?: (employee: any) => void;
   onEmployeeEdit?: (employee: any) => void;
   onEmployeeDelete?: (employeeId: number) => void;
   onTeamViewAllMembers?: (teamId: number) => void;
@@ -59,7 +58,6 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   managedTeamId,
   collapsedTeams = new Set(),
   onToggleTeamCollapse,
-  onEmployeeView,
   onEmployeeEdit,
   onEmployeeDelete,
   onTeamViewAllMembers,
@@ -209,8 +207,8 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
     const unassignedEmployees: typeof calendarData.employees = [];
 
     calendarData.employees.forEach(employee => {
-      // Assuming employee has a teamId property (you might need to add this to the employee data structure)
-      const teamId = (employee as any).teamId;
+      // Use the teamId property from EmployeeScheduleDto
+      const teamId = employee.teamId;
       if (teamId && teams.find(t => t.id === teamId)) {
         if (!employeesByTeam.has(teamId)) {
           employeesByTeam.set(teamId, []);
@@ -327,8 +325,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                   onTaskCopy={onTaskCopy}
                   onTaskPaste={onTaskPaste}
                   hasCopiedTask={hasCopiedTask}
-                  onEmployeeView={onEmployeeView}
-                  onEmployeeEdit={onEmployeeEdit}
+                                    onEmployeeEdit={onEmployeeEdit}
                   onEmployeeDelete={onEmployeeDelete}
                   onTeamViewAllMembers={onTeamViewAllMembers}
                   onTeamAddMember={onTeamAddMember}
@@ -361,8 +358,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                 onTaskCopy={onTaskCopy}
                 onTaskPaste={onTaskPaste}
                 hasCopiedTask={hasCopiedTask}
-                onEmployeeView={onEmployeeView}
-                onEmployeeEdit={onEmployeeEdit}
+                                onEmployeeEdit={onEmployeeEdit}
                 onEmployeeDelete={onEmployeeDelete}
                 onTeamViewAllMembers={onTeamViewAllMembers}
                 onTeamAddMember={onTeamAddMember}
@@ -374,7 +370,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
           <>
             {/* Traditional view - render employees directly */}
             {employeesToShow.map((employee) => {
-              const team = teams.find(t => t.id === (employee as any).teamId);
+              const team = teams.find(t => t.id === employee.teamId);
               return (
                 <EmployeeRow
                   key={employee.employeeId}
@@ -392,8 +388,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                   teamColor={team?.color}
                   isTeamManaged={team ? team.isManaged : true}
                   showTeamIndicator={true}
-                  onEmployeeView={onEmployeeView}
-                  onEmployeeEdit={onEmployeeEdit}
+                                    onEmployeeEdit={onEmployeeEdit}
                   onEmployeeDelete={onEmployeeDelete}
                 />
               );

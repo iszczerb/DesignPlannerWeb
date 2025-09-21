@@ -54,15 +54,18 @@ namespace DesignPlanner.Core.DTOs
         // Employee fields
         [Required(ErrorMessage = "Team is required")]
         public int TeamId { get; set; }
-        
+
         [StringLength(50, ErrorMessage = "Employee ID cannot exceed 50 characters")]
         public string? EmployeeId { get; set; }
-        
+
         [StringLength(100, ErrorMessage = "Position cannot exceed 100 characters")]
         public string? Position { get; set; }
-        
+
         [StringLength(20, ErrorMessage = "Phone number cannot exceed 20 characters")]
         public string? PhoneNumber { get; set; }
+
+        // For Manager/Admin roles - list of team IDs they manage
+        public List<int>? ManagedTeamIds { get; set; }
     }
 
     public class EmployeeListResponseDto

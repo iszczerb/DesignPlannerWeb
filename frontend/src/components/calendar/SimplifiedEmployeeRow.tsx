@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import { EmployeeCalendarDto, TEAM_TYPE_LABELS } from '../../types/schedule';
+import TeamMemberDetailsModal from './TeamMemberDetailsModal';
+import { calculateActualHours } from '../../utils/taskLayoutHelpers';
 
 interface SimplifiedEmployeeRowProps {
   employee: EmployeeCalendarDto;
-  onEmployeeView?: (employee: EmployeeCalendarDto) => void;
-  onEmployeeEdit?: (employee: EmployeeCalendarDto) => void;
-  onEmployeeDelete?: (employeeId: number) => void;
 }
 
 const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
-  employee,
-  onEmployeeView,
-  onEmployeeEdit,
-  onEmployeeDelete
+  employee
 }) => {
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -24,66 +20,70 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
     x: 0,
     y: 0
   });
-  // Calculate filled slots for progress bar (x/total available)
-  const getFilledSlots = () => {
-    let filledSlots = 0;
-    employee.dayAssignments.forEach((day) => {
-      // Only count slots that are NOT blocked by leave/holidays and have tasks
-      if (day.morningSlot &&
-          day.morningSlot.tasks &&
-          day.morningSlot.tasks.length > 0 &&
-          !day.morningSlot.leave &&
-          !day.isHoliday) {
-        filledSlots++;
-      }
-      if (day.afternoonSlot &&
-          day.afternoonSlot.tasks &&
-          day.afternoonSlot.tasks.length > 0 &&
-          !day.afternoonSlot.leave &&
-          !day.isHoliday) {
-        filledSlots++;
-      }
-    });
-    return filledSlots;
-  };
 
-  const getTotalSlots = () => {
-    let totalSlots = 0;
+  // Team member details modal state
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  // Calculate percentage-based capacity utilization
+  const getCapacityUtilization = () => {
+    let usedCapacity = 0;
+    let totalCapacity = 0;
+
     employee.dayAssignments.forEach((day) => {
-      // Count available slots (not blocked by leave or holidays)
+      // Skip holidays completely
       if (day.isHoliday) {
-        // Holiday blocks both AM and PM slots for this employee - count 0
         return;
       }
 
       // Check if employee has full-day leave
       if (day.leave && day.leave.duration === 1) { // LeaveDuration.FullDay = 1
-        // Full day leave blocks both slots - count 0
         return;
       }
 
-      // Count individual slots that are not blocked
-      let daySlots = 0;
+      // Count available slots and calculate their filling percentage
+      let dayCapacity = 0;
+      let dayUsed = 0;
 
       // Check AM slot
       if (!day.morningSlot?.leave) {
-        daySlots++;
+        dayCapacity += 1; // Available slot = 1.0 capacity
+        const morningTasks = day.morningSlot?.tasks || [];
+        // Calculate actual hours used in morning slot
+        let morningHours = 0;
+        morningTasks.forEach((task, index) => {
+          morningHours += calculateActualHours(task, index, morningTasks.length);
+        });
+        // Convert hours to capacity (4 hours = 1.0 capacity)
+        const morningFilling = Math.min(morningHours / 4, 1.0);
+        dayUsed += morningFilling;
       }
 
       // Check PM slot
       if (!day.afternoonSlot?.leave) {
-        daySlots++;
+        dayCapacity += 1; // Available slot = 1.0 capacity
+        const afternoonTasks = day.afternoonSlot?.tasks || [];
+        // Calculate actual hours used in afternoon slot
+        let afternoonHours = 0;
+        afternoonTasks.forEach((task, index) => {
+          afternoonHours += calculateActualHours(task, index, afternoonTasks.length);
+        });
+        // Convert hours to capacity (4 hours = 1.0 capacity)
+        const afternoonFilling = Math.min(afternoonHours / 4, 1.0);
+        dayUsed += afternoonFilling;
       }
 
-      totalSlots += daySlots;
+      totalCapacity += dayCapacity;
+      usedCapacity += dayUsed;
     });
 
-    return totalSlots;
+    return {
+      usedCapacity,
+      totalCapacity,
+      percentage: totalCapacity > 0 ? (usedCapacity / totalCapacity) * 100 : 0
+    };
   };
 
-  const filledSlots = getFilledSlots();
-  const totalSlots = getTotalSlots();
-  const progressPercentage = totalSlots > 0 ? (filledSlots / totalSlots) * 100 : 0;
+  const capacityUtilization = getCapacityUtilization();
+  const progressPercentage = capacityUtilization.percentage;
 
   // Get progress bar color based on percentage
   const getProgressColor = (percentage: number): string => {
@@ -183,25 +183,9 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
     setContextMenu({ visible: false, x: 0, y: 0 });
   };
 
-  const handleEmployeeViewEdit = () => {
-    onEmployeeView?.(employee);
-    handleCloseContextMenu();
-  };
-
-  const handleEmployeeDelete = () => {
-    const confirmMessage = `Are you sure you want to delete ${employee.employeeName}?\n\n` +
-      `Role: ${employee.role}\n` +
-      `Team: ${employee.teamType ? TEAM_TYPE_LABELS[employee.teamType] : 'Unassigned'}\n` +
-      `Status: ${employee.isActive ? 'Active' : 'Inactive'}\n\n` +
-      `This action cannot be undone and will:\n` +
-      `• Remove the member from all teams and assignments\n` +
-      `• Delete all associated schedule data\n` +
-      `• Remove access to all systems and projects\n\n` +
-      `Are you absolutely sure you want to proceed?`;
-
-    if (window.confirm(confirmMessage)) {
-      onEmployeeDelete?.(employee.employeeId);
-    }
+  const handleEmployeeViewDetails = () => {
+    console.log('🚀 Opening details modal for employee:', employee.employeeName);
+    setShowDetailsModal(true);
     handleCloseContextMenu();
   };
 
@@ -219,24 +203,20 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
           flexDirection: 'column',
           alignItems: 'center',
           gap: '2px',
-          cursor: onEmployeeView ? 'pointer' : 'default',
+          cursor: 'pointer',
           padding: '4px',
           borderRadius: '6px',
           transition: 'background-color 0.2s ease'
         }}
-        onClick={() => onEmployeeView?.(employee)}
+        onClick={() => setShowDetailsModal(true)}
         onMouseEnter={(e) => {
-          if (onEmployeeView) {
-            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-          }
+          e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
         }}
         onMouseLeave={(e) => {
-          if (onEmployeeView) {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }
+          e.currentTarget.style.backgroundColor = 'transparent';
         }}
         onContextMenu={handleEmployeeContextMenu}
-        title={onEmployeeView ? "Click to view details, right-click for options" : ""}
+        title="Click to view details, right-click for options"
       >
         {/* First Name */}
         <div style={getFirstNameStyle()}>
@@ -255,7 +235,7 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
 
         {/* Team */}
         <div style={getTeamStyle()}>
-          {employee.teamType ? TEAM_TYPE_LABELS[employee.teamType] : 'Unassigned'}
+          {employee.team}
         </div>
       </div>
       
@@ -270,7 +250,7 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
         
         {/* Progress Text Under Bar */}
         <div style={getProgressTextStyle()}>
-          {filledSlots}/{totalSlots} ({Math.round(progressPercentage)}%)
+          {capacityUtilization.usedCapacity.toFixed(1)}/{capacityUtilization.totalCapacity} ({Math.round(progressPercentage)}%)
         </div>
       </div>
 
@@ -319,47 +299,40 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
             </div>
 
             <div
-              onClick={handleEmployeeViewEdit}
+              onClick={handleEmployeeViewDetails}
               style={{
-                padding: '12px 16px',
+                padding: '16px 20px',
                 fontSize: '0.875rem',
                 color: '#374151',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s ease',
+                gap: '10px',
+                transition: 'all 0.2s ease',
+                fontWeight: '500',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <span style={{ fontSize: '1rem' }}>👁️</span>
-              View / Edit Member
-            </div>
-
-            <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '4px 0' }} />
-
-            <div
-              onClick={handleEmployeeDelete}
-              style={{
-                padding: '12px 16px',
-                fontSize: '0.875rem',
-                color: '#dc2626',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s ease',
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#3b82f6';
+                e.currentTarget.style.color = 'white';
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#374151';
+              }}
             >
-              <span style={{ fontSize: '1rem' }}>🗑️</span>
-              Delete Member
+              <span style={{ fontSize: '1.1rem' }}>📊</span>
+              View Member Details
             </div>
           </div>
         </>
       )}
+
+      {/* Team Member Details Modal */}
+      <TeamMemberDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        employee={employee}
+      />
     </div>
   );
 };

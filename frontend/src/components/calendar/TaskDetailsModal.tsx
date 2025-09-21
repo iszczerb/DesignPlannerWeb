@@ -30,6 +30,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import { AssignmentTaskDto, TaskPriority, TaskStatus, PRIORITY_LABELS, STATUS_LABELS } from '../../types/schedule';
 import scheduleService from '../../services/scheduleService';
 import { formatHours, calculateTaskHours } from '../../utils/hoursCalculator';
+import { calculateActualHours } from '../../utils/taskLayoutHelpers';
 import projectService, { ClientOption, ProjectOption, ProjectTaskOption } from '../../services/projectService';
 
 interface TaskDetailsModalProps {
@@ -41,22 +42,15 @@ interface TaskDetailsModalProps {
   slotTasks?: AssignmentTaskDto[]; // Other tasks in the same slot for validation
 }
 
-// Helper function to calculate automatic hours based on task count
-const calculateAutoHours = (taskCount: number): number => {
-  if (taskCount === 0) return 0;
-  return Math.round((4 / taskCount) * 100) / 100; // 4 hours divided by task count, rounded to 2 decimal places
+// Helper function to get actual task hours based on visual column occupancy
+const getTaskActualHours = (task: AssignmentTaskDto, taskIndex: number, slotTasks: AssignmentTaskDto[]): string => {
+  const actualHours = calculateActualHours(task, taskIndex, slotTasks.length);
+  return `${actualHours}h`;
 };
 
-// Helper function to format automatic hours for display
-const formatAutoHours = (taskCount: number): string => {
-  const hours = calculateAutoHours(taskCount);
-  return formatHours(hours);
-};
-
-// Helper function to get automatic hours for current slot
-const getSlotAutoHours = (slotTasks: AssignmentTaskDto[]): string => {
-  if (slotTasks.length === 0) return '0h';
-  return formatAutoHours(slotTasks.length);
+// Helper function to get just the task type name for display
+const getTaskTypeName = (task: AssignmentTaskDto): string => {
+  return task.taskTypeName;
 };
 
 const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
@@ -290,10 +284,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
       >
         <DialogTitle>
           <Typography variant="h6" component="div">
-            Task Details
+            {mode === 'edit' ? '✏️ Edit Task' : '👁️ Task Details'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Assignment ID: {task.assignmentId}
+            Assignment ID: {task.assignmentId} {mode === 'edit' && '• Editing Mode'}
           </Typography>
         </DialogTitle>
 
@@ -303,12 +297,12 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             <Card elevation={1}>
               <CardContent>
                 <Typography variant="h6" gutterBottom color="primary">
-                  {selectedProjectId ? 
-                    (projects.find(p => p.id === selectedProjectId)?.code || task.projectCode)
-                    : task.projectCode
-                  } - {selectedTaskId ? 
-                    (projectTasks.find(t => t.id === selectedTaskId)?.title || task.taskTitle)
-                    : task.taskTitle
+                  {selectedProjectId ?
+                    (projects.find(p => p.id === selectedProjectId)?.name || task.projectName)
+                    : task.projectName
+                  } - {selectedTaskId ?
+                    (projectTasks.find(t => t.id === selectedTaskId)?.taskTypeName || getTaskTypeName(task))
+                    : getTaskTypeName(task)
                   }
                 </Typography>
                 
@@ -418,20 +412,12 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                         </Select>
                       </FormControl>
                     ) : (
-                      <Box>
-                        <Typography variant="body1" fontWeight="medium">
-                          {selectedTaskId ? 
-                            projectTasks.find(t => t.id === selectedTaskId)?.title || task.taskTitle
-                            : task.taskTitle
-                          }
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Type: {selectedTaskId ? 
-                            projectTasks.find(t => t.id === selectedTaskId)?.taskTypeName || task.taskTypeName
-                            : task.taskTypeName
-                          }
-                        </Typography>
-                      </Box>
+                      <Typography variant="body1" fontWeight="medium">
+                        {selectedTaskId ?
+                          projectTasks.find(t => t.id === selectedTaskId)?.taskTypeName || getTaskTypeName(task)
+                          : getTaskTypeName(task)
+                        }
+                      </Typography>
                     )}
                   </Grid>
                   
@@ -446,10 +432,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Task Hours (Auto-calculated)
+                      Task Hours
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      {getSlotAutoHours(slotTasks)}
+                      {task ? getTaskActualHours(task, slotTasks.findIndex(t => t.assignmentId === task.assignmentId), slotTasks) : '0h'}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -586,14 +572,14 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Task Hours (Auto-calculated)
+                    Task Hours
                   </Typography>
                   <Box>
                     <Typography variant="body1" fontWeight="medium">
-                      {getSlotAutoHours(slotTasks)}
+                      {task ? getTaskActualHours(task, slotTasks.findIndex(t => t.assignmentId === task.assignmentId), slotTasks) : '0h'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Based on {slotTasks.length} task{slotTasks.length !== 1 ? 's' : ''} in this slot
+                      Based on visual column occupancy
                     </Typography>
                   </Box>
                 </Grid>

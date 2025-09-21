@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import TimeSlot from './TimeSlot';
+import TeamMemberDetailsModal from './TeamMemberDetailsModal';
 import {
   EmployeeRowProps,
   Slot,
@@ -9,6 +10,7 @@ import {
   EmployeeScheduleDto
 } from '../../types/schedule';
 import { DragItem } from '../../types/dragDrop';
+import { calculateActualHours } from '../../utils/taskLayoutHelpers';
 
 interface ExtendedEmployeeRowProps extends EmployeeRowProps {
   onTaskDrop?: (dragItem: DragItem, targetDate: Date, targetSlot: Slot, targetEmployeeId: number) => void;
@@ -21,11 +23,9 @@ interface ExtendedEmployeeRowProps extends EmployeeRowProps {
   teamColor?: string;
   isTeamManaged?: boolean;
   showTeamIndicator?: boolean;
-  onEmployeeView?: (employee: EmployeeScheduleDto) => void;
-  onEmployeeEdit?: (employee: EmployeeScheduleDto) => void;
-  onEmployeeDelete?: (employeeId: number) => void;
 }
 
+// Updated context menu
 const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
   employee,
   days,
@@ -42,9 +42,6 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
   teamColor,
   isTeamManaged = true,
   showTeamIndicator = false,
-  onEmployeeView,
-  onEmployeeEdit,
-  onEmployeeDelete
 }) => {
   // Create a map of day assignments for easy lookup
   const dayAssignmentMap = useMemo(() => {
@@ -65,6 +62,9 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
     x: 0,
     y: 0
   });
+
+  // Team member details modal state
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const handleTaskClick = (task: AssignmentTaskDto) => {
     if (onTaskClick) {
@@ -100,29 +100,8 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
   };
 
   const handleEmployeeView = () => {
-    onEmployeeView?.(employee);
-    handleCloseContextMenu();
-  };
-
-  const handleEmployeeEdit = () => {
-    onEmployeeEdit?.(employee);
-    handleCloseContextMenu();
-  };
-
-  const handleEmployeeDelete = () => {
-    const confirmMessage = `Are you sure you want to delete ${employee.employeeName}?\n\n` +
-      `Role: ${employee.role}\n` +
-      `Team: ${employee.team}\n` +
-      `Status: ${employee.isActive ? 'Active' : 'Inactive'}\n\n` +
-      `This action cannot be undone and will:\n` +
-      `• Remove the member from all teams and assignments\n` +
-      `• Delete all associated schedule data\n` +
-      `• Remove access to all systems and projects\n\n` +
-      `Are you absolutely sure you want to proceed?`;
-
-    if (window.confirm(confirmMessage)) {
-      onEmployeeDelete?.(employee.employeeId);
-    }
+    console.log('🚀 Opening details modal for employee:', employee.employeeName);
+    setShowDetailsModal(true);
     handleCloseContextMenu();
   };
 
@@ -172,8 +151,33 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
   const getWorkloadSummary = () => {
     const totalAssignments = employee.dayAssignments.reduce((sum, day) => sum + day.totalAssignments, 0);
     const daysWithConflicts = employee.dayAssignments.filter(day => day.hasConflicts).length;
-    const totalSlots = days.length * 2; // 2 slots per day
-    const utilizationPercentage = Math.round((totalAssignments / totalSlots) * 100);
+    const totalCapacity = days.length * 2; // 2 slots per day (total capacity)
+
+    // Calculate used capacity based on actual task hours (not task count)
+    let usedCapacity = 0;
+    employee.dayAssignments.forEach(dayAssignment => {
+      const morningTasks = dayAssignment.morningSlot?.tasks || [];
+      const afternoonTasks = dayAssignment.afternoonSlot?.tasks || [];
+
+      // Calculate actual hours used in each slot
+      let morningHours = 0;
+      morningTasks.forEach((task, index) => {
+        morningHours += calculateActualHours(task, index, morningTasks.length);
+      });
+
+      let afternoonHours = 0;
+      afternoonTasks.forEach((task, index) => {
+        afternoonHours += calculateActualHours(task, index, afternoonTasks.length);
+      });
+
+      // Convert hours to capacity (4 hours = 1.0 capacity)
+      const morningCapacity = Math.min(morningHours / 4, 1.0);
+      const afternoonCapacity = Math.min(afternoonHours / 4, 1.0);
+
+      usedCapacity += morningCapacity + afternoonCapacity;
+    });
+
+    const utilizationPercentage = totalCapacity > 0 ? Math.round((usedCapacity / totalCapacity) * 100) : 0;
 
     return {
       totalAssignments,
@@ -270,33 +274,47 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
         style={{
           ...getEmployeeSidebarStyle(),
           cursor: 'pointer',
+          transition: 'all 0.2s ease',
         }}
         onContextMenu={handleEmployeeContextMenu}
-        title="Right-click to view employee options"
+        title="Click to view details • Right-click for options"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = isTeamManaged ? '#f1f5f9' : '#e2e8f0';
+          e.currentTarget.style.transform = 'scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = isTeamManaged ? '#f8fafc' : '#f1f5f9';
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        onClick={() => {
+          console.log('🖱️ Employee sidebar clicked for:', employee.employeeName);
+          setShowDetailsModal(true);
+        }}
       >
         {/* Clickable Employee Info Section */}
         <div
-          onClick={() => onEmployeeView?.(employee)}
+          onClick={() => {
+            console.log('🖱️ Employee info clicked for:', employee.employeeName);
+            setShowDetailsModal(true);
+          }}
           style={{
-            cursor: onEmployeeView ? 'pointer' : 'default',
-            padding: '4px',
-            borderRadius: '6px',
-            transition: 'background-color 0.2s ease',
-            ...( onEmployeeView && {
-              ':hover': {
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              }
-            })
+            cursor: 'pointer',
+            padding: '8px',
+            borderRadius: '8px',
+            transition: 'all 0.2s ease',
+            border: '2px solid transparent',
           }}
           onMouseEnter={(e) => {
-            if (onEmployeeView) {
-              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-            }
+            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+            e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+            e.currentTarget.style.transform = 'scale(1.02)';
           }}
           onMouseLeave={(e) => {
-            if (onEmployeeView) {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.borderColor = 'transparent';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
         >
           {/* Employee Name */}
@@ -336,7 +354,7 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
           {/* Team Name */}
           <div style={getEmployeeInfoStyle()}>
             <div style={{ fontWeight: '600', color: '#4f46e5', fontSize: '0.8125rem' }}>
-              {employee.team || (employee.teamType ? TEAM_TYPE_LABELS[employee.teamType] : 'Unassigned')}
+              {employee.team}
             </div>
           </div>
         </div>
@@ -463,64 +481,38 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
             <div
               onClick={handleEmployeeView}
               style={{
-                padding: '12px 16px',
+                padding: '16px 20px',
                 fontSize: '0.875rem',
                 color: '#374151',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s ease',
+                gap: '10px',
+                transition: 'all 0.2s ease',
+                fontWeight: '500',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#3b82f6';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#374151';
+              }}
             >
-              <span style={{ fontSize: '1rem' }}>👁️</span>
+              <span style={{ fontSize: '1.1rem' }}>📊</span>
               View Member Details
-            </div>
-
-            <div
-              onClick={handleEmployeeEdit}
-              style={{
-                padding: '12px 16px',
-                fontSize: '0.875rem',
-                color: '#374151',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s ease',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <span style={{ fontSize: '1rem' }}>✏️</span>
-              Edit Member
-            </div>
-
-            <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '4px 0' }} />
-
-            <div
-              onClick={handleEmployeeDelete}
-              style={{
-                padding: '12px 16px',
-                fontSize: '0.875rem',
-                color: '#dc2626',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s ease',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <span style={{ fontSize: '1rem' }}>🗑️</span>
-              Delete Member
             </div>
           </div>
         </>
       )}
+
+      {/* Team Member Details Modal */}
+      <TeamMemberDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        employee={employee}
+      />
     </div>
   );
 };

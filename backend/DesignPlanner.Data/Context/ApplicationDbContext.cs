@@ -52,28 +52,26 @@ namespace DesignPlanner.Data.Context
             modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
             modelBuilder.ApplyConfiguration(new CategoryConfiguration());
 
-            // Seed data for default clients
-            var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            modelBuilder.Entity<Client>().HasData(
-                new Client { Id = 1, Code = "AWS", Name = "Amazon Web Services", IsActive = true, CreatedAt = seedDate },
-                new Client { Id = 2, Code = "MSFT", Name = "Microsoft", IsActive = true, CreatedAt = seedDate },
-                new Client { Id = 3, Code = "GOOGLE", Name = "Google", IsActive = true, CreatedAt = seedDate },
-                new Client { Id = 4, Code = "EQX", Name = "Equinix", IsActive = true, CreatedAt = seedDate },
-                new Client { Id = 5, Code = "TATE", Name = "Tate", IsActive = true, CreatedAt = seedDate }
-            );
+            // SEEDING COMPLETELY DISABLED - DO NOT CREATE ANY DEFAULT DATA
+            // var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            // modelBuilder.Entity<Client>().HasData(
+            //     new Client { Id = 1, Code = "AWS", Name = "Amazon Web Services", IsActive = true, CreatedAt = seedDate },
+            //     new Client { Id = 2, Code = "MSFT", Name = "Microsoft", IsActive = true, CreatedAt = seedDate },
+            //     new Client { Id = 3, Code = "GOOGLE", Name = "Google", IsActive = true, CreatedAt = seedDate },
+            //     new Client { Id = 4, Code = "EQX", Name = "Equinix", IsActive = true, CreatedAt = seedDate },
+            //     new Client { Id = 5, Code = "TATE", Name = "Tate", IsActive = true, CreatedAt = seedDate }
+            // );
 
-
-            // Seed data for default skills
-            modelBuilder.Entity<Skill>().HasData(
-                new Skill { Id = 1, Name = "C#", Category = "Technical", IsActive = true, CreatedAt = seedDate },
-                new Skill { Id = 2, Name = "JavaScript", Category = "Technical", IsActive = true, CreatedAt = seedDate },
-                new Skill { Id = 3, Name = "React", Category = "Technical", IsActive = true, CreatedAt = seedDate },
-                new Skill { Id = 4, Name = "UI/UX Design", Category = "Design", IsActive = true, CreatedAt = seedDate },
-                new Skill { Id = 5, Name = "Project Management", Category = "Management", IsActive = true, CreatedAt = seedDate },
-                new Skill { Id = 6, Name = "Database Design", Category = "Technical", IsActive = true, CreatedAt = seedDate },
-                new Skill { Id = 7, Name = "API Development", Category = "Technical", IsActive = true, CreatedAt = seedDate },
-                new Skill { Id = 8, Name = "Testing", Category = "Technical", IsActive = true, CreatedAt = seedDate }
-            );
+            // modelBuilder.Entity<Skill>().HasData(
+            //     new Skill { Id = 1, Name = "C#", Category = "Technical", IsActive = true, CreatedAt = seedDate },
+            //     new Skill { Id = 2, Name = "JavaScript", Category = "Technical", IsActive = true, CreatedAt = seedDate },
+            //     new Skill { Id = 3, Name = "React", Category = "Technical", IsActive = true, CreatedAt = seedDate },
+            //     new Skill { Id = 4, Name = "UI/UX Design", Category = "Design", IsActive = true, CreatedAt = seedDate },
+            //     new Skill { Id = 5, Name = "Project Management", Category = "Management", IsActive = true, CreatedAt = seedDate },
+            //     new Skill { Id = 6, Name = "Database Design", Category = "Technical", IsActive = true, CreatedAt = seedDate },
+            //     new Skill { Id = 7, Name = "API Development", Category = "Technical", IsActive = true, CreatedAt = seedDate },
+            //     new Skill { Id = 8, Name = "Testing", Category = "Technical", IsActive = true, CreatedAt = seedDate }
+            // );
         }
 
         public override int SaveChanges()

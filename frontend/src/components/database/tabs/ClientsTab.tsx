@@ -12,12 +12,16 @@ import {
   Project
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
+import { clientTaskCountService, ClientTaskCount } from '../../../services/clientTaskCountService';
 
 interface ClientsTabProps {
   onEntityCountChange: (count: number) => void;
+  onDataChange?: () => void;
+  onTaskCountsChange?: (taskCounts: ClientTaskCount[]) => void;
+  refreshTrigger?: number; // External trigger to refresh task counts
 }
 
-const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
+const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange, onDataChange, onTaskCountsChange, refreshTrigger }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,10 +31,12 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingClient, setDeletingClient] = useState<Client | undefined>();
   const [formLoading, setFormLoading] = useState(false);
+  const [liveTaskCounts, setLiveTaskCounts] = useState<Map<number, { taskCount: number; projectCount: number }>>(new Map());
 
   useEffect(() => {
     loadClients();
     loadProjects();
+    loadLiveTaskCounts();
   }, []);
 
   useEffect(() => {
@@ -56,12 +62,50 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
     }
   }, [projects]);
 
+  // Respond to external refresh triggers (e.g., from calendar changes)
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      console.log('🔄 CLIENTS TAB - External refresh trigger received:', refreshTrigger);
+      loadLiveTaskCounts();
+    }
+  }, [refreshTrigger]);
+
   const loadProjects = async () => {
     try {
       const data = await databaseService.getProjects();
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load projects:', err);
+    }
+  };
+
+  const loadLiveTaskCounts = async () => {
+    try {
+      console.log('🔄 CLIENTS TAB - loadLiveTaskCounts called');
+      const taskCounts = await clientTaskCountService.getClientTaskCounts();
+      console.log('🏢 CLIENTS TAB - received live task counts:', taskCounts);
+
+      // Convert to Map for efficient lookup
+      const countsMap = new Map<number, { taskCount: number; projectCount: number }>();
+      taskCounts.forEach(count => {
+        countsMap.set(count.clientId, {
+          taskCount: count.taskCount,
+          projectCount: count.projectCount
+        });
+      });
+
+      setLiveTaskCounts(countsMap);
+
+      // Notify parent component if callback provided
+      if (onTaskCountsChange) {
+        onTaskCountsChange(taskCounts);
+      }
+
+      console.log('✅ CLIENTS TAB - loadLiveTaskCounts completed');
+    } catch (err) {
+      console.error('❌ CLIENTS TAB - error in loadLiveTaskCounts:', err);
+      // On error, clear the counts
+      setLiveTaskCounts(new Map());
     }
   };
 
@@ -105,6 +149,10 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
       setEditingClient(undefined);
       await loadClients();
       await loadProjects(); // Reload projects to trigger project count recalculation
+      await loadLiveTaskCounts(); // Refresh live counts after changes
+
+      // Notify parent component that data has changed (e.g., client colors updated)
+      onDataChange?.();
     } catch (err) {
       throw err; // Let the form handle the error
     } finally {
@@ -124,6 +172,7 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
       setDeletingClient(undefined);
       await loadClients();
       await loadProjects(); // Reload projects to trigger project count recalculation
+      await loadLiveTaskCounts(); // Refresh live counts after deletion
     } catch (err) {
       console.error('Delete error:', err);
       console.error('Delete error details:', err);
@@ -180,8 +229,31 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
       key: 'projectCount',
       label: 'Projects',
       sortable: true,
-      width: '100px',
-      render: (value) => getProjectsCount(value || 0)
+      width: '80px',
+      render: (value, item) => {
+        // Use live project count if available, otherwise fall back to database value
+        const liveCount = liveTaskCounts.get(item.id!)?.projectCount ?? value ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'taskCount',
+      label: 'Tasks',
+      sortable: true,
+      width: '80px',
+      render: (value, item) => {
+        // Use live task count from assignments
+        const liveCount = liveTaskCounts.get(item.id!)?.taskCount ?? 0;
+        return (
+          <span className="count-badge">
+            {liveCount}
+          </span>
+        );
+      }
     },
   ];
 
@@ -196,7 +268,11 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ onEntityCountChange }) => {
         data={clients}
         loading={loading}
         error={error}
-        onRefresh={loadClients}
+        onRefresh={() => {
+          loadClients();
+          loadProjects();
+          loadLiveTaskCounts();
+        }}
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}

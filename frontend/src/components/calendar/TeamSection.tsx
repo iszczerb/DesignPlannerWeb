@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import EmployeeRow from './EmployeeRow';
+import TeamDetailsModal from './TeamDetailsModal';
 import { EmployeeCalendarDto, CalendarDayDto, AssignmentTaskDto, EmployeeScheduleDto } from '../../types/schedule';
 import { DragItem } from '../../types/dragDrop';
 import { Slot } from '../../types/schedule';
@@ -28,7 +29,6 @@ interface TeamSectionProps {
   onTaskPaste?: (date: Date, slot: Slot, employeeId: number) => void;
   hasCopiedTask?: boolean;
   // Team member management props
-  onEmployeeView?: (employee: EmployeeScheduleDto) => void;
   onEmployeeEdit?: (employee: EmployeeScheduleDto) => void;
   onEmployeeDelete?: (employeeId: number) => void;
   onTeamViewAllMembers?: (teamId: number) => void;
@@ -52,7 +52,6 @@ const TeamSection: React.FC<TeamSectionProps> = ({
   onTaskCopy,
   onTaskPaste,
   hasCopiedTask = false,
-  onEmployeeView,
   onEmployeeEdit,
   onEmployeeDelete,
   onTeamViewAllMembers,
@@ -60,6 +59,7 @@ const TeamSection: React.FC<TeamSectionProps> = ({
   onTeamManage
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showTeamDetailsModal, setShowTeamDetailsModal] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -166,10 +166,17 @@ const TeamSection: React.FC<TeamSectionProps> = ({
     zIndex: isViewOnly && !team.isManaged ? 1 : -1,
   });
 
-  const handleHeaderClick = () => {
+  const handleHeaderClick = (event: React.MouseEvent) => {
+    // If it's a right-click, let the context menu handle it
+    if (event.button === 2) return;
+
+    // Toggle collapse functionality
     if (onToggleCollapse) {
       onToggleCollapse(team.id);
     }
+
+    // Also open team details modal
+    setShowTeamDetailsModal(true);
   };
 
   const handleTeamContextMenu = (event: React.MouseEvent) => {
@@ -192,13 +199,8 @@ const TeamSection: React.FC<TeamSectionProps> = ({
     handleCloseContextMenu();
   };
 
-  const handleAddMember = () => {
-    onTeamAddMember?.(team.id);
-    handleCloseContextMenu();
-  };
-
-  const handleManageTeam = () => {
-    onTeamManage?.(team.id);
+  const handleViewTeamDetails = () => {
+    setShowTeamDetailsModal(true);
     handleCloseContextMenu();
   };
 
@@ -301,7 +303,6 @@ const TeamSection: React.FC<TeamSectionProps> = ({
             teamColor={team.color}
             isTeamManaged={team.isManaged}
             showTeamIndicator={false}
-            onEmployeeView={onEmployeeView}
             onEmployeeEdit={onEmployeeEdit}
             onEmployeeDelete={onEmployeeDelete}
           />
@@ -366,66 +367,42 @@ const TeamSection: React.FC<TeamSectionProps> = ({
             </div>
 
             <div
-              onClick={handleViewAllMembers}
+              onClick={handleViewTeamDetails}
               style={{
-                padding: '12px 16px',
+                padding: '16px 20px',
                 fontSize: '0.875rem',
                 color: '#374151',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s ease',
+                gap: '10px',
+                transition: 'all 0.2s ease',
+                fontWeight: '500',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <span style={{ fontSize: '1rem' }}>👥</span>
-              View All Members
-            </div>
-
-            <div
-              onClick={handleAddMember}
-              style={{
-                padding: '12px 16px',
-                fontSize: '0.875rem',
-                color: '#374151',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s ease',
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#3b82f6';
+                e.currentTarget.style.color = 'white';
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <span style={{ fontSize: '1rem' }}>➕</span>
-              Add New Member
-            </div>
-
-            <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '4px 0' }} />
-
-            <div
-              onClick={handleManageTeam}
-              style={{
-                padding: '12px 16px',
-                fontSize: '0.875rem',
-                color: '#374151',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s ease',
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#374151';
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <span style={{ fontSize: '1rem' }}>⚙️</span>
-              Manage Team
+              <span style={{ fontSize: '1.1rem' }}>📊</span>
+              View Team Details
             </div>
           </div>
         </>
       )}
+
+      {/* Team Details Modal */}
+      <TeamDetailsModal
+        isOpen={showTeamDetailsModal}
+        onClose={() => setShowTeamDetailsModal(false)}
+        teamId={team.id}
+        teamName={team.name}
+        teamMembers={employees}
+      />
     </div>
   );
 };

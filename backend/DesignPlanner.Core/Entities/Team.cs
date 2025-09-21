@@ -14,9 +14,8 @@ namespace DesignPlanner.Core.Entities
         [MaxLength(500)]
         public string? Description { get; set; }
 
-        [Required]
         [MaxLength(10)]
-        public string Code { get; set; } = string.Empty; // e.g., "TEAM01"
+        public string? Code { get; set; } // Optional field - no longer used
 
         public bool IsActive { get; set; } = true;
 

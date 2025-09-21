@@ -27,6 +27,7 @@ namespace DesignPlanner.Core.DTOs
         public string EmployeeName { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string Team { get; set; } = string.Empty;
+        public int? TeamId { get; set; }
         public bool IsActive { get; set; }
         public List<DayAssignmentDto> DayAssignments { get; set; } = new List<DayAssignmentDto>();
     }
@@ -54,7 +55,6 @@ namespace DesignPlanner.Core.DTOs
         public int TaskId { get; set; }
         public string TaskTitle { get; set; } = string.Empty;
         public string TaskTypeName { get; set; } = string.Empty;
-        public string ProjectCode { get; set; } = string.Empty;
         public string ProjectName { get; set; } = string.Empty;
         public string ClientCode { get; set; } = string.Empty;
         public string ClientName { get; set; } = string.Empty;
@@ -69,6 +69,8 @@ namespace DesignPlanner.Core.DTOs
         public int EmployeeId { get; set; }
         public string EmployeeName { get; set; } = string.Empty;
         public double? Hours { get; set; }
+        public int SlotOrder { get; set; }
+        public int? ColumnStart { get; set; }
     }
 
     public class ProjectTaskDto

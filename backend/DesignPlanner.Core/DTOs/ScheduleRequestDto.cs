@@ -34,6 +34,15 @@ namespace DesignPlanner.Core.DTOs
 
         [MaxLength(500)]
         public string? Notes { get; set; }
+
+        // Optional fields for creating tasks on-the-fly
+        public int? ProjectId { get; set; }
+        public int? TaskTypeId { get; set; }
+        public string? Title { get; set; }
+        public string? Description { get; set; }
+        public TaskPriority? Priority { get; set; }
+        public DesignPlanner.Core.Enums.TaskStatus? Status { get; set; }
+        public double? Hours { get; set; } // Custom hours for this assignment
     }
 
     public class UpdateAssignmentDto
@@ -53,7 +62,9 @@ namespace DesignPlanner.Core.DTOs
         public string? Notes { get; set; }
 
         public double? Hours { get; set; }
-        
+
+        public int? ColumnStart { get; set; } // Column position (0-3) in 4-column grid
+
         public TaskPriority? Priority { get; set; }
 
         public DateTime? DueDate { get; set; }

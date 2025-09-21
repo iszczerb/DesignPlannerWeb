@@ -65,6 +65,19 @@ class TeamService {
    */
   async getTeamCalendarView(teamId: number, request: ScheduleRequestDto): Promise<CalendarViewDto> {
     try {
+      // CRITICAL INTERCEPTION: Check if user is Admin and redirect to global view
+      const userRole = this.getCurrentUserRole();
+      console.log('🚨🚨🚨 SERVICE INTERCEPT: getTeamCalendarView called with teamId:', teamId, 'role:', userRole);
+      console.log('🚨 SERVICE INTERCEPT: Token exists:', !!localStorage.getItem('accessToken'));
+      console.log('🚨 SERVICE INTERCEPT: Full token payload:', this.decodeTokenPayload());
+
+      if (userRole === 'Admin') {
+        console.log('🚨 ✅ SERVICE INTERCEPT: Admin user detected, redirecting to GLOBAL endpoint!');
+        console.log('🚨 PREVENTING TeamId', teamId, 'from reaching backend - using global instead');
+        const globalView = await this.getGlobalCalendarView(request);
+        return this.transformGlobalViewToCalendarData(globalView);
+      }
+
       const params = {
         startDate: typeof request.startDate === 'string' ? request.startDate : new Date(request.startDate).toISOString().split('T')[0],
         viewType: request.viewType.toString(),
@@ -207,6 +220,39 @@ class TeamService {
     } catch (error) {
       console.error('Failed to fetch available teams:', error);
       throw new Error('Failed to fetch available teams');
+    }
+  }
+
+  /**
+   * Get current user role from JWT token
+   */
+  private getCurrentUserRole(): string | null {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return null;
+
+      // Decode JWT token (basic decoding without verification)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || null;
+    } catch (error) {
+      console.error('Failed to decode user role from token:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Helper method to decode token payload for debugging
+   */
+  private decodeTokenPayload(): any {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return null;
+
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload;
+    } catch (error) {
+      console.error('Failed to decode token payload:', error);
+      return null;
     }
   }
 }

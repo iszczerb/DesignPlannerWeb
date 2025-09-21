@@ -19,8 +19,15 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
-import { Slot, TaskPriority, TaskStatus, CreateAssignmentDto } from '../../types/schedule';
-import projectService, { ClientOption, ProjectOption, TaskTypeOption, ProjectTaskOption } from '../../services/projectService';
+import { Slot, TaskPriority, TaskStatus, CreateAssignmentDto, AssignmentTaskDto } from '../../types/schedule';
+import projectService, { ClientOption, ProjectOption, TaskTypeOption } from '../../services/projectService';
+import {
+  migrateTasksToColumns,
+  getTaskHours,
+  getTaskColumnStart,
+  calculateOptimalPlacement,
+  getMaxAvailableDuration
+} from '../../utils/taskLayoutHelpers';
 
 interface TaskCreationModalProps {
   open: boolean;
@@ -30,6 +37,7 @@ interface TaskCreationModalProps {
   initialSlot: Slot;
   employeeId: number;
   employeeName: string;
+  existingSlotTasks?: AssignmentTaskDto[]; // Tasks already in the target slot
 }
 
 
@@ -41,25 +49,28 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
   initialSlot,
   employeeId,
   employeeName,
+  existingSlotTasks = [],
 }) => {
   const [formData, setFormData] = useState({
     client: null as ClientOption | null,
     project: null as ProjectOption | null,
     taskType: null as TaskTypeOption | null,
-    projectTask: null as ProjectTaskOption | null,
     description: '',
     priority: null as TaskPriority | null,
-    status: TaskStatus.NotStarted as TaskStatus, // Default to Not Started
+    status: null as TaskStatus | null, // No default status
     dueDate: null as Dayjs | null, // Default to blank
     notes: '',
+    hours: 1 as number, // Start with safe default (1 is always available)
   });
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [taskTypes, setTaskTypes] = useState<TaskTypeOption[]>([]);
-  const [projectTasks, setProjectTasks] = useState<ProjectTaskOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Available duration options
+  const [availableDurations, setAvailableDurations] = useState<number[]>([4, 3, 2, 1]);
 
   // Load data when modal opens
   useEffect(() => {
@@ -68,25 +79,75 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
     }
   }, [open]);
 
-  // Reset form when modal opens
+  // Reset form and calculate durations when modal opens
   useEffect(() => {
-    if (open) {
-      setFormData({
-        client: null,
-        project: null,
-        taskType: null,
-        projectTask: null,
-        description: '',
-        priority: null,
-        status: TaskStatus.NotStarted,
-        dueDate: null,
-        notes: '',
+    if (!open) return;
+
+    // First, reset form data (except hours - we'll calculate that)
+    setFormData(prev => ({
+      client: null,
+      project: null,
+      taskType: null,
+      description: '',
+      priority: null,
+      status: null,
+      dueDate: null,
+      notes: '',
+      hours: prev.hours || 1, // Keep previous or default to 1
+    }));
+    setErrors({});
+    setProjects([]);
+
+    // Duration calculation is now handled by separate useEffect
+  }, [open, initialDate]); // Remove existingSlotTasks to prevent form reset when tasks change
+
+  // Separate effect for duration calculation that doesn't reset the form
+  useEffect(() => {
+    if (!open) return;
+
+    console.log('🔥 DURATION CALCULATION (separate effect):', {
+      existingSlotTasks,
+      length: existingSlotTasks?.length,
+    });
+
+    if (!existingSlotTasks || existingSlotTasks.length === 0) {
+      console.log('✅ EMPTY SLOT - Setting [4, 3, 2, 1]');
+      const finalDurations = [4, 3, 2, 1];
+      setAvailableDurations(finalDurations);
+
+      // Set largest available (4 hours for empty slot)
+      setFormData(prev => {
+        console.log(`🔧 EMPTY SLOT UPDATE: setting to ${finalDurations[0]} hours`);
+        return { ...prev, hours: finalDurations[0] };
       });
-      setErrors({});
-      setProjects([]);
-      setProjectTasks([]);
+      return;
     }
-  }, [open, initialDate]);
+
+    // Calculate total occupied columns by summing task hours
+    let occupiedColumns = 0;
+    existingSlotTasks.forEach(task => {
+      const taskHours = task.hours || 1;
+      occupiedColumns += taskHours;
+    });
+
+    const availableColumns = 4 - occupiedColumns;
+
+    // Generate available duration options (largest first)
+    const durations: number[] = [];
+    for (let duration = availableColumns; duration >= 1; duration--) {
+      durations.push(duration);
+    }
+
+    const finalDurations = durations.length > 0 ? durations : [1];
+    setAvailableDurations(finalDurations);
+
+    // Set largest available duration immediately
+    setFormData(prev => {
+      const largestAvailable = finalDurations[0];
+      console.log(`🔧 SLOT WITH TASKS UPDATE: setting to ${largestAvailable} hours (available: [${finalDurations.join(',')}])`);
+      return { ...prev, hours: largestAvailable };
+    });
+  }, [open, existingSlotTasks]); // Only depend on existingSlotTasks for duration calculation
 
   const loadData = async () => {
     setDataLoading(true);
@@ -98,7 +159,7 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
       setClients(clientsData);
       setTaskTypes(taskTypesData);
     } catch (error) {
-      console.error('Error loading clients and task types:', error);
+      console.error('❌ TaskCreationModal: Error loading clients and task types:', error);
       setErrors({ submit: 'Failed to load project data. Please try again.' });
     } finally {
       setDataLoading(false);
@@ -110,7 +171,7 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
       ...formData, 
       client: newClient,
       project: null,
-      projectTask: null
+      taskType: null
     });
     
     if (newClient) {
@@ -124,36 +185,16 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
     } else {
       setProjects([]);
     }
-    setProjectTasks([]);
   };
 
   const handleProjectChange = async (newProject: ProjectOption | null) => {
     setFormData({ 
       ...formData, 
       project: newProject,
-      projectTask: null
+      taskType: null
     });
-    
-    if (newProject) {
-      try {
-        const projectTasksData = await projectService.getProjectTasks(newProject.id);
-        setProjectTasks(projectTasksData);
-      } catch (error) {
-        console.error('Error loading project tasks:', error);
-        setProjectTasks([]);
-      }
-    } else {
-      setProjectTasks([]);
-    }
   };
 
-  const handleProjectTaskChange = (newProjectTask: ProjectTaskOption | null) => {
-    setFormData({ 
-      ...formData, 
-      projectTask: newProjectTask,
-      taskType: newProjectTask ? taskTypes.find(tt => tt.id === newProjectTask.taskTypeId) || null : null
-    });
-  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -164,8 +205,8 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
     if (!formData.project) {
       newErrors.project = 'Project is required';
     }
-    if (!formData.projectTask) {
-      newErrors.projectTask = 'Project task is required';
+    if (!formData.taskType) {
+      newErrors.taskType = 'Task type is required';
     }
 
     setErrors(newErrors);
@@ -177,23 +218,47 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
 
     setLoading(true);
     try {
-      // Use the selected project task ID
-      const taskId = formData.projectTask!.id;
-
-      // Fix date to ensure correct timezone handling
+      // Format date without timezone conversion to avoid day shift issues
       const year = initialDate.getFullYear();
       const month = String(initialDate.getMonth() + 1).padStart(2, '0');
       const day = String(initialDate.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
+      const dateString = `${year}-${month}-${day}T00:00:00`;
 
-      const assignment: CreateAssignmentDto = {
-        taskId: taskId,
-        employeeId: employeeId,
-        assignedDate: dateStr,
-        slot: initialSlot,
-        notes: formData.notes || undefined,
+      // Calculate rightmost position for new task
+      const getRightmostPosition = () => {
+        if (!existingSlotTasks || existingSlotTasks.length === 0) {
+          return 4 - formData.hours; // Place at rightmost position based on duration
+        }
+
+        // Find the rightmost occupied column and place after it
+        let rightmostEnd = 0;
+        existingSlotTasks.forEach(task => {
+          const taskStart = task.columnStart ?? 0;
+          const taskHours = task.hours ?? 1;
+          const taskEnd = taskStart + taskHours;
+          rightmostEnd = Math.max(rightmostEnd, taskEnd);
+        });
+
+        return rightmostEnd;
       };
 
+      const assignment: CreateAssignmentDto = {
+        taskId: 0, // Will be created by backend
+        employeeId: employeeId,
+        assignedDate: dateString,
+        slot: initialSlot,
+        projectId: formData.project!.id,
+        taskTypeId: formData.taskType!.id,
+        title: formData.description || `${formData.taskType!.name} - ${formData.project!.name}`,
+        description: formData.description || undefined,
+        priority: formData.priority || undefined,
+        status: formData.status || undefined,
+        notes: formData.notes || undefined,
+        hours: formData.hours, // Include selected hours
+        columnStart: getRightmostPosition(), // Place at rightmost position
+      };
+
+      console.log('📤 Sending assignment data:', assignment);
       await onSubmit(assignment);
       onClose();
     } catch (error) {
@@ -267,14 +332,14 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
               onChange={(_, newValue) => handleProjectChange(newValue)}
               options={projects}
               disabled={!formData.client}
-              getOptionLabel={(option) => `${option.code} - ${option.name}`}
+              getOptionLabel={(option) => option.name}
               renderOption={(props, option) => {
                 const { key, ...otherProps } = props;
                 return (
                   <Box component="li" key={key} {...otherProps}>
                     <Box>
                       <Typography variant="body2" fontWeight="bold">
-                        {option.code} - {option.name}
+                        {option.name}
                       </Typography>
                     </Box>
                   </Box>
@@ -291,23 +356,23 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
               )}
             />
 
-            {/* Project Task Selection */}
+            {/* Task Type Selection */}
             <Autocomplete
-              value={formData.projectTask}
-              onChange={(_, newValue) => handleProjectTaskChange(newValue)}
-              options={projectTasks}
+              value={formData.taskType}
+              onChange={(_, newValue) => setFormData({ ...formData, taskType: newValue })}
+              options={taskTypes}
               disabled={!formData.project}
-              getOptionLabel={(option) => `${option.title} (${option.taskTypeName})`}
+              getOptionLabel={(option) => option.name}
               renderOption={(props, option) => {
                 const { key, ...otherProps } = props;
                 return (
                   <Box component="li" key={key} {...otherProps}>
                     <Box>
                       <Typography variant="body2" fontWeight="bold">
-                        {option.title}
+                        {option.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {option.taskTypeName}
+                        {option.description || 'Task type'}
                       </Typography>
                     </Box>
                   </Box>
@@ -316,9 +381,9 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Project Task"
-                  error={!!errors.projectTask}
-                  helperText={errors.projectTask || (!formData.project ? 'Select a project first' : '')}
+                  label="Task Type"
+                  error={!!errors.taskType}
+                  helperText={errors.taskType || (!formData.project ? 'Select a project first' : '')}
                   required
                 />
               )}
@@ -363,17 +428,36 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
 
               {/* Status */}
               <FormControl sx={{ flex: 1 }}>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>Status (Optional)</InputLabel>
                 <Select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus })}
-                  label="Status"
+                  value={formData.status || ''}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus || null })}
+                  label="Status (Optional)"
                 >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
                   <MenuItem value={TaskStatus.NotStarted}>Not Started</MenuItem>
                   <MenuItem value={TaskStatus.InProgress}>In Progress</MenuItem>
                   <MenuItem value={TaskStatus.Done}>Done</MenuItem>
                   <MenuItem value={TaskStatus.OnHold}>On Hold</MenuItem>
                   <MenuItem value={TaskStatus.Blocked}>Blocked</MenuItem>
+                </Select>
+              </FormControl>
+
+              {/* Duration (Hours) */}
+              <FormControl sx={{ flex: 1 }}>
+                <InputLabel>Duration</InputLabel>
+                <Select
+                  value={formData.hours}
+                  onChange={(e) => setFormData({ ...formData, hours: e.target.value as number })}
+                  label="Duration"
+                >
+                  {availableDurations.map(hours => (
+                    <MenuItem key={hours} value={hours}>
+                      {hours} hour{hours > 1 ? 's' : ''} {hours === 4 ? '(Full slot)' : ''}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
 

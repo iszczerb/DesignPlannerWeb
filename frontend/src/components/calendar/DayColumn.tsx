@@ -106,15 +106,8 @@ const DayColumn: React.FC<DayColumnProps> = ({
   };
 
   const getTaskCardStyle = (task: AssignmentTaskDto): React.CSSProperties => {
-    // Color coding based on project/client
-    const colors = [
-      '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', 
-      '#f97316', '#84cc16', '#ec4899', '#6366f1', '#14b8a6'
-    ];
-    const colorIndex = (task.taskId || 0) % colors.length;
-
     return {
-      backgroundColor: colors[colorIndex],
+      backgroundColor: task.clientColor || '#f8f9fa',
       color: '#ffffff',
       padding: '6px 8px',
       borderRadius: '6px',
@@ -137,7 +130,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
       onClick={() => onTaskClick?.(task)}
     >
       <div style={{ fontWeight: '600', fontSize: '0.7rem' }}>
-        {task.projectCode || 'TASK'}
+        {task.projectName || 'TASK'}
       </div>
       <div style={{ fontSize: '0.6rem', opacity: 0.9 }}>
         {task.clientName || 'CLIENT'}
