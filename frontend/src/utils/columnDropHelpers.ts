@@ -173,20 +173,10 @@ export const smartCompressAndPosition = (tasks: AssignmentTaskDto[], droppedTask
     needsCompression: totalOriginalHours > 4
   });
 
-  // If all tasks fit without compression, just position them
+  // If all tasks fit without compression, use bulletproof gap-filling
   if (totalOriginalHours <= 4) {
-    console.log('✅ No compression needed, positioning in order');
-    let currentPosition = 0;
-    return finalOrder.map(task => {
-      const result = {
-        ...task,
-        columnStart: currentPosition,
-        hours: task.hours || 1
-      };
-      currentPosition += result.hours;
-      console.log(`📍 Positioned task ${task.assignmentId}: column ${result.columnStart}, ${result.hours}h`);
-      return result;
-    });
+    console.log('✅ No compression needed, using bulletproof gap-filling');
+    return leftPackOnly(finalOrder);
   }
 
   // COMPRESSION NEEDED - Smart algorithm
@@ -219,46 +209,111 @@ export const smartCompressAndPosition = (tasks: AssignmentTaskDto[], droppedTask
     }
   }
 
-  // Position the compressed tasks in final order
-  let currentPosition = 0;
-  return finalOrder.map(task => {
-    const result = {
-      ...task,
-      columnStart: currentPosition,
-      hours: task.hours || 1
-    };
-    currentPosition += result.hours;
-
-    console.log(`📍 Positioned task ${task.assignmentId}: column ${result.columnStart}, ${result.hours}h`);
-    return result;
-  });
+  // Position the compressed tasks using bulletproof gap-filling
+  console.log('🛡️ Using bulletproof positioning after compression');
+  return leftPackOnly(finalOrder);
 };
 
 /**
- * Pure left-pack function that ONLY repositions tasks without resizing
- * Used when removing tasks - we want to eliminate gaps but preserve task sizes
+ * BULLETPROOF gap-filling left-pack that NEVER allows overlaps
+ * This function detects gaps and moves tasks while ensuring NO overlapping columns
  */
 export const leftPackOnly = (tasks: AssignmentTaskDto[]): AssignmentTaskDto[] => {
   if (tasks.length === 0) return tasks;
 
-  console.log(`🔧 LEFT-PACK ONLY (no resizing) for ${tasks.length} tasks`);
+  console.log(`🛡️ BULLETPROOF GAP-FILLING LEFT-PACK for ${tasks.length} tasks`);
 
-  // Sort tasks by their current position
+  // Sort tasks by their current position to maintain relative order
   const sortedTasks = [...tasks].sort((a, b) => (a.columnStart ?? 0) - (b.columnStart ?? 0));
 
-  // Position tasks left-to-right without any resizing
-  let currentPosition = 0;
-  return sortedTasks.map(task => {
-    const result = {
-      ...task,
-      columnStart: currentPosition,
-      hours: task.hours || 1 // Keep original hours - NO RESIZING
-    };
-    currentPosition += result.hours;
+  console.log('📊 Before gap-filling:', sortedTasks.map(t => ({
+    id: t.assignmentId,
+    column: t.columnStart,
+    hours: t.hours
+  })));
 
-    console.log(`📍 LEFT-PACK: Task ${task.assignmentId} positioned at column ${result.columnStart}, kept ${result.hours}h`);
-    return result;
-  });
+  const result: AssignmentTaskDto[] = [];
+
+  // Process each task and find the leftmost available position
+  for (const task of sortedTasks) {
+    const taskHours = task.hours || 1;
+
+    console.log(`🔍 Processing task ${task.assignmentId} (${taskHours}h)...`);
+
+    // Find the leftmost position where this task can fit without overlap
+    let bestPosition = -1;
+
+    for (let startCol = 0; startCol <= 4 - taskHours; startCol++) {
+      console.log(`  🧪 Testing position ${startCol} for ${taskHours}h task...`);
+
+      // Check if this position conflicts with any already placed task
+      let hasConflict = false;
+
+      for (const placedTask of result) {
+        const placedStart = placedTask.columnStart ?? 0;
+        const placedEnd = placedStart + (placedTask.hours || 1);
+        const testEnd = startCol + taskHours;
+
+        // Check for overlap: tasks overlap if one starts before the other ends
+        const overlaps = (startCol < placedEnd) && (testEnd > placedStart);
+
+        if (overlaps) {
+          console.log(`    ❌ CONFLICT with task ${placedTask.assignmentId} at columns ${placedStart}-${placedEnd-1}`);
+          hasConflict = true;
+          break;
+        }
+      }
+
+      if (!hasConflict) {
+        console.log(`    ✅ Position ${startCol} is available`);
+        bestPosition = startCol;
+        break;
+      }
+    }
+
+    // Safety fallback - should never happen if we have space
+    if (bestPosition === -1) {
+      console.error(`❌ CRITICAL ERROR: No position found for task ${task.assignmentId}!`);
+      bestPosition = 0; // Emergency fallback
+    }
+
+    const repositionedTask = {
+      ...task,
+      columnStart: bestPosition,
+      hours: taskHours
+    };
+
+    result.push(repositionedTask);
+
+    console.log(`📍 POSITIONED: Task ${task.assignmentId} at columns ${bestPosition}-${bestPosition + taskHours - 1} (${taskHours}h)`);
+  }
+
+  console.log('📊 After gap-filling:', result.map(t => ({
+    id: t.assignmentId,
+    column: t.columnStart,
+    hours: t.hours,
+    range: `${t.columnStart}-${(t.columnStart ?? 0) + (t.hours || 1) - 1}`
+  })));
+
+  // FINAL VALIDATION: Check for any overlaps
+  console.log('🔍 FINAL OVERLAP CHECK:');
+  for (let i = 0; i < result.length; i++) {
+    for (let j = i + 1; j < result.length; j++) {
+      const task1 = result[i];
+      const task2 = result[j];
+      const start1 = task1.columnStart ?? 0;
+      const end1 = start1 + (task1.hours || 1);
+      const start2 = task2.columnStart ?? 0;
+      const end2 = start2 + (task2.hours || 1);
+
+      const overlaps = (start1 < end2) && (end1 > start2);
+      if (overlaps) {
+        console.error(`🚨 OVERLAP DETECTED: Task ${task1.assignmentId} (${start1}-${end1-1}) overlaps with Task ${task2.assignmentId} (${start2}-${end2-1})`);
+      }
+    }
+  }
+
+  return result;
 };
 
 /**

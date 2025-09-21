@@ -1011,9 +1011,24 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     try {
       console.log('🔍 Finding remaining tasks in source slot for left-packing...');
 
-      // Find all tasks in the source slot (excluding the removed task)
+      // ULTRA-FIX: Always fetch fresh calendar data directly from API
+      console.log('🔄 Fetching FRESH calendar data for left-packing...');
+      const freshCalendarData = await scheduleService.getCalendarView({
+        startDate: date,
+        viewType: CalendarViewType.Week,
+        teamId: teamViewMode === 'managed' ? managedTeamId : undefined
+      });
+
+      if (!freshCalendarData || !freshCalendarData.employees) {
+        console.log('❌ Failed to get fresh calendar data for left-packing');
+        return;
+      }
+
+      console.log('✅ Fresh calendar data loaded for left-packing');
+
+      // Find all tasks in the source slot (excluding the removed task) using FRESH data
       const dateStr = date.toDateString();
-      const employee = calendarData.employees.find(emp => emp.employeeId === employeeId);
+      const employee = freshCalendarData.employees.find(emp => emp.employeeId === employeeId);
       if (!employee) {
         console.log('❌ Employee not found for left-packing');
         return;
@@ -1036,21 +1051,60 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       // Get remaining tasks (exclude the removed task)
       const remainingTasks = slotData.tasks.filter(task => task.assignmentId !== removedTaskId);
 
-      console.log('🔍 Remaining tasks for left-packing:', {
+      console.log('🔍 LEFT-PACK ULTRA-DEBUG:', {
+        employeeId,
+        slotType: slot === Slot.Morning ? 'Morning' : 'Afternoon',
+        removedTaskId,
+        dateStr,
+        allTasksInSlot: slotData.tasks.map(t => ({
+          id: t.assignmentId,
+          column: t.columnStart,
+          hours: t.hours,
+          title: t.taskTitle?.substring(0, 20)
+        })),
+        remainingAfterFilter: remainingTasks.map(t => ({
+          id: t.assignmentId,
+          column: t.columnStart,
+          hours: t.hours,
+          title: t.taskTitle?.substring(0, 20)
+        })),
         totalRemaining: remainingTasks.length,
-        tasks: remainingTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
+        calendarDataTimestamp: new Date().toISOString()
       });
+
+      // ULTRA-SAFETY: Double-check by looking at ALL employees and slots using FRESH data
+      console.log('🔍 ULTRA-SAFETY CHECK - All slots for this employee on this date (FRESH DATA):');
+      const targetEmployee = freshCalendarData.employees.find(emp => emp.employeeId === employeeId);
+      if (targetEmployee) {
+        const targetDay = targetEmployee.dayAssignments.find(day =>
+          new Date(day.date).toDateString() === dateStr
+        );
+        if (targetDay) {
+          console.log('📊 MORNING SLOT (FRESH):', targetDay.morningSlot?.tasks?.map(t => ({
+            id: t.assignmentId,
+            col: t.columnStart,
+            hrs: t.hours,
+            title: t.taskTitle?.substring(0, 15)
+          })) || 'NONE');
+          console.log('📊 AFTERNOON SLOT (FRESH):', targetDay.afternoonSlot?.tasks?.map(t => ({
+            id: t.assignmentId,
+            col: t.columnStart,
+            hrs: t.hours,
+            title: t.taskTitle?.substring(0, 15)
+          })) || 'NONE');
+        }
+      }
 
       if (remainingTasks.length === 0) {
         console.log('✅ No remaining tasks to left-pack');
         return;
       }
 
-      // Import the compression function
-      const { smartCompressAndPosition } = await import('../utils/columnDropHelpers');
+      // Import the left-pack function (positioning only, no resizing)
+      const { leftPackOnly } = await import('../utils/columnDropHelpers');
 
-      // Apply left-packing (no compression needed, just positioning)
-      const leftPackedTasks = smartCompressAndPosition(remainingTasks);
+      // Apply pure left-packing (no resizing, just positioning)
+      const leftPackedTasks = leftPackOnly(remainingTasks);
 
       console.log('📦 Left-packed arrangement:', {
         tasks: leftPackedTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
@@ -1069,10 +1123,13 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('✅ Source slot left-packing completed');
 
+      // Refresh the calendar to show updated positions
+      await loadCalendarData(teamViewMode === 'managed' ? managedTeamId : undefined, teamViewMode);
+
     } catch (error) {
       console.error('❌ Error during source slot left-packing:', error);
     }
-  }, [calendarData]);
+  }, [loadCalendarData, teamViewMode, managedTeamId]);
 
   /**
    * Left-pack tasks directly from captured task data
@@ -1089,11 +1146,11 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         tasks: remainingTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
       });
 
-      // Import the compression function
-      const { smartCompressAndPosition } = await import('../utils/columnDropHelpers');
+      // Import the left-pack function (positioning only, no resizing)
+      const { leftPackOnly } = await import('../utils/columnDropHelpers');
 
-      // Apply left-packing (no compression needed, just positioning)
-      const leftPackedTasks = smartCompressAndPosition(remainingTasks);
+      // Apply pure left-packing (no resizing, just positioning)
+      const leftPackedTasks = leftPackOnly(remainingTasks);
 
       console.log('📦 Left-packed arrangement:', {
         tasks: leftPackedTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
@@ -1112,10 +1169,13 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('✅ Direct left-packing completed');
 
+      // Refresh the calendar to show updated positions
+      await loadCalendarData(teamViewMode === 'managed' ? managedTeamId : undefined, teamViewMode);
+
     } catch (error) {
       console.error('❌ Error during direct left-packing:', error);
     }
-  }, []);
+  }, [loadCalendarData, teamViewMode, managedTeamId]);
 
   /**
    * Handle task drag and drop
@@ -1154,29 +1214,15 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         isMovingToNewSlot
       });
 
-      // CRITICAL: Get source slot tasks BEFORE moving the task
-      let sourceSlotTasks: any[] = [];
+      // Store source slot info for left-packing AFTER the move
+      let sourceSlotInfo: { employeeId: number; date: Date; slot: Slot } | null = null;
       if (isMovingToNewSlot) {
-        console.log('🔍 Capturing source slot tasks before move...');
-
-        const sourceEmployee = calendarData?.employees.find(emp => emp.employeeId === dragItem.task.employeeId);
-        if (sourceEmployee) {
-          const sourceDayAssignment = sourceEmployee.dayAssignments.find(day =>
-            new Date(day.date).toDateString() === originalDate.toDateString()
-          );
-          if (sourceDayAssignment) {
-            const sourceSlotData = dragItem.task.slot === Slot.Morning ?
-              sourceDayAssignment.morningSlot : sourceDayAssignment.afternoonSlot;
-            if (sourceSlotData?.tasks) {
-              sourceSlotTasks = sourceSlotData.tasks.filter(t => t.assignmentId !== dragItem.task.assignmentId);
-              console.log('🔍 Captured source slot tasks:', {
-                totalTasks: sourceSlotData.tasks.length,
-                remainingAfterMove: sourceSlotTasks.length,
-                tasks: sourceSlotTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
-              });
-            }
-          }
-        }
+        sourceSlotInfo = {
+          employeeId: dragItem.task.employeeId,
+          date: originalDate,
+          slot: dragItem.task.slot
+        };
+        console.log('🔍 Storing source slot info for post-move left-packing:', sourceSlotInfo);
       }
 
       // Format the target date as YYYY-MM-DD for API
@@ -1198,17 +1244,27 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('Task moved successfully with column position');
 
-      // If task moved to a different slot, left-pack the remaining tasks in the source slot
-      if (isMovingToNewSlot && sourceSlotTasks.length > 0) {
-        console.log('🔄 Left-packing source slot after task removal...');
-        await leftPackSourceSlotDirect(sourceSlotTasks);
-      }
-
-      // Refresh the calendar data to show the moved task
+      // Refresh calendar data first to get updated state
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
         teamViewMode
       );
+
+      // If task moved to a different slot, left-pack the remaining tasks in the source slot
+      if (isMovingToNewSlot && sourceSlotInfo) {
+        console.log('🔄 Left-packing source slot after task move...');
+
+        // Small delay to ensure all database updates are complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Use the same approach as deletion - find remaining tasks AFTER the move
+        await leftPackSourceSlot(
+          sourceSlotInfo.employeeId,
+          sourceSlotInfo.date,
+          sourceSlotInfo.slot,
+          dragItem.task.assignmentId
+        );
+      }
 
     } catch (error) {
       console.error('Error moving task:', error);

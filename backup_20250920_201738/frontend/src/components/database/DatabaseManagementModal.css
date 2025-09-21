@@ -1,0 +1,452 @@
+/* Database Management Modal Styles */
+
+.database-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.database-modal-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 95vw;
+  height: 90vh;
+  max-width: 1400px;
+  max-height: 900px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Header */
+.database-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.database-modal-title h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.database-modal-title p {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.database-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.database-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+/* Tabs */
+.database-modal-tabs {
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 0 32px;
+}
+
+.database-tabs-list {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.database-tabs-list::-webkit-scrollbar {
+  display: none;
+}
+
+.database-tab {
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px 8px 0 0;
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
+  position: relative;
+  margin-bottom: -1px;
+}
+
+.database-tab:hover {
+  background: rgba(99, 102, 241, 0.05);
+  color: #4f46e5;
+}
+
+.database-tab.active {
+  background: white;
+  color: #4f46e5;
+  border: 1px solid #e5e7eb;
+  border-bottom: 1px solid white;
+  font-weight: 600;
+}
+
+.database-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #4f46e5;
+}
+
+.database-tab-icon {
+  font-size: 16px;
+}
+
+.database-tab-label {
+  font-size: 14px;
+}
+
+.database-tab-count {
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.database-tab.active .database-tab-count {
+  background: #4f46e5;
+  color: white;
+}
+
+/* Content */
+.database-modal-content {
+  flex: 1;
+  overflow: hidden;
+  background: white;
+}
+
+.database-tab-panel {
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.database-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #6b7280;
+}
+
+.database-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #4f46e5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Footer */
+.database-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.database-modal-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.database-info-text {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.database-info-text kbd {
+  background: #e5e7eb;
+  color: #374151;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.database-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Buttons */
+.database-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.database-btn-primary {
+  background: #4f46e5;
+  color: white;
+}
+
+.database-btn-primary:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.database-btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.database-btn-secondary:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.database-btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.database-btn-danger:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.database-btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.database-btn-success:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.database-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .database-modal-container {
+    width: 98vw;
+    height: 95vh;
+    border-radius: 12px;
+  }
+
+  .database-modal-header {
+    padding: 20px 24px;
+  }
+
+  .database-modal-tabs {
+    padding: 0 24px;
+  }
+
+  .database-modal-footer {
+    padding: 16px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .database-modal-container {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .database-modal-header {
+    padding: 16px 20px;
+  }
+
+  .database-modal-title h2 {
+    font-size: 20px;
+  }
+
+  .database-modal-title p {
+    font-size: 13px;
+  }
+
+  .database-modal-tabs {
+    padding: 0 20px;
+  }
+
+  .database-tab {
+    padding: 14px 16px;
+  }
+
+  .database-tab-label {
+    display: none;
+  }
+
+  .database-tab-icon {
+    font-size: 18px;
+  }
+
+  .database-modal-footer {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .database-modal-info {
+    order: 2;
+  }
+
+  .database-modal-actions {
+    order: 1;
+    width: 100%;
+  }
+
+  .database-btn {
+    flex: 1;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .database-modal-container {
+    background: #1f2937;
+    color: white;
+  }
+
+  .database-modal-header {
+    border-bottom-color: #374151;
+  }
+
+  .database-modal-tabs {
+    background: #111827;
+    border-bottom-color: #374151;
+  }
+
+  /* Force table headers to be visible in dark mode */
+  .data-table-header-cell {
+    background: #111827 !important;
+    color: #f9fafb !important;
+    border-bottom-color: #374151 !important;
+  }
+
+  .data-table thead {
+    background: #111827 !important;
+  }
+
+  .database-tab {
+    color: #9ca3af;
+  }
+
+  .database-tab:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+  }
+
+  .database-tab.active {
+    background: #1f2937;
+    color: #a5b4fc;
+    border-color: #374151;
+    border-bottom-color: #1f2937;
+  }
+
+  .database-tab-count {
+    background: #374151;
+    color: #d1d5db;
+  }
+
+  .database-tab.active .database-tab-count {
+    background: #4f46e5;
+    color: white;
+  }
+
+  .database-modal-footer {
+    background: #111827;
+    border-top-color: #374151;
+  }
+
+  .database-info-text {
+    color: #9ca3af;
+  }
+
+  .database-info-text kbd {
+    background: #374151;
+    color: #d1d5db;
+  }
+
+  .database-btn-secondary {
+    background: #374151;
+    color: #d1d5db;
+  }
+
+  .database-btn-secondary:hover {
+    background: #4b5563;
+  }
+}

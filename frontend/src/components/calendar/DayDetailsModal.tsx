@@ -100,7 +100,7 @@ const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
         });
       }
 
-      // Calculate capacity based on percentage slot filling (25% per task, max 100%)
+      // Calculate capacity using ACTUAL HOURS (same as team member row progress bars)
       const morningTasks = dayAssignment.morningSlot?.tasks || [];
       const afternoonTasks = dayAssignment.afternoonSlot?.tasks || [];
       const allTasks: AssignmentTaskDto[] = [...morningTasks, ...afternoonTasks];
@@ -109,25 +109,29 @@ const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
       const capacity = 2;
       stats.totalCapacity += capacity;
 
-      // Calculate percentage filling for each slot (25% per task, max 100%)
-      const morningFilling = Math.min(morningTasks.length * 0.25, 1.0);
-      const afternoonFilling = Math.min(afternoonTasks.length * 0.25, 1.0);
-      const totalUsedCapacity = morningFilling + afternoonFilling;
+      // Calculate actual hours for morning slot
+      let morningHours = 0;
+      morningTasks.forEach((task, index) => {
+        morningHours += calculateActualHours(task, index, morningTasks.length);
+      });
+      // Convert hours to capacity (4 hours = 1.0 capacity)
+      const morningFilling = Math.min(morningHours / 4, 1.0);
 
+      // Calculate actual hours for afternoon slot
+      let afternoonHours = 0;
+      afternoonTasks.forEach((task, index) => {
+        afternoonHours += calculateActualHours(task, index, afternoonTasks.length);
+      });
+      // Convert hours to capacity (4 hours = 1.0 capacity)
+      const afternoonFilling = Math.min(afternoonHours / 4, 1.0);
+
+      const totalUsedCapacity = morningFilling + afternoonFilling;
       stats.usedCapacity += totalUsedCapacity;
 
       stats.totalTasks += allTasks.length;
 
-      // Calculate actual hours using the new column-based system
-      morningTasks.forEach((task, index) => {
-        const actualHours = calculateActualHours(task, index, morningTasks.length);
-        stats.totalHours += actualHours;
-      });
-
-      afternoonTasks.forEach((task, index) => {
-        const actualHours = calculateActualHours(task, index, afternoonTasks.length);
-        stats.totalHours += actualHours;
-      });
+      // Add the actual hours to total (already calculated above)
+      stats.totalHours += morningHours + afternoonHours;
 
       // Check if overbooked
       if (dayAssignment.morningSlot?.isOverbooked || dayAssignment.afternoonSlot?.isOverbooked) {

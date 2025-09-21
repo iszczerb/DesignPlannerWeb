@@ -40,7 +40,11 @@
       "Bash(wmic process where ProcessId=22240 delete:*)",
       "Bash(wmic process where ProcessId=25924 delete:*)",
       "Bash(wmic process where ProcessId=6964 delete:*)",
-      "Bash(wmic process where ProcessId=16944 delete:*)"
+      "Bash(wmic process where ProcessId=16944 delete:*)",
+      "Bash(wmic process where ProcessId=20716 delete:*)",
+      "Bash(wmic:*)",
+      "Bash(python:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
