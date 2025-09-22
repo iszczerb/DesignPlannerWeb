@@ -6,13 +6,11 @@ import {
   Box,
 } from '@mui/material';
 import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip as RechartsTooltip,
-} from 'recharts';
+  VictoryPie,
+  VictoryContainer,
+  VictoryTooltip,
+  VictoryLegend,
+} from 'victory';
 import { ClientDistributionDto } from '../../services/analyticsService';
 
 interface ClientDistributionChartProps {
@@ -24,9 +22,27 @@ const ClientDistributionChart: React.FC<ClientDistributionChartProps> = ({ data 
     return `${hours.toFixed(1)}h`;
   };
 
-  // Custom label function for pie charts
-  const renderCustomLabel = (entry: any) => {
-    return `${entry.percentage.toFixed(1)}%`;
+  // Prepare data for Victory
+  const chartData = data.map((item) => ({
+    x: item.clientName,
+    y: item.hours,
+    label: `${item.percentage.toFixed(1)}%`,
+    clientCode: item.clientCode,
+    clientColor: item.clientColor || '#3b82f6',
+    projectCount: item.projectCount,
+    taskCount: item.taskCount,
+  }));
+
+  // Enhanced tooltip
+  const getTooltipText = (datum: any) => {
+    return [
+      `Client: ${datum.x}`,
+      `Code: ${datum.clientCode}`,
+      `Hours: ${formatHours(datum.y)}`,
+      `Projects: ${datum.projectCount}`,
+      `Tasks: ${datum.taskCount}`,
+      `Percentage: ${datum.label}`,
+    ];
   };
 
   return (
@@ -36,34 +52,58 @@ const ClientDistributionChart: React.FC<ClientDistributionChartProps> = ({ data 
           CLIENT DISTRIBUTION
         </Typography>
 
-        <Box sx={{ flex: 1, minHeight: 0 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data as any}
-                cx="50%"
-                cy="50%"
-                innerRadius="40%"
-                outerRadius="70%"
-                dataKey="hours"
-                nameKey="clientName"
-                labelLine={false}
-                label={renderCustomLabel}
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.clientColor || '#3b82f6'} />
-                ))}
-              </Pie>
-              <RechartsTooltip
-                formatter={(value: any) => [formatHours(value), 'Hours']}
-                labelFormatter={(label) => `Client: ${label}`}
-              />
-              <Legend
-                wrapperStyle={{ fontSize: '12px' }}
-                iconType="circle"
-              />
-            </PieChart>
-          </ResponsiveContainer>
+        <Box sx={{ flex: 1, minHeight: 0, height: 400 }}>
+          <VictoryContainer width={400} height={400}>
+            <VictoryPie
+              data={chartData}
+              x="x"
+              y="y"
+              innerRadius={60}
+              outerRadius={120}
+              padAngle={2}
+              colorScale={chartData.map(d => d.clientColor)}
+              labels={({ datum }) => [
+                `Client: ${datum.x}`,
+                `Code: ${datum.clientCode}`,
+                `Hours: ${formatHours(datum.y)}`,
+                `Projects: ${datum.projectCount}`,
+                `Tasks: ${datum.taskCount}`,
+                `Percentage: ${datum.label}`
+              ].join('\n')}
+              labelComponent={
+                <VictoryTooltip
+                  style={{
+                    fill: '#333',
+                    fontSize: 12,
+                    fontFamily: 'Roboto, sans-serif',
+                  }}
+                  flyoutStyle={{
+                    fill: '#fff',
+                    stroke: '#ccc',
+                    strokeWidth: 1,
+                  }}
+                />
+              }
+              animate={{
+                duration: 1000,
+              }}
+            />
+            <VictoryLegend
+              x={20}
+              y={280}
+              orientation="horizontal"
+              gutter={10}
+              style={{
+                border: { stroke: 'transparent' },
+                title: { fontSize: 14, fill: '#333' },
+                labels: { fontSize: 10, fill: '#333' },
+              }}
+              data={chartData.map((item) => ({
+                name: item.x,
+                symbol: { fill: item.clientColor },
+              }))}
+            />
+          </VictoryContainer>
         </Box>
       </CardContent>
     </Card>

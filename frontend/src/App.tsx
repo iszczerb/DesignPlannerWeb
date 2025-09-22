@@ -16,6 +16,7 @@ import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import TeamSchedule from './pages/TeamSchedule';
+import Analytics from './pages/Analytics';
 import Unauthorized from './pages/Unauthorized';
 
 // Management Components
@@ -67,7 +68,7 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Roboto", "Inter", "Helvetica", "Arial", sans-serif',
     h1: {
       fontWeight: 700,
       fontSize: '2.5rem',
@@ -192,7 +193,16 @@ const App: React.FC = () => {
                       </ProtectedRoute>
                     }
                   />
-                  
+
+                  <Route
+                    path="/analytics"
+                    element={
+                      <ProtectedRoute requiredRoles={[UserRole.Manager, UserRole.Admin]}>
+                        <Analytics />
+                      </ProtectedRoute>
+                    }
+                  />
+
                   {/* Management Routes - Manager/Admin Only */}
                   <Route
                     path="/management/employees"

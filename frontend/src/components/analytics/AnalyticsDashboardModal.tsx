@@ -29,15 +29,18 @@ import {
   FileDownload as ExportIcon
 } from '@mui/icons-material';
 import {
-  VictoryChart,
-  VictoryBar,
-  VictoryPie,
-  VictoryAxis,
-  VictoryTooltip,
-  VictoryLabel,
-  VictoryTheme,
-  VictoryContainer
-} from 'victory';
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  LabelList,
+  Tooltip,
+  Legend,
+} from 'recharts';
 import useMeasure from 'react-use-measure';
 
 
@@ -223,9 +226,6 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         analyticsService.getEmployeeAnalytics(filter)
       ]);
 
-      console.log('🔍 Task Type Analytics Data:', taskTypeData);
-      console.log('🔍 Category Distribution Data:', categoryDistData);
-      console.log('🔍 Client Distribution Data:', clientDistData);
 
       setSummary(summaryData);
       setCategoryDistribution(categoryDistData);
@@ -832,37 +832,68 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           backgroundColor: '#f5f7fa',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden'
+          overflow: 'visible'
         }
       }}
     >
       {/* Single Compact Header - Matching Reference */}
       <Box sx={{
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        px: 3,
+        flexDirection: 'column',
+        px: 4,
         py: 1,
         backgroundColor: 'white',
         borderBottom: '1px solid #e2e8f0',
-        minHeight: '60px'
+        minHeight: '90px'
       }}>
-        {/* Left - DesignPlanner Logo (clickable, bigger) */}
-        <Box onClick={goToCurrentPeriod} sx={{ cursor: 'pointer' }}>
-          <img
-            src="/assets/logos/design-planner-logo.png"
-            alt="Design Planner"
-            style={{ height: '40px', width: 'auto' }}
-          />
-        </Box>
 
-        {/* Center - Timeline Controls */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+        {/* Single Row Layout */}
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          width: '100%',
+          gap: 0.5,
+          position: 'relative',
+          height: '100%'
+        }}>
+
+        {/* Toggle centered at top - absolute positioning */}
+        <Box sx={{
+          position: 'absolute',
+          left: '50%',
+          top: '0px',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 1,
+          zIndex: 10,
+          width: 'auto'
+        }}>
           <ToggleButtonGroup
             value={timelineMode}
             exclusive
             onChange={handleTimelineChange}
             size="small"
+            sx={{
+              '& .MuiToggleButton-root': {
+                backgroundColor: '#00265C',
+                color: 'white',
+                border: '1px solid #00265C',
+                fontSize: '12px',
+                px: 1.5,
+                py: 0.5,
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: '#003d7a'
+                },
+                '&.Mui-selected': {
+                  backgroundColor: '#001a3d',
+                  color: 'white'
+                }
+              }
+            }}
           >
             <ToggleButton value="DAILY">DAILY</ToggleButton>
             <ToggleButton value="WEEKLY">WEEKLY</ToggleButton>
@@ -870,29 +901,135 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <ToggleButton value="YEARLY">YEARLY</ToggleButton>
           </ToggleButtonGroup>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={() => navigatePeriod('prev')} size="small">
-              <ChevronLeft />
+          {/* Date aligned centered */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton onClick={() => navigatePeriod('prev')} size="small" sx={{ color: '#00265C' }}>
+              <ChevronLeft fontSize="small" />
             </IconButton>
-            <Typography variant="subtitle1" sx={{ minWidth: '120px', textAlign: 'center', fontWeight: 'bold' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                width: '150px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                color: '#00265C'
+              }}
+            >
               {formatPeriodDisplay()}
             </Typography>
-            <IconButton onClick={() => navigatePeriod('next')} size="small">
-              <ChevronRight />
+            <IconButton onClick={() => navigatePeriod('next')} size="small" sx={{ color: '#00265C' }}>
+              <ChevronRight fontSize="small" />
             </IconButton>
           </Box>
         </Box>
+          {/* Left Logo */}
+          <Box onClick={goToCurrentPeriod} sx={{ cursor: 'pointer' }}>
+            <img
+              src="/assets/logos/design-planner-logo.png"
+              alt="Design Planner"
+              style={{ height: '50px', width: 'auto' }}
+            />
+          </Box>
 
-        {/* Right - Tate Logo + Close */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <img
-            src="/assets/logos/tate-logo.png"
-            alt="Tate"
-            style={{ height: '40px', width: 'auto' }}
-          />
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
+          {/* 2 KPIs BEFORE toggle - grouped */}
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+            <Card sx={{ minWidth: '120px', height: '60px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <CardContent sx={{
+                textAlign: 'center',
+                py: 0.5,
+                px: 2,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+                  PROJECTS
+                </Typography>
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '18px', color: '#00265C' }}>
+                  {getFilteredSummary().totalProjects}
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ minWidth: '120px', height: '60px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <CardContent sx={{
+                textAlign: 'center',
+                py: 0.5,
+                px: 2,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+                  HOURS
+                </Typography>
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '18px', color: '#00265C' }}>
+                  {formatHours(getFilteredSummary().totalHours)}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Spacer for center area */}
+          <Box sx={{ width: '80px' }} />
+
+          {/* 2 KPIs AFTER toggle - grouped */}
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+            <Card sx={{ minWidth: '120px', height: '60px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <CardContent sx={{
+                textAlign: 'center',
+                py: 0.5,
+                px: 2,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+                  TASKS
+                </Typography>
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '18px', color: '#00265C' }}>
+                  {getFilteredSummary().totalTasks}
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ minWidth: '120px', height: '60px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <CardContent sx={{
+                textAlign: 'center',
+                py: 0.5,
+                px: 2,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+                  PROJ/CLIENT
+                </Typography>
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '18px', color: '#00265C' }}>
+                  {getFilteredSummary().averageProjectClient.toFixed(1)}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Right Logo + Close */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <img
+              src="/assets/logos/tate-logo.png"
+              alt="Tate"
+              style={{ height: '50px', width: 'auto' }}
+            />
+            <IconButton onClick={onClose} size="medium" sx={{ color: '#00265C' }}>
+              <CloseIcon fontSize="large" />
+            </IconButton>
+          </Box>
         </Box>
       </Box>
 
@@ -901,29 +1038,29 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         flex: 1,
         display: 'flex',
         overflow: 'hidden',
-        height: 'calc(100vh - 120px)' // Reserve space for header and footer
+        height: 'calc(100vh - 200px)' // Reserve space for taller header and footer
       }}>
 
         {/* LEFT SIDEBAR - Projects */}
-        <Box sx={{ width: '200px', display: 'flex', flexDirection: 'column', p: 0.5 }}>
+        <Box sx={{ width: '280px', display: 'flex', flexDirection: 'column', p: 0.5 }}>
           <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <CardContent sx={{
-              backgroundColor: '#e3f2fd',
+              backgroundColor: '#00265C',
               py: 0.5,
-              px: 1,
+              px: 2,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '11px' }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'white' }}>
                 PROJECTS
               </Typography>
-              <Button size="small" onClick={() => setSelectedProjects([])} sx={{ fontSize: '9px', minWidth: '30px' }}>
+              <Button size="small" onClick={() => setSelectedProjects([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'white' }}>
                 clear
               </Button>
             </CardContent>
-            <Box sx={{ flex: 1, overflow: 'auto', px: 0.5, py: 0.25 }}>
-              <List dense disablePadding>
+            <Box sx={{ flex: 1, overflow: 'auto', px: 1, py: 0.25 }}>
+              <Box>
                 {getFilteredProjectsForSidebar().map((project, index) => {
                   const isSelected = selectedProjects.includes(project.projectCode);
                   // CRITICAL: Check if project should be greyed out due to ANY active filters
@@ -931,55 +1068,59 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                                    (project.hours === 0); // Grey out if hours reduced to 0 by other filters
 
                   return (
-                    <ListItem
+                    <Card
                       key={index}
                       onClick={() => toggleProjectFilter(project.projectCode)}
                       sx={{
-                        px: 0.5,
-                        py: 0.25,
+                        mb: 0.5,
                         backgroundColor: isSelected
                           ? 'rgba(59, 130, 246, 0.2)'
-                          : 'transparent',
+                          : 'white',
                         border: isSelected
                           ? '2px solid #3B82F6'
-                          : '2px solid transparent',
-                        borderRadius: 1,
+                          : '1px solid #e0e0e0',
+                        borderRadius: 2,
                         cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        transition: 'all 0.2s',
                         opacity: isFiltered ? 0.4 : 1,
                         '&:hover': {
                           backgroundColor: 'rgba(59, 130, 246, 0.1)',
                           border: '2px solid #3B82F6',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                          transform: 'translateY(-1px)',
                           opacity: 1
                         }
                       }}
                     >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontSize: '11px',
-                                color: isFiltered ? '#999' : 'inherit'
-                              }}
-                            >
-                              {project.projectCode}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color={isFiltered ? 'text.disabled' : 'primary'}
-                              fontWeight="bold"
-                              sx={{ fontSize: '11px' }}
-                            >
-                              {formatHours(project.hours)}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
+                      <CardContent sx={{ px: 1.5, py: 1, '&:last-child': { pb: 1 } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              color: isFiltered ? '#999' : '#333'
+                            }}
+                          >
+                            {project.projectCode}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              color: isFiltered ? '#999' : '#00265C',
+                            }}
+                          >
+                            {formatHours(project.hours)}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
                   );
                 })}
-              </List>
+              </Box>
             </Box>
           </Card>
         </Box>
@@ -987,56 +1128,6 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         {/* CENTER - Charts and Summary */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0.5, gap: 0.5 }}>
 
-          {/* Summary Cards - More Compact */}
-          <Box sx={{ display: 'flex', gap: 0.5, height: '60px' }}>
-            <Card sx={{ flex: 1 }}>
-              <CardContent sx={{ textAlign: 'center', py: 0.5, px: 0.5 }}>
-                <CalendarIcon sx={{ fontSize: 16, color: '#3b82f6', mb: 0.25 }} />
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '14px' }}>
-                  {getFilteredSummary().totalProjects}
-                </Typography>
-                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '9px' }}>
-                  PROJECTS
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ flex: 1 }}>
-              <CardContent sx={{ textAlign: 'center', py: 0.5, px: 0.5 }}>
-                <ScheduleIcon sx={{ fontSize: 16, color: '#3b82f6', mb: 0.25 }} />
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '14px' }}>
-                  {formatHours(getFilteredSummary().totalHours)}
-                </Typography>
-                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '9px' }}>
-                  HOURS
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ flex: 1 }}>
-              <CardContent sx={{ textAlign: 'center', py: 0.5, px: 0.5 }}>
-                <AssignmentIcon sx={{ fontSize: 16, color: '#3b82f6', mb: 0.25 }} />
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '14px' }}>
-                  {getFilteredSummary().totalTasks}
-                </Typography>
-                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '9px' }}>
-                  TASKS
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ flex: 1 }}>
-              <CardContent sx={{ textAlign: 'center', py: 0.5, px: 0.5 }}>
-                <BusinessIcon sx={{ fontSize: 16, color: '#3b82f6', mb: 0.25 }} />
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '14px' }}>
-                  {getFilteredSummary().averageProjectClient.toFixed(1)}
-                </Typography>
-                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '9px' }}>
-                  PROJ/CLIENT
-                </Typography>
-              </CardContent>
-            </Card>
-          </Box>
 
           {/* Charts Grid - Compact Layout */}
           <Box sx={{
@@ -1049,18 +1140,18 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           }}>
 
             {/* Project Hours Chart - Top Left (spans row 1) */}
-            <Card sx={{ gridRow: '1', gridColumn: '1' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 0.5 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                  <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '10px' }}>
+            <Card sx={{ gridRow: '1', gridColumn: '1', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '8px' }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0 }}>
+                  <Typography variant="subtitle2" fontWeight="600" sx={{ fontSize: '14px', color: '#00265C' }}>
                     PROJECT HOURS
                   </Typography>
-                  <FormControl size="small" sx={{ minWidth: 70 }}>
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
                     <Select
                       value={colorMode}
                       onChange={(e) => setColorMode(e.target.value as ColorMode)}
                       variant="outlined"
-                      sx={{ fontSize: '9px', height: '20px' }}
+                      sx={{ fontSize: '12px', height: '32px' }}
                     >
                       <MenuItem value="default">Default</MenuItem>
                       <MenuItem value="client">Client</MenuItem>
@@ -1068,239 +1159,428 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                     </Select>
                   </FormControl>
                 </Box>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <VictoryChart
-                    theme={VictoryTheme.material}
-                    domainPadding={15}
-                    padding={{ left: 40, top: 5, right: 15, bottom: 30 }}
-                    width={280}
-                    height={100}
-                    containerComponent={<VictoryContainer />}
-                  >
-                    <VictoryAxis
-                      dependentAxis
-                      tickFormat={(t) => `${t}h`}
-                      style={{
-                        tickLabels: { fontSize: 7, padding: 3 }
-                      }}
-                    />
-                    <VictoryAxis
-                      style={{
-                        tickLabels: { fontSize: 6, padding: 3, angle: -45 }
-                      }}
-                    />
-                    <VictoryBar
-                      data={getProjectChartData()?.map(p => ({
-                        x: p.projectCode,
-                        y: p.hours,
-                        fill: colorMode === 'client' ? p.clientColor :
-                              colorMode === 'category' ? p.categoryColor : '#3B82F6',
-                        projectName: p.projectName,
-                        clientName: p.clientName,
-                        categoryName: p.categoryName
-                      })) || []}
-                      style={{
-                        data: {
-                          fill: ({ datum, active }) => active ?
-                            `${datum.fill}dd` : datum.fill,
-                          cursor: 'pointer'
-                        }
-                      }}
-                      labels={({ datum }) => {
-                        if (!datum || typeof datum.y !== 'number') return '';
-                        const total = getProjectChartData()?.reduce((sum, p) => sum + p.hours, 0) || 0;
-                        const percentage = total > 0 ? Math.round((datum.y / total) * 100) : 0;
-                        return `${percentage}%`;
-                      }}
-                      labelComponent={<VictoryLabel
-                        style={{ fontSize: 7, fontWeight: 'bold', fill: 'black' }}
-                        dy={-8}
-                      />}
-                      events={[{
-                        target: "data",
-                        eventHandlers: {
-                          onMouseOver: () => [
-                            {
-                              target: "data",
-                              mutation: () => ({ active: true })
-                            }
-                          ],
-                          onMouseOut: () => [
-                            {
-                              target: "data",
-                              mutation: () => ({ active: false })
-                            }
-                          ]
-                        }
-                      }]}
-                    />
-                  </VictoryChart>
+                <Box sx={{ flex: 1, minHeight: 0, height: 120 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={(() => {
+                        const projectData = getProjectChartData() || [];
+                        const total = projectData.reduce((sum, p) => sum + p.hours, 0);
+                        return projectData.map(p => ({
+                          name: p.projectCode,
+                          value: p.hours,
+                          percentage: total > 0 ? Math.round((p.hours / total) * 100) : 0,
+                          fill: colorMode === 'client' ? p.clientColor :
+                                colorMode === 'category' ? p.categoryColor : '#3B82F6',
+                          projectName: p.projectName,
+                          clientName: p.clientName,
+                          categoryName: p.categoryName
+                        }));
+                      })()}
+                      margin={{ top: 80, right: 5, left: 0, bottom: 0 }}
+                    >
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: '#605e5c', fontFamily: 'Roboto, sans-serif' }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: '#605e5c', fontFamily: 'Roboto, sans-serif' }}
+                        tickFormatter={(value) => `${value}h`}
+                        grid={false}
+                      />
+                      <Tooltip
+                        formatter={(value: number, name: string, props: any) => [
+                          `${value}h`,
+                          'Hours'
+                        ]}
+                        labelFormatter={(label: string) => `Project: ${label}`}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          fontSize: '12px'
+                        }}
+                        itemStyle={{
+                          color: '#3B82F6'
+                        }}
+                        cursor={{fill: 'transparent'}}
+                      />
+                      <Bar
+                        dataKey="value"
+                        radius={[8, 8, 2, 2]}
+                        fill={(entry: any) => entry.fill}
+                        isAnimationActive={true}
+                        animationDuration={200}
+                        animationEasing="ease-out"
+                        animationBegin={0}
+                        onMouseEnter={(data, index) => {}}
+                        onMouseLeave={() => {}}
+                      >
+                        {(() => {
+                          const projectData = getProjectChartData() || [];
+                          return projectData.map((p, index) => {
+                            const fillColor = colorMode === 'client' ? p.clientColor : colorMode === 'category' ? p.categoryColor : '#3B82F6';
+                            return (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={fillColor}
+                                style={{
+                                  filter: 'brightness(1)',
+                                  cursor: 'pointer',
+                                  transition: 'filter 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.filter = 'brightness(1.15)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.filter = 'brightness(1)';
+                                }}
+                              />
+                            );
+                          });
+                        })()}
+                        <LabelList
+                          dataKey="percentage"
+                          position="top"
+                          formatter={(value: number) => `${value}%`}
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            fill: '#323130',
+                            fontFamily: 'Roboto, sans-serif'
+                          }}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </Box>
               </CardContent>
             </Card>
 
             {/* Category Distribution - Top Right (smaller square) */}
-            <Card sx={{ gridRow: '1', gridColumn: '2' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 0.5 }}>
-                <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5, fontSize: '10px' }}>
+            <Card sx={{ gridRow: '1', gridColumn: '2', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '8px' }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
+                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: '#00265C' }}>
                   CATEGORY DISTRIBUTION
                 </Typography>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <VictoryPie
-                    data={getFilteredCategoryData()?.map(cat => ({
-                      x: cat.categoryName,
-                      y: cat.hours,
-                      fill: cat.color
-                    })) || []}
-                    colorScale={getFilteredCategoryData()?.map(cat => cat.color) || []}
-                    innerRadius={0}
-                    labelRadius={25}
-                    labelComponent={<VictoryLabel
-                      style={{ fontSize: 8, fontWeight: 'bold' }}
-                      text={({ datum }) => {
-                        const total = getFilteredCategoryData()?.reduce((sum, cat) => sum + cat.hours, 0) || 0;
-                        const percentage = total > 0 ? Math.round((datum.y / total) * 100) : 0;
-                        return `${percentage}%`;
-                      }}
-                    />}
-                    padding={{ left: 5, right: 5, top: 5, bottom: 5 }}
-                    width={120}
-                    height={100}
-                    events={[{
-                      target: "data",
-                      eventHandlers: {
-                        onMouseOver: () => [{
-                          target: "data",
-                          mutation: ({ style }) => ({
-                            style: { ...style, fillOpacity: 0.75, cursor: 'pointer' }
-                          })
-                        }],
-                        onMouseOut: () => [{
-                          target: "data",
-                          mutation: () => ({})
-                        }]
-                      }
-                    }]}
-                  />
+                <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={(() => {
+                          const categoryData = getFilteredCategoryData() || [];
+                          const total = categoryData.reduce((sum, cat) => sum + cat.hours, 0);
+                          return categoryData.map(cat => ({
+                            name: cat.categoryName,
+                            value: cat.hours,
+                            color: cat.color,
+                            percentage: total > 0 ? Math.round((cat.hours / total) * 100) : 0
+                          }));
+                        })()}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={0}
+                        outerRadius={110}
+                        paddingAngle={2}
+                        dataKey="value"
+                        isAnimationActive={true}
+                        animationDuration={250}
+                        animationEasing="ease-out"
+                        animationBegin={0}
+                        activeOpacity={0.8}
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                          const RADIAN = Math.PI / 180;
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill="white"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fontSize="14px"
+                              fontWeight="700"
+                              fontFamily="Roboto, sans-serif"
+                            >
+                              {`${Math.round(percent * 100)}%`}
+                            </text>
+                          );
+                        }}
+                        labelLine={false}
+                      >
+                        {(() => {
+                          const categoryData = getFilteredCategoryData() || [];
+                          return categoryData.map((cat, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={cat.color}
+                              style={{
+                                filter: 'brightness(1)',
+                                cursor: 'pointer',
+                                transition: 'filter 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.filter = 'brightness(1.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.filter = 'brightness(1)';
+                              }}
+                            />
+                          ));
+                        })()}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number, name: string, props: any) => [
+                          `${value}h`,
+                          `${name}`
+                        ]}
+                        labelFormatter={(label: string) => `Category: ${label}`}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          fontSize: '12px'
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="middle"
+                        align="right"
+                        layout="vertical"
+                        iconType="circle"
+                        wrapperStyle={{
+                          fontSize: '12px',
+                          paddingLeft: '10px',
+                          lineHeight: '24px'
+                        }}
+                        formatter={(value, entry) => (
+                          <span style={{ color: '#000000', fontSize: '12px' }}>{value}</span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </Box>
               </CardContent>
             </Card>
 
             {/* Task Types Chart - Bottom Left */}
-            <Card sx={{ gridRow: '2', gridColumn: '1' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 0.5 }}>
-                <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5, fontSize: '10px' }}>
+            <Card sx={{
+              gridRow: '2',
+              gridColumn: '1',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              borderRadius: '8px'
+            }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
+                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: '#00265C' }}>
                   TASK TYPES
                 </Typography>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <VictoryChart
-                    horizontal
-                    theme={VictoryTheme.material}
-                    domainPadding={10}
-                    padding={{ left: 60, top: 5, right: 15, bottom: 15 }}
-                    width={280}
-                    height={90}
-                  >
-                    <VictoryAxis
-                      dependentAxis
-                      tickFormat={(t) => `${t}h`}
-                      style={{
-                        tickLabels: { fontSize: 6, padding: 3 }
-                      }}
-                    />
-                    <VictoryAxis
-                      style={{
-                        tickLabels: { fontSize: 6, padding: 3 }
-                      }}
-                    />
-                    <VictoryBar
-                      data={getFilteredTaskTypeData()?.map(item => ({
-                        x: item.taskTypeName,
-                        y: item.hours,
-                        taskCount: item.count
-                      })) || []}
-                      style={{
-                        data: {
-                          fill: ({ active }) => active ? '#10B981cc' : '#10B981',
-                          cursor: 'pointer'
-                        }
-                      }}
-                      labels={({ datum }) => {
-                        if (!datum || typeof datum.y !== 'number') return '';
-                        const total = getFilteredTaskTypeData()?.reduce((sum, item) => sum + item.hours, 0) || 0;
-                        const percentage = total > 0 ? Math.round((datum.y / total) * 100) : 0;
-                        return `${percentage}%`;
-                      }}
-                      labelComponent={<VictoryLabel
-                        style={{ fontSize: 8, fontWeight: 'bold', fill: 'black' }}
-                        dx={10}
-                      />}
-                      events={[{
-                        target: "data",
-                        eventHandlers: {
-                          onMouseOver: () => [
-                            {
-                              target: "data",
-                              mutation: () => ({ active: true })
-                            }
-                          ],
-                          onMouseOut: () => [
-                            {
-                              target: "data",
-                              mutation: () => ({ active: false })
-                            }
-                          ]
-                        }
-                      }]}
-                    />
-                  </VictoryChart>
+                <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={(() => {
+                        const taskTypeData = getFilteredTaskTypeData() || [];
+                        const total = taskTypeData.reduce((sum, item) => sum + item.hours, 0);
+                        const chartData = taskTypeData.map(item => ({
+                          name: item.taskTypeName,
+                          value: item.hours,
+                          percentage: total > 0 ? Math.round((item.hours / total) * 100) : 0,
+                          taskCount: item.count
+                        }));
+                        return chartData;
+                      })()}
+                      margin={{ top: 80, right: 60, left: 5, bottom: 0 }}
+                    >
+                      <XAxis
+                        type="number"
+                        domain={[0, 'dataMax']}
+                        tick={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: '#605e5c', fontFamily: 'Roboto, sans-serif' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={100}
+                      />
+                      <Tooltip
+                        formatter={(value: number, name: string, props: any) => [
+                          `${value}h`,
+                          'Hours'
+                        ]}
+                        labelFormatter={(label: string) => `Task Type: ${label}`}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          fontSize: '12px'
+                        }}
+                        cursor={{fill: 'transparent'}}
+                      />
+                      <Bar
+                        dataKey="value"
+                        fill="#10B981"
+                        radius={[0, 4, 4, 0]}
+                        maxBarSize={30}
+                        isAnimationActive={true}
+                        animationDuration={200}
+                        animationEasing="ease-out"
+                        animationBegin={0}
+                      >
+                        {(() => {
+                          const taskTypeData = getFilteredTaskTypeData() || [];
+                          return taskTypeData.map((item, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill="#10B981"
+                              style={{
+                                filter: 'brightness(1)',
+                                cursor: 'pointer',
+                                transition: 'filter 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.filter = 'brightness(1.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.filter = 'brightness(1)';
+                              }}
+                            />
+                          ));
+                        })()}
+                        <LabelList
+                          dataKey="percentage"
+                          position="right"
+                          formatter={(value: number) => `${value}%`}
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            fill: '#323130',
+                            fontFamily: 'Roboto, sans-serif'
+                          }}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </Box>
               </CardContent>
             </Card>
 
             {/* Client Distribution - Bottom Right (smaller square) */}
-            <Card sx={{ gridRow: '2', gridColumn: '2' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 0.5 }}>
-                <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5, fontSize: '10px' }}>
+            <Card sx={{
+              gridRow: '2',
+              gridColumn: '2',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              borderRadius: '8px'
+            }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
+                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: '#00265C' }}>
                   CLIENT DISTRIBUTION
                 </Typography>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <VictoryPie
-                    data={getFilteredClientData()?.map(client => ({
-                      x: client.clientName,
-                      y: client.hours,
-                      fill: client.clientColor
-                    })) || []}
-                    colorScale={getFilteredClientData()?.map(client => client.clientColor) || []}
-                    innerRadius={20}
-                    labelRadius={25}
-                    labelComponent={<VictoryLabel
-                      style={{ fontSize: 8, fontWeight: 'bold' }}
-                      text={({ datum }) => {
-                        const total = getFilteredClientData()?.reduce((sum, client) => sum + client.hours, 0) || 0;
-                        const percentage = total > 0 ? Math.round((datum.y / total) * 100) : 0;
-                        return `${percentage}%`;
-                      }}
-                    />}
-                    padding={{ left: 5, right: 5, top: 5, bottom: 5 }}
-                    width={120}
-                    height={100}
-                    events={[{
-                      target: "data",
-                      eventHandlers: {
-                        onMouseOver: () => [{
-                          target: "data",
-                          mutation: ({ style }) => ({
-                            style: { ...style, fillOpacity: 0.75, cursor: 'pointer' }
-                          })
-                        }],
-                        onMouseOut: () => [{
-                          target: "data",
-                          mutation: () => ({})
-                        }]
-                      }
-                    }]}
-                  />
+                <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={(() => {
+                          const clientData = getFilteredClientData() || [];
+                          const total = clientData.reduce((sum, client) => sum + client.hours, 0);
+                          return clientData.map(client => ({
+                            name: client.clientName,
+                            value: client.hours,
+                            color: client.clientColor,
+                            percentage: total > 0 ? Math.round((client.hours / total) * 100) : 0
+                          }));
+                        })()}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={110}
+                        paddingAngle={2}
+                        dataKey="value"
+                        isAnimationActive={true}
+                        animationDuration={250}
+                        animationEasing="ease-out"
+                        animationBegin={0}
+                        activeOpacity={0.8}
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                          const RADIAN = Math.PI / 180;
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill="white"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fontSize="14px"
+                              fontWeight="700"
+                              fontFamily="Roboto, sans-serif"
+                            >
+                              {`${Math.round(percent * 100)}%`}
+                            </text>
+                          );
+                        }}
+                        labelLine={false}
+                      >
+                        {(() => {
+                          const clientData = getFilteredClientData() || [];
+                          return clientData.map((client, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={client.clientColor}
+                              style={{
+                                filter: 'brightness(1)',
+                                cursor: 'pointer',
+                                transition: 'filter 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.filter = 'brightness(1.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.filter = 'brightness(1)';
+                              }}
+                            />
+                          ));
+                        })()}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number, name: string, props: any) => [
+                          `${value}h`,
+                          `${name}`
+                        ]}
+                        labelFormatter={(label: string) => `Client: ${label}`}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          fontSize: '12px'
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="middle"
+                        align="right"
+                        layout="vertical"
+                        iconType="circle"
+                        wrapperStyle={{
+                          fontSize: '12px',
+                          paddingLeft: '10px',
+                          lineHeight: '24px'
+                        }}
+                        formatter={(value, entry) => (
+                          <span style={{ color: '#000000', fontSize: '12px' }}>{value}</span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </Box>
               </CardContent>
             </Card>
@@ -1308,157 +1588,165 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         </Box>
 
         {/* RIGHT SIDEBAR - Team & Clients */}
-        <Box sx={{ width: '200px', display: 'flex', flexDirection: 'column', p: 0.5, gap: 0.5 }}>
+        <Box sx={{ width: '280px', display: 'flex', flexDirection: 'column', p: 0.5, gap: 0.5 }}>
 
           {/* Team Card */}
           <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <CardContent sx={{
-              backgroundColor: '#e3f2fd',
+              backgroundColor: '#00265C',
               py: 0.5,
-              px: 1,
+              px: 2,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '11px' }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'white' }}>
                 TEAM
               </Typography>
-              <Button size="small" onClick={() => setSelectedTeamMembers([])} sx={{ fontSize: '9px', minWidth: '30px' }}>
+              <Button size="small" onClick={() => setSelectedTeamMembers([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'white' }}>
                 clear
               </Button>
             </CardContent>
-            <Box sx={{ flex: 1, overflow: 'auto', px: 0.5, py: 0.25 }}>
-              <List dense disablePadding>
+            <Box sx={{ flex: 1, overflow: 'auto', px: 1, py: 0.25 }}>
+              <Box>
                 {getFilteredTeamMembersForSidebar().map((employee, index) => {
                   const isSelected = selectedTeamMembers.includes(employee.employeeId);
                   const isFiltered = (selectedTeamMembers.length > 0 && !isSelected) || employee.totalHours === 0;
 
                   return (
-                    <ListItem
+                    <Card
                       key={index}
                       onClick={() => toggleTeamMemberFilter(employee.employeeId)}
                       sx={{
-                        px: 0.5,
-                        py: 0.25,
+                        mb: 0.5,
                         backgroundColor: isSelected
                           ? 'rgba(59, 130, 246, 0.2)'
-                          : 'transparent',
+                          : 'white',
                         border: isSelected
                           ? '2px solid #3B82F6'
-                          : '2px solid transparent',
-                        borderRadius: 1,
+                          : '1px solid #e0e0e0',
+                        borderRadius: 2,
                         cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        transition: 'all 0.2s',
                         opacity: isFiltered ? 0.4 : 1,
                         '&:hover': {
                           backgroundColor: 'rgba(59, 130, 246, 0.1)',
                           border: '2px solid #3B82F6',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                          transform: 'translateY(-1px)',
                           opacity: 1
                         }
                       }}
                     >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontSize: '11px',
-                                color: isFiltered ? '#999' : 'inherit'
-                              }}
-                            >
-                              {employee.employeeName}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color={isFiltered ? 'text.disabled' : 'primary'}
-                              fontWeight="bold"
-                              sx={{ fontSize: '11px' }}
-                            >
-                              {formatHours(employee.totalHours)}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
+                      <CardContent sx={{ px: 1.5, py: 1, '&:last-child': { pb: 1 } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              color: isFiltered ? '#999' : '#333'
+                            }}
+                          >
+                            {employee.employeeName}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              color: isFiltered ? '#999' : '#00265C',
+                            }}
+                          >
+                            {formatHours(employee.totalHours)}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
                   );
                 })}
-              </List>
+              </Box>
             </Box>
           </Card>
 
           {/* Clients Card */}
           <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <CardContent sx={{
-              backgroundColor: '#e3f2fd',
+              backgroundColor: '#00265C',
               py: 0.5,
-              px: 1,
+              px: 2,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '11px' }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'white' }}>
                 CLIENTS
               </Typography>
-              <Button size="small" onClick={() => setSelectedClients([])} sx={{ fontSize: '9px', minWidth: '30px' }}>
+              <Button size="small" onClick={() => setSelectedClients([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'white' }}>
                 clear
               </Button>
             </CardContent>
-            <Box sx={{ flex: 1, overflow: 'auto', px: 0.5, py: 0.25 }}>
-              <List dense disablePadding>
+            <Box sx={{ flex: 1, overflow: 'auto', px: 1, py: 0.25 }}>
+              <Box>
                 {getFilteredClientsForSidebar().map((client, index) => {
                   const isSelected = selectedClients.includes(client.clientCode);
                   const isFiltered = (selectedClients.length > 0 && !isSelected) || client.hours === 0;
 
                   return (
-                    <ListItem
+                    <Card
                       key={index}
                       onClick={() => toggleClientFilter(client.clientCode)}
                       sx={{
-                        px: 0.5,
-                        py: 0.25,
+                        mb: 0.5,
                         backgroundColor: isSelected
                           ? 'rgba(59, 130, 246, 0.2)'
-                          : 'transparent',
+                          : 'white',
                         border: isSelected
                           ? '2px solid #3B82F6'
-                          : '2px solid transparent',
-                        borderRadius: 1,
+                          : '1px solid #e0e0e0',
+                        borderRadius: 2,
                         cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        transition: 'all 0.2s',
                         opacity: isFiltered ? 0.4 : 1,
                         '&:hover': {
                           backgroundColor: 'rgba(59, 130, 246, 0.1)',
                           border: '2px solid #3B82F6',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                          transform: 'translateY(-1px)',
                           opacity: 1
                         }
                       }}
                     >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontSize: '11px',
-                                color: isFiltered ? '#999' : 'inherit'
-                              }}
-                            >
-                              {client.clientName}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color={isFiltered ? 'text.disabled' : 'primary'}
-                              fontWeight="bold"
-                              sx={{ fontSize: '11px' }}
-                            >
-                              {formatHours(client.hours)}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
+                      <CardContent sx={{ px: 1.5, py: 1, '&:last-child': { pb: 1 } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              color: isFiltered ? '#999' : '#333'
+                            }}
+                          >
+                            {client.clientName}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              color: isFiltered ? '#999' : '#00265C',
+                            }}
+                          >
+                            {formatHours(client.hours)}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
                   );
                 })}
-              </List>
+              </Box>
             </Box>
           </Card>
         </Box>
@@ -1468,22 +1756,12 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         px: 3,
         py: 1.5,
-        backgroundColor: 'white',
+        backgroundColor: '#00265C',
         borderTop: '1px solid #e2e8f0'
       }}>
-        {/* Export Button */}
-        <Button
-          variant="contained"
-          color="success"
-          startIcon={<ExportIcon />}
-          size="small"
-        >
-          Export Excel
-        </Button>
-
         {/* Category Filters */}
         <Box sx={{ display: 'flex', gap: 1 }}>
           {categories.map(category => (
@@ -1491,12 +1769,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               key={category.id}
               label={category.name}
               onClick={() => toggleCategoryFilter(category.id)}
-              color={selectedCategories.includes(category.id) ? "primary" : "default"}
-              variant={selectedCategories.includes(category.id) ? "filled" : "outlined"}
               sx={{
-                backgroundColor: selectedCategories.includes(category.id) ? category.color : undefined,
-                color: selectedCategories.includes(category.id) ? 'white' : undefined,
-                borderColor: category.color
+                backgroundColor: selectedCategories.includes(category.id) ? '#001a3d' : category.color,
+                color: 'white',
+                borderColor: category.color,
+                '&:hover': {
+                  backgroundColor: selectedCategories.includes(category.id) ? '#001a3d' : category.color,
+                  filter: 'brightness(1.1)'
+                }
               }}
             />
           ))}
