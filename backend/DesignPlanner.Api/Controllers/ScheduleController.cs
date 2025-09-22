@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 using DesignPlanner.Core.DTOs;
 using DesignPlanner.Core.Enums;
 using DesignPlanner.Core.Services;
 using DesignPlanner.Data.Context;
+using DesignPlanner.Api.Hubs;
 using System.Security.Claims;
 
 namespace DesignPlanner.Api.Controllers
@@ -17,12 +19,14 @@ namespace DesignPlanner.Api.Controllers
         private readonly IScheduleService _scheduleService;
         private readonly ILogger<ScheduleController> _logger;
         private readonly ApplicationDbContext _context;
+        private readonly IHubContext<ScheduleUpdateHub> _hubContext;
 
-        public ScheduleController(IScheduleService scheduleService, ILogger<ScheduleController> logger, ApplicationDbContext context)
+        public ScheduleController(IScheduleService scheduleService, ILogger<ScheduleController> logger, ApplicationDbContext context, IHubContext<ScheduleUpdateHub> hubContext)
         {
             _scheduleService = scheduleService;
             _logger = logger;
             _context = context;
+            _hubContext = hubContext;
         }
 
         // GET: api/schedule/calendar
@@ -38,11 +42,18 @@ namespace DesignPlanner.Api.Controllers
                 // Team members can only see their own schedule unless they're managers
                 if (userRole != "Manager" && userRole != "Admin")
                 {
-                    if (request.EmployeeId != userId && request.EmployeeId != null)
+                    // Convert User ID to Employee ID for team members
+                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
+                    if (employee == null)
+                    {
+                        return NotFound("Employee record not found for current user");
+                    }
+
+                    if (request.EmployeeId != employee.Id && request.EmployeeId != null)
                     {
                         return Forbid("You can only view your own schedule");
                     }
-                    request.EmployeeId = userId;
+                    request.EmployeeId = employee.Id; // Use Employee ID, not User ID
                 }
 
                 var calendarView = await _scheduleService.GetCalendarViewAsync(request);
@@ -191,6 +202,10 @@ namespace DesignPlanner.Api.Controllers
                 Console.WriteLine($"🚨🚨🚨 CONTROLLER: ModelState is valid, calling service...");
                 var assignment = await _scheduleService.UpdateAssignmentAsync(updateDto);
                 Console.WriteLine($"🚨🚨🚨 CONTROLLER: Service returned assignment with Hours={assignment.Hours}");
+
+                // Broadcast update to all connected users
+                await _hubContext.Clients.Group("schedule_updates").SendAsync("AssignmentUpdated", assignment);
+
                 return Ok(assignment);
             }
             catch (ArgumentException ex)
@@ -206,7 +221,7 @@ namespace DesignPlanner.Api.Controllers
 
         // DELETE: api/schedule/assignments/{assignmentId}
         [HttpDelete("assignments/{assignmentId}")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize] // Allow any authenticated user to delete assignments
         public async Task<ActionResult> DeleteAssignment(int assignmentId)
         {
             try
@@ -228,7 +243,7 @@ namespace DesignPlanner.Api.Controllers
 
         // POST: api/schedule/assignments/bulk
         [HttpPost("assignments/bulk")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize] // Allow any authenticated user to create bulk assignments
         public async Task<ActionResult<List<AssignmentTaskDto>>> CreateBulkAssignments([FromBody] BulkAssignmentDto bulkDto)
         {
             try
@@ -254,7 +269,7 @@ namespace DesignPlanner.Api.Controllers
 
         // PUT: api/schedule/assignments/bulk
         [HttpPut("assignments/bulk")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize] // Allow any authenticated user to update bulk assignments
         public async Task<ActionResult<List<AssignmentTaskDto>>> UpdateBulkAssignments([FromBody] BulkUpdateAssignmentDto bulkUpdateDto)
         {
             try
@@ -265,6 +280,10 @@ namespace DesignPlanner.Api.Controllers
                 }
 
                 var assignments = await _scheduleService.BulkUpdateAssignmentsAsync(bulkUpdateDto);
+
+                // Broadcast bulk update to all connected users
+                await _hubContext.Clients.Group("schedule_updates").SendAsync("BulkAssignmentsUpdated", assignments);
+
                 return Ok(assignments);
             }
             catch (ArgumentException ex)
@@ -558,7 +577,7 @@ namespace DesignPlanner.Api.Controllers
 
         // GET: api/schedule/calendar/global
         [HttpGet("calendar/global")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize] // Allow all authenticated users (TeamMember, Manager, Admin)
         public async Task<ActionResult<object>> GetGlobalCalendarView([FromQuery] ScheduleRequestDto request)
         {
             try
@@ -566,10 +585,39 @@ namespace DesignPlanner.Api.Controllers
                 var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-                // Get global view with all teams and their managed status
-                var globalView = await _scheduleService.GetGlobalCalendarViewAsync(userId, request);
-                
-                return Ok(globalView);
+                // TeamMembers should only see their own row
+                if (userRole == "TeamMember")
+                {
+                    // Get the employee record for this user
+                    var employee = await _context.Employees
+                        .Include(e => e.User)
+                        .FirstOrDefaultAsync(e => e.UserId == userId);
+
+                    if (employee == null)
+                    {
+                        return Ok(new { employees = new List<object>(), days = new List<object>() });
+                    }
+
+                    // Get calendar view for just this employee
+                    var calendarView = await _scheduleService.GetCalendarViewAsync(request);
+
+                    // Filter to only show the current employee
+                    // NOTE: In CalendarViewDto, EmployeeId is actually the User ID, not the Employee table ID
+                    if (calendarView.Employees != null)
+                    {
+                        calendarView.Employees = calendarView.Employees
+                            .Where(e => e.EmployeeId == userId) // Compare with userId, not employee.Id
+                            .ToList();
+                    }
+
+                    return Ok(calendarView);
+                }
+                else
+                {
+                    // Managers and Admins see the global view with all teams
+                    var globalView = await _scheduleService.GetGlobalCalendarViewAsync(userId, request);
+                    return Ok(globalView);
+                }
             }
             catch (Exception ex)
             {

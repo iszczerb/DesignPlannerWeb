@@ -238,8 +238,15 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     setViewMenuAnchor(null);
   };
 
-  // Keyboard navigation handlers - only works for Weekly and Biweekly views (like WPF)
+  // Keyboard and mouse wheel navigation handlers - only works for Weekly and Biweekly views (like WPF)
   React.useEffect(() => {
+    let accumulatedScroll = 0;
+    let scrollAnimationFrame: number | null = null;
+    let lastWheelTime = 0;
+    const SCROLL_SENSITIVITY = 100; // How much scroll delta equals one day navigation
+    const SCROLL_DECAY = 0.95; // Momentum decay factor
+    const SCROLL_RESET_TIME = 200; // Reset accumulated scroll after this many ms of inactivity
+
     const handleKeyDown = (event: KeyboardEvent) => {
       // Only allow navigation in Weekly and Biweekly views (matching WPF logic)
       if ((currentViewType === 'Weekly' || currentViewType === 'Biweekly') && onDateChange && currentDate) {
@@ -253,8 +260,93 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       }
     };
 
+    // Smooth animation for accumulated scroll
+    const applyScrollNavigation = () => {
+      if (Math.abs(accumulatedScroll) >= SCROLL_SENSITIVITY) {
+        const daysToNavigate = Math.floor(Math.abs(accumulatedScroll) / SCROLL_SENSITIVITY);
+        const direction = accumulatedScroll > 0 ? 1 : -1;
+
+        // Navigate multiple days at once for smoother feel
+        if (onDateChange && currentDate) {
+          const newDate = new Date(currentDate);
+          let daysNavigated = 0;
+
+          while (daysNavigated < daysToNavigate) {
+            newDate.setDate(newDate.getDate() + direction);
+            // Skip weekends
+            while (newDate.getDay() === 0 || newDate.getDay() === 6) {
+              newDate.setDate(newDate.getDate() + direction);
+            }
+            daysNavigated++;
+          }
+
+          // Only trigger one update for all days
+          onDateChange(newDate);
+        }
+
+        // Reduce accumulated scroll by the amount we navigated
+        accumulatedScroll = accumulatedScroll % SCROLL_SENSITIVITY;
+      }
+
+      // Apply momentum decay
+      accumulatedScroll *= SCROLL_DECAY;
+
+      // Continue animation if there's still momentum
+      if (Math.abs(accumulatedScroll) > 0.1) {
+        scrollAnimationFrame = requestAnimationFrame(applyScrollNavigation);
+      } else {
+        accumulatedScroll = 0;
+        scrollAnimationFrame = null;
+      }
+    };
+
+    // Handle mouse wheel events with momentum
+    const handleWheel = (event: WheelEvent) => {
+      // Only allow navigation in Weekly and Biweekly views
+      if ((currentViewType === 'Weekly' || currentViewType === 'Biweekly') && onDateChange && currentDate) {
+        let delta = 0;
+
+        // Native horizontal scroll (e.g., trackpad or mouse with horizontal wheel)
+        if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+          delta = event.deltaX;
+        }
+        // Vertical scroll with Shift key held
+        else if (event.shiftKey && event.deltaY !== 0) {
+          delta = event.deltaY;
+        }
+
+        if (delta !== 0) {
+          event.preventDefault();
+
+          const now = Date.now();
+          // Reset accumulated scroll if too much time has passed
+          if (now - lastWheelTime > SCROLL_RESET_TIME) {
+            accumulatedScroll = 0;
+          }
+          lastWheelTime = now;
+
+          // Add to accumulated scroll
+          accumulatedScroll += delta;
+
+          // Cancel any existing animation and start a new one
+          if (scrollAnimationFrame) {
+            cancelAnimationFrame(scrollAnimationFrame);
+          }
+          scrollAnimationFrame = requestAnimationFrame(applyScrollNavigation);
+        }
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+      if (scrollAnimationFrame) {
+        cancelAnimationFrame(scrollAnimationFrame);
+      }
+    };
   }, [currentDate, currentViewType]);
 
   // Simple navigation helpers for keyboard input - actual WPF logic is in TeamSchedule

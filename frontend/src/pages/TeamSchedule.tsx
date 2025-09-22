@@ -42,6 +42,7 @@ import { CreateEmployeeRequest } from '../types/employee';
 import { UserRole } from '../types/auth';
 import { useAppDispatch } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
+import signalRService from '../services/signalRService';
 
 // Mock user context (in real app, this would come from auth context)
 interface UserContext {
@@ -63,7 +64,7 @@ interface StoredLeaveData {
 
 const saveLeaveDataToStorage = (leaveData: StoredLeaveData[]) => {
   localStorage.setItem('persistentLeaveData', JSON.stringify(leaveData));
-  console.log('💾 Saved leave data to localStorage:', leaveData);
+  // console.log('💾 Saved leave data to localStorage:', leaveData);
 };
 
 const loadLeaveDataFromStorage = (): StoredLeaveData[] => {
@@ -71,7 +72,7 @@ const loadLeaveDataFromStorage = (): StoredLeaveData[] => {
   if (!stored) return [];
   try {
     const parsed = JSON.parse(stored);
-    console.log('📂 Loaded leave data from localStorage:', parsed);
+    // console.log('📂 Loaded leave data from localStorage:', parsed);
     return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     console.error('Error parsing stored leave data:', error);
@@ -141,7 +142,7 @@ const mergeStoredLeaveData = (calendarData: CalendarViewDto): CalendarViewDto =>
   const storedLeaves = loadLeaveDataFromStorage();
   if (storedLeaves.length === 0) return calendarData;
 
-  console.log('🔄 Merging stored leave data into calendar data');
+  // console.log('🔄 Merging stored leave data into calendar data');
 
   const updatedData = { ...calendarData };
   updatedData.employees = calendarData.employees.map(employee => {
@@ -817,7 +818,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('🔍 loadCalendarData: Received calendar data:', data);
       console.log('🔍 loadCalendarData: Days in response:', data.days?.map(d => ({ date: d.date, dayName: d.dayName, displayDate: d.displayDate })));
-      console.log('🔍 loadCalendarData: Employee team IDs:', data.employees?.map(e => ({ name: e.fullName, teamId: e.teamId })));
+      // console.log('🔍 loadCalendarData: Employee team IDs:', data.employees?.map(e => ({ name: e.fullName, teamId: e.teamId })));
 
       // Always merge stored leave data (this persists through navigation and refresh!)
       const dataWithStoredLeaves = mergeStoredLeaveData(data);
@@ -825,7 +826,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       // Disable mock data completely to avoid conflicts with real data
       const finalData = dataWithStoredLeaves;
 
-      console.log('🔍 loadCalendarData: Final data with persistent leaves:', finalData);
+      // console.log('🔍 loadCalendarData: Final data with persistent leaves:', finalData);
 
       // ✅ DATABASE ONLY - No more localStorage team member mixing
       console.log('🔍 Using PURE DATABASE DATA - no localStorage mixing');
@@ -1316,46 +1317,46 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     for (let i = 0; i < windowDays - 1; i++) {
       windowEnd = getNextBusinessDay(windowEnd);
     }
-    console.log('NavigateToDay: Current window spans', windowStartDate, 'to', windowEnd);
+    // console.log('NavigateToDay: Current window spans', windowStartDate, 'to', windowEnd);
 
     // Determine navigation direction
     const isNavigatingBackward = lastNavigatedDate && targetDate < lastNavigatedDate;
-    console.log('NavigateToDay: Navigating', isNavigatingBackward ? 'backward' : 'forward', 'from', lastNavigatedDate, 'to', targetDate);
+    // console.log('NavigateToDay: Navigating', isNavigatingBackward ? 'backward' : 'forward', 'from', lastNavigatedDate, 'to', targetDate);
 
     // Calculate new window start using exact WPF logic
     let newWindowStart: Date;
     
     if (targetDate < windowStartDate) {
-      console.log('NavigateToDay: ✓ TARGET IS BEFORE CURRENT START - shifting backward by one working day');
+      // console.log('NavigateToDay: ✓ TARGET IS BEFORE CURRENT START - shifting backward by one working day');
       newWindowStart = getPreviousBusinessDay(windowStartDate);
     } else if (targetDate > windowEnd) {
-      console.log('NavigateToDay: ✓ TARGET IS AFTER WINDOW END - shifting forward by one working day');
+      // console.log('NavigateToDay: ✓ TARGET IS AFTER WINDOW END - shifting forward by one working day');
       newWindowStart = getNextBusinessDay(windowStartDate);
     } else if (isNavigatingBackward) {
-      console.log('NavigateToDay: ✓ TARGET IS WITHIN WINDOW BUT NAVIGATING BACKWARD - shifting backward by one working day');
+      // console.log('NavigateToDay: ✓ TARGET IS WITHIN WINDOW BUT NAVIGATING BACKWARD - shifting backward by one working day');
       newWindowStart = getPreviousBusinessDay(windowStartDate);
     } else {
-      console.log('NavigateToDay: ✓ TARGET IS WITHIN WINDOW BUT NAVIGATING FORWARD - shifting forward by one working day');
+      // console.log('NavigateToDay: ✓ TARGET IS WITHIN WINDOW BUT NAVIGATING FORWARD - shifting forward by one working day');
       newWindowStart = getNextBusinessDay(windowStartDate);
     }
 
-    console.log('NavigateToDay: Final calculated window start:', newWindowStart);
+    // console.log('NavigateToDay: Final calculated window start:', newWindowStart);
 
     // Only update if window actually changes
     if (newWindowStart.toDateString() !== windowStartDate.toDateString()) {
-      console.log('NavigateToDay: ✓ UPDATING window start from', windowStartDate, 'to', newWindowStart);
+      // console.log('NavigateToDay: ✓ UPDATING window start from', windowStartDate, 'to', newWindowStart);
       setWindowStartDate(newWindowStart);
       setCurrentDate(targetDate);
       // Calendar data will reload via useEffect dependency on windowStartDate
     } else {
-      console.log('NavigateToDay: ✗ NO CHANGE - window start unchanged');
+      // console.log('NavigateToDay: ✗ NO CHANGE - window start unchanged');
       // Still update currentDate even if window doesn't change
       setCurrentDate(targetDate);
     }
 
     // Remember this date for next navigation
     setLastNavigatedDate(targetDate);
-    console.log('NavigateToDay: Stored last navigated date as', targetDate);
+    // console.log('NavigateToDay: Stored last navigated date as', targetDate);
     console.log('=== NavigateToDay END ===');
   }, [windowStartDate, lastNavigatedDate, viewType, getNextBusinessDay, getPreviousBusinessDay]);
 
@@ -2596,6 +2597,51 @@ ${dateInfo}`;
 
     loadTeams();
     loadTaskTypes();
+  }, []); // Only run once on mount
+
+  // Initialize SignalR connection for real-time updates
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      console.log('🔗 Initializing SignalR connection for real-time updates...');
+      signalRService.start();
+
+      // Set up schedule update listeners
+      const handleAssignmentUpdate = (assignment: any) => {
+        console.log('🔄 Real-time assignment update received:', assignment);
+        // Reload calendar data to show the update
+        loadCalendarData(
+          windowStartDate,
+          teamViewMode,
+          viewType,
+          teamViewMode === TeamViewMode.SingleTeam ? managedTeamId : undefined,
+          teamFilters.length > 0 ? teamFilters : undefined
+        );
+      };
+
+      const handleBulkAssignmentsUpdate = (assignments: any[]) => {
+        console.log('🔄 Real-time bulk assignments update received:', assignments);
+        // Reload calendar data to show the updates
+        loadCalendarData(
+          windowStartDate,
+          teamViewMode,
+          viewType,
+          teamViewMode === TeamViewMode.SingleTeam ? managedTeamId : undefined,
+          teamFilters.length > 0 ? teamFilters : undefined
+        );
+      };
+
+      signalRService.addListener('assignmentUpdated', handleAssignmentUpdate);
+      signalRService.addListener('bulkAssignmentsUpdated', handleBulkAssignmentsUpdate);
+
+      // Cleanup on component unmount
+      return () => {
+        console.log('🔗 Cleaning up SignalR listeners...');
+        signalRService.removeListener('assignmentUpdated', handleAssignmentUpdate);
+        signalRService.removeListener('bulkAssignmentsUpdated', handleBulkAssignmentsUpdate);
+        signalRService.stop();
+      };
+    }
   }, []); // Only run once on mount
 
   // Set teamViewMode based on user role

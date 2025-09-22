@@ -80,14 +80,19 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AllRoles", policy => policy.RequireRole("Admin", "Manager", "TeamMember"));
 });
 
-// Add CORS for React frontend
+// Add CORS for React frontend and mobile devices
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", builder =>
     {
-        builder.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178", "http://localhost:5179", "http://localhost:5180", "http://localhost:5181", "http://localhost:5182", "http://localhost:5183", "http://localhost:5184", "http://localhost:5185", "http://localhost:3000") // Vite dev server and common React ports
+        builder.WithOrigins(
+                "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178", "http://localhost:5179", "http://localhost:5180", "http://localhost:5181", "http://localhost:5182", "http://localhost:5183", "http://localhost:5184", "http://localhost:5185", "http://localhost:3000", // Localhost variants
+                "http://192.168.200.83:5173", "http://192.168.200.83:5174", "http://192.168.200.83:5175", "http://192.168.200.83:5176", "http://192.168.200.83:5177", "http://192.168.200.83:5178", "http://192.168.200.83:5179", "http://192.168.200.83:5180", "http://192.168.200.83:5181", "http://192.168.200.83:5182", "http://192.168.200.83:5183", "http://192.168.200.83:5184", "http://192.168.200.83:5185", "http://192.168.200.83:3000", // Current network IP variants
+                "http://192.168.0.125:5173", "http://192.168.0.125:5174", "http://192.168.0.125:5175", "http://192.168.0.125:5176", "http://192.168.0.125:5177", "http://192.168.0.125:5178", "http://192.168.0.125:5179", "http://192.168.0.125:5180", "http://192.168.0.125:5181", "http://192.168.0.125:5182", "http://192.168.0.125:5183", "http://192.168.0.125:5184", "http://192.168.0.125:5185", "http://192.168.0.125:3000" // Old network IP variants for compatibility
+               )
                .AllowAnyMethod()
-               .AllowAnyHeader();
+               .AllowAnyHeader()
+               .AllowCredentials();
     });
 });
 
@@ -107,6 +112,7 @@ builder.Services.AddScoped<ISkillService, SkillService>();
 builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 // SEEDING COMPLETELY DISABLED - DO NOT REGISTER SEEDING SERVICES
 // builder.Services.AddScoped<IMinimalInitializer, MinimalInitializer>();
@@ -232,7 +238,8 @@ if (app.Environment.IsDevelopment())
     }).WithTags("Development");
 }
 
-app.UseHttpsRedirection();
+// Temporarily disable HTTPS redirection for iPad access
+// app.UseHttpsRedirection();
 
 // Use CORS
 app.UseCors("AllowReactApp");
@@ -243,7 +250,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Map SignalR hub
+// Map SignalR hubs
 app.MapHub<DesignPlanner.Api.Hubs.LeaveNotificationHub>("/leaveHub");
+app.MapHub<DesignPlanner.Api.Hubs.ScheduleUpdateHub>("/scheduleHub");
 
 app.Run();
