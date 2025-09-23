@@ -188,9 +188,9 @@ const TimeSlotWithLeave: React.FC<ExtendedTimeSlotProps> = ({
             baseStyle.borderColor = '#f56565';
             baseStyle.borderWidth = '2px';
             break;
-          case LeaveType.Training:
-            baseStyle.backgroundColor = '#d1fae5'; // Green
-            baseStyle.borderColor = '#34d399';
+          case LeaveType.OtherLeave:
+            baseStyle.backgroundColor = '#f3f4f6'; // Gray
+            baseStyle.borderColor = '#6b7280';
             baseStyle.borderWidth = '2px';
             break;
         }
@@ -273,8 +273,8 @@ const TimeSlotWithLeave: React.FC<ExtendedTimeSlotProps> = ({
         return 'Annual';
       case LeaveType.Sick:
         return 'Sick';
-      case LeaveType.Training:
-        return 'Training';
+      case LeaveType.OtherLeave:
+        return 'Other Leave';
       default:
         return 'Leave';
     }

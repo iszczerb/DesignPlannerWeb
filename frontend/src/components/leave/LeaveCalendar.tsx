@@ -156,8 +156,8 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({
         return '#2196f3'; // Blue
       case LeaveType.Sick:
         return '#ff9800'; // Orange
-      case LeaveType.Training:
-        return '#4caf50'; // Green
+      case LeaveType.OtherLeave:
+        return '#6b7280'; // Gray
       default:
         return '#9e9e9e'; // Gray
     }
@@ -169,8 +169,8 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({
         return 'Annual';
       case LeaveType.Sick:
         return 'Sick';
-      case LeaveType.Training:
-        return 'Training';
+      case LeaveType.OtherLeave:
+        return 'Other Leave';
       default:
         return 'Leave';
     }
@@ -350,10 +350,10 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({
             label="Sick Leave"
             sx={{ backgroundColor: getLeaveTypeColor(LeaveType.Sick), color: 'white' }}
           />
-          <Chip 
-            size="small" 
-            label="Training Leave"
-            sx={{ backgroundColor: getLeaveTypeColor(LeaveType.Training), color: 'white' }}
+          <Chip
+            size="small"
+            label="Other Leave"
+            sx={{ backgroundColor: getLeaveTypeColor(LeaveType.OtherLeave), color: 'white' }}
           />
           <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
             Faded colors indicate pending approval

@@ -122,10 +122,10 @@ namespace DesignPlanner.Data.Services
             // Managers can manage their assigned teams
             if (user.Role == UserRole.Manager)
             {
-                // For now, returning all teams - in a real implementation,
-                // you would filter by actual manager-team relationships
-                return await _context.Teams
-                    .Where(t => t.IsActive)
+                return await _context.UserTeamManagements
+                    .Include(utm => utm.Team)
+                    .Where(utm => utm.UserId == userId && utm.Team.IsActive)
+                    .Select(utm => utm.Team)
                     .ToListAsync();
             }
 
@@ -163,11 +163,21 @@ namespace DesignPlanner.Data.Services
             var managedTeams = await GetManagedTeamsAsync(userId);
             var teamIds = managedTeams.Select(t => t.Id).ToList();
 
-            return await _context.Employees
+            var allEmployees = await _context.Employees
                 .Include(e => e.User)
                 .Include(e => e.Team)
                 .Where(e => e.TeamId.HasValue && teamIds.Contains(e.TeamId.Value))
                 .ToListAsync();
+
+            // Debug: Log what we found
+            Console.WriteLine($"🔍 DEBUG: Found {allEmployees.Count} employees in managed teams");
+            foreach (var emp in allEmployees)
+            {
+                Console.WriteLine($"🔍 Employee: {emp.FirstName} {emp.LastName}, Role: {emp.User.Role}");
+            }
+
+            // Return ONLY team members (not managers/admins) for absence tracking
+            return allEmployees.Where(e => e.User.Role == UserRole.TeamMember).ToList();
         }
 
         public async Task<List<Employee>> GetViewableEmployeesAsync(int userId)

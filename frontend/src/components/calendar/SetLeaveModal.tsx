@@ -4,7 +4,7 @@ import { EmployeeCalendarDto, CalendarDayDto } from '../../types/schedule';
 export enum LeaveType {
   AnnualLeave = 1,
   SickDay = 2,
-  Training = 3
+  OtherLeave = 3
 }
 
 export enum LeaveDuration {
@@ -91,7 +91,7 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
     switch (type) {
       case LeaveType.AnnualLeave: return '✈️';
       case LeaveType.SickDay: return '🤒';
-      case LeaveType.Training: return '🎓';
+      case LeaveType.OtherLeave: return '📋';
       default: return '✈️';
     }
   };
@@ -100,7 +100,7 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
     switch (type) {
       case LeaveType.AnnualLeave: return '#10b981'; // Green
       case LeaveType.SickDay: return '#ef4444'; // Red
-      case LeaveType.Training: return '#6b7280'; // Gray
+      case LeaveType.OtherLeave: return '#6b7280'; // Gray
       default: return '#10b981';
     }
   };
@@ -264,7 +264,7 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
                   }}>
                     {type === LeaveType.AnnualLeave ? 'Annual Leave' :
                      type === LeaveType.SickDay ? 'Sick Day' :
-                     'Training'}
+                     'Other Leave'}
                   </span>
                 </label>
               ))}

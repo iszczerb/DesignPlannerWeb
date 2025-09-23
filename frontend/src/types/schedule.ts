@@ -29,7 +29,8 @@ export enum TaskPriority {
 export enum LeaveType {
   AnnualLeave = 1,
   SickDay = 2,
-  Training = 3
+  OtherLeave = 3,
+  BankHoliday = 4
 }
 
 export enum TeamType {
@@ -167,6 +168,7 @@ export interface CreateAssignmentDto {
   description?: string;
   hours?: number; // Duration in hours (1-4)
   columnStart?: number; // Starting column position (0-3)
+  absenceType?: number; // For leave assignments
 }
 
 export interface UpdateAssignmentDto {
@@ -399,19 +401,22 @@ export const PRIORITY_LABELS: PriorityLabel = {
 export const LEAVE_TYPE_LABELS: LeaveTypeLabel = {
   [LeaveType.AnnualLeave]: 'Annual Leave',
   [LeaveType.SickDay]: 'Sick Day',
-  [LeaveType.Training]: 'Training',
+  [LeaveType.OtherLeave]: 'Other Leave',
+  [LeaveType.BankHoliday]: 'Bank Holiday',
 };
 
 export const LEAVE_TYPE_COLORS = {
   [LeaveType.AnnualLeave]: '#10b981', // Green
   [LeaveType.SickDay]: '#ef4444',     // Red
-  [LeaveType.Training]: '#6b7280',    // Gray
+  [LeaveType.OtherLeave]: '#6b7280',    // Gray
+  [LeaveType.BankHoliday]: '#8b5cf6', // Purple
 };
 
 export const LEAVE_TYPE_ICONS = {
   [LeaveType.AnnualLeave]: '✈️',
   [LeaveType.SickDay]: '🤒',
-  [LeaveType.Training]: '🎓',
+  [LeaveType.OtherLeave]: '📋',
+  [LeaveType.BankHoliday]: '🏛️',
 };
 
 export type TeamTypeLabel = {

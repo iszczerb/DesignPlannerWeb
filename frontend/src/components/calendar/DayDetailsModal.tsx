@@ -201,7 +201,7 @@ const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
     switch (leaveType) {
       case LeaveType.AnnualLeave: return 'Annual Leave';
       case LeaveType.SickDay: return 'Sick Day';
-      case LeaveType.Training: return 'Training';
+      case LeaveType.OtherLeave: return 'Other Leave';
       default: return 'Unknown';
     }
   };

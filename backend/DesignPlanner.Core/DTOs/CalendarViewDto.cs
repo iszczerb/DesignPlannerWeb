@@ -39,6 +39,9 @@ namespace DesignPlanner.Core.DTOs
         public TimeSlotAssignmentDto? AfternoonSlot { get; set; }
         public int TotalAssignments { get; set; }
         public bool HasConflicts { get; set; }
+        public LeaveSlotDto? Leave { get; set; }
+        public bool? IsHoliday { get; set; }
+        public string? HolidayName { get; set; }
     }
 
     public class TimeSlotAssignmentDto
@@ -47,6 +50,7 @@ namespace DesignPlanner.Core.DTOs
         public List<AssignmentTaskDto> Tasks { get; set; } = new List<AssignmentTaskDto>();
         public int AvailableCapacity { get; set; }
         public bool IsOverbooked { get; set; }
+        public LeaveSlotDto? Leave { get; set; }
     }
 
     public class AssignmentTaskDto

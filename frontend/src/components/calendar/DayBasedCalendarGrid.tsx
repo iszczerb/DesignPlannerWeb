@@ -244,6 +244,18 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       return;
     }
 
+    // Check if the target slot has a leave - prevent task operations on blocked slots
+    // Fix timezone issue - use local date instead of UTC
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dayNum = String(dateObj.getDate()).padStart(2, '0');
+    const dayString = `${year}-${month}-${dayNum}`;
+    const day = { date: dayString } as CalendarDayDto;
+    if (hasLeaveInSlot(employee, day, isAM)) {
+      console.log('❌ Cannot drop task on slot with leave');
+      return;
+    }
+
     // Calculate which column (0-3) the drop occurred in
     const targetColumn = calculateDropColumn(e.clientX, e.currentTarget);
 
@@ -578,16 +590,19 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     const slotData = isAM ? dayAssignment?.morningSlot : dayAssignment?.afternoonSlot;
     const hasTasks = slotData?.tasks && slotData.tasks.length > 0;
 
+    // Check if slot has a leave - this blocks all task operations
+    const hasLeave = hasLeaveInSlot(employee, day, isAM);
+
     const menuItems = [
       {
         label: '➕ Create Task',
         action: () => onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId),
-        enabled: !hasTasks || (slotData?.tasks?.length || 0) < 4
+        enabled: !hasLeave && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
       },
       {
         label: '📋 Paste Task',
         action: () => handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId),
-        enabled: hasCopiedTask && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
+        enabled: !hasLeave && hasCopiedTask && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
       }
     ];
 
@@ -894,7 +909,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
         style={{
           flex: 1,
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: backgroundColor + '20', // 20% opacity for background
@@ -903,17 +918,24 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           color: backgroundColor,
           fontWeight: '600',
           fontSize: '0.75rem',
-          padding: '8px 4px',
+          padding: '8px',
           margin: '2px',
-          textAlign: 'center',
-          minHeight: '56px'
+          minHeight: '56px',
+          gap: '8px'
         }}
       >
-        <div style={{ fontSize: '1.2rem', marginBottom: '4px' }}>{icon}</div>
-        <div style={{ fontSize: '0.7rem', lineHeight: '1.1' }}>{label}</div>
-        {!isFullDay && (
-          <div style={{ fontSize: '0.65rem', opacity: 0.8, marginTop: '2px' }}>{slotLabel}</div>
-        )}
+        <div style={{ fontSize: '1.2rem', flexShrink: 0 }}>{icon}</div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '2px'
+        }}>
+          <div style={{ fontSize: '0.75rem', lineHeight: '1.1', fontWeight: '600' }}>{label}</div>
+          {!isFullDay && (
+            <div style={{ fontSize: '0.65rem', opacity: 0.8 }}>({slotLabel})</div>
+          )}
+        </div>
       </div>
     );
   };
@@ -932,7 +954,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
         style={{
           flex: 1,
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#fee2e2', // Light red background
@@ -941,15 +963,22 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           color: '#dc2626',
           fontWeight: '600',
           fontSize: '0.75rem',
-          padding: '8px 4px',
+          padding: '8px',
           margin: '2px',
-          textAlign: 'center',
-          minHeight: '56px'
+          minHeight: '56px',
+          gap: '8px'
         }}
       >
-        <div style={{ fontSize: '1.2rem', marginBottom: '4px' }}>🏦</div>
-        <div style={{ fontSize: '0.7rem', lineHeight: '1.1' }}>{holidayName}</div>
-        <div style={{ fontSize: '0.65rem', opacity: 0.8, marginTop: '2px' }}>Holiday</div>
+        <div style={{ fontSize: '1.2rem', flexShrink: 0 }}>🏛️</div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '2px'
+        }}>
+          <div style={{ fontSize: '0.75rem', lineHeight: '1.1', fontWeight: '600' }}>{holidayName}</div>
+          <div style={{ fontSize: '0.65rem', opacity: 0.8 }}>Bank Holiday</div>
+        </div>
       </div>
     );
   };
@@ -1281,9 +1310,8 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
         })}
         onMouseLeave={() => setHoveredSlot(null)}
         onDragOver={(e) => {
-          if (!isReadOnly) {
-            // For now, allow all drag overs - we'll validate on drop
-            // TODO: Enhance with better visual feedback when we have access to drag data
+          if (!isReadOnly && !hasLeaveInSlot(employee, day, isAM)) {
+            // Prevent drag over for slots with leaves - they should be blocked
             e.preventDefault();
             e.currentTarget.style.backgroundColor = '#f0f9ff';
             addColumnGuides(e.currentTarget);
@@ -1727,7 +1755,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
             zIndex: 10
           }}>
-            {slotData.tasks.length < 4 && (
+            {!hasLeaveInSlot(employee, day, isAM) && slotData.tasks.length < 4 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1752,7 +1780,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                 +
               </button>
             )}
-            {hasCopiedTask && slotData.tasks.length < 4 && (
+            {!hasLeaveInSlot(employee, day, isAM) && hasCopiedTask && slotData.tasks.length < 4 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();

@@ -223,4 +223,45 @@ namespace DesignPlanner.Data.Configurations
             builder.HasIndex(utm => utm.TeamId);
         }
     }
+
+    public class AbsenceAllocationConfiguration : IEntityTypeConfiguration<AbsenceAllocation>
+    {
+        public void Configure(EntityTypeBuilder<AbsenceAllocation> builder)
+        {
+            // One employee can have one allocation per year
+            builder.HasIndex(aa => new { aa.EmployeeId, aa.Year }).IsUnique();
+
+            // Relationship with Employee
+            builder.HasOne(aa => aa.Employee)
+                .WithMany()
+                .HasForeignKey(aa => aa.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
+    }
+
+    public class AbsenceRecordConfiguration : IEntityTypeConfiguration<AbsenceRecord>
+    {
+        public void Configure(EntityTypeBuilder<AbsenceRecord> builder)
+        {
+            // Convert enum to int for storage
+            builder.Property(ar => ar.AbsenceType).HasConversion<int>();
+
+            // Relationship with Employee
+            builder.HasOne(ar => ar.Employee)
+                .WithMany()
+                .HasForeignKey(ar => ar.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Optional relationship with Assignment
+            builder.HasOne(ar => ar.Assignment)
+                .WithMany()
+                .HasForeignKey(ar => ar.AssignmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Index for performance
+            builder.HasIndex(ar => ar.EmployeeId);
+            builder.HasIndex(ar => ar.StartDate);
+            builder.HasIndex(ar => ar.AbsenceType);
+        }
+    }
 }

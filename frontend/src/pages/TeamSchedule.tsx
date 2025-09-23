@@ -16,6 +16,7 @@ import NotificationManager from '../components/common/NotificationManager';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import DatabaseManagementModal from '../components/database/DatabaseManagementModal';
 import AnalyticsDashboardModal from '../components/analytics/AnalyticsDashboardModal';
+import AbsenceManagementModal from '../components/leave/AbsenceManagementModal';
 import { TeamViewMode } from '../components/calendar/TeamToggle';
 import {
   CalendarViewType,
@@ -43,6 +44,7 @@ import { UserRole, User } from '../types/auth';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
 import signalRService from '../services/signalRService';
+import { absenceService } from '../services/absenceService';
 
 // User context interface for local component usage
 interface UserContext {
@@ -121,8 +123,23 @@ const addHolidayToStorage = (date: Date, holidayName: string = 'Bank Holiday') =
 };
 
 const removeLeaveFromStorage = (date: Date, employeeId?: number) => {
-  const dateStr = date.toISOString().split('T')[0];
+  // Fix timezone issue - use local date instead of UTC
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+
   const existing = loadLeaveDataFromStorage();
+
+  console.log(`🗑️ removeLeaveFromStorage: Input date: ${date.toLocaleDateString()}`);
+  console.log(`🗑️ removeLeaveFromStorage: Converted to dateStr: ${dateStr}, employeeId: ${employeeId}`);
+  console.log(`🗑️ Before removal, localStorage has ${existing.length} items:`, existing);
+
+  // Debug each item's date format
+  existing.forEach((item, index) => {
+    console.log(`🗑️ Item ${index}: date="${item.date}", employeeId=${item.employeeId}, type=${item.leaveType}`);
+    console.log(`🗑️ Comparison: "${item.date}" !== "${dateStr}" = ${item.date !== dateStr}`);
+  });
 
   let filtered;
   if (employeeId) {
@@ -135,14 +152,18 @@ const removeLeaveFromStorage = (date: Date, employeeId?: number) => {
     filtered = existing.filter(item => item.date !== dateStr);
   }
 
+  console.log(`🗑️ After filtering, will save ${filtered.length} items:`, filtered);
   saveLeaveDataToStorage(filtered);
+
+  // Verify the save worked
+  const afterSave = loadLeaveDataFromStorage();
+  console.log(`🗑️ After save, localStorage now has ${afterSave.length} items:`, afterSave);
 };
 
 const mergeStoredLeaveData = (calendarData: CalendarViewDto): CalendarViewDto => {
   const storedLeaves = loadLeaveDataFromStorage();
+  console.log(`🔄 mergeStoredLeaveData: Found ${storedLeaves.length} stored leaves:`, storedLeaves);
   if (storedLeaves.length === 0) return calendarData;
-
-  // console.log('🔄 Merging stored leave data into calendar data');
 
   const updatedData = { ...calendarData };
   updatedData.employees = calendarData.employees.map(employee => {
@@ -315,7 +336,7 @@ const addMockLeaveData = (data: CalendarViewDto): CalendarViewDto => {
 
       if (dayAssignment && dayAssignment.afternoonSlot) {
         dayAssignment.afternoonSlot.leave = {
-          leaveType: LeaveType.Training,
+          leaveType: LeaveType.OtherLeave,
           duration: LeaveDuration.HalfDay,
           slot: Slot.Afternoon,
           employeeId: thirdEmployee.employeeId,
@@ -533,6 +554,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const [currentQuickEditTask, setCurrentQuickEditTask] = useState<AssignmentTaskDto | null>(null);
   const [showDatabaseModal, setShowDatabaseModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showAbsenceModal, setShowAbsenceModal] = useState(false);
   const [databaseRefreshTrigger, setDatabaseRefreshTrigger] = useState(0);
 
   // Day Details modal state
@@ -681,6 +703,8 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       setShowDatabaseModal(true);
     } else if (page === 'dashboard') {
       setShowAnalyticsModal(true);
+    } else if (page === 'absence') {
+      setShowAbsenceModal(true);
     } else {
       // TODO: Implement other navigation logic
     }
@@ -882,16 +906,21 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       console.log('🔍 loadCalendarData: Days in response:', data.days?.map(d => ({ date: d.date, dayName: d.dayName, displayDate: d.displayDate })));
       // console.log('🔍 loadCalendarData: Employee team IDs:', data.employees?.map(e => ({ name: e.fullName, teamId: e.teamId })));
 
-      // Always merge stored leave data (this persists through navigation and refresh!)
-      const dataWithStoredLeaves = mergeStoredLeaveData(data);
+      // 🚨 FIXED: Only merge localStorage when explicitly needed, not always!
+      // const dataWithStoredLeaves = mergeStoredLeaveData(data);
 
-      // Disable mock data completely to avoid conflicts with real data
-      const finalData = dataWithStoredLeaves;
+      // ✅ DATABASE ONLY - No localStorage leave merging for pure database mode
+      console.log('🔍 Using PURE DATABASE DATA - localStorage leave merging DISABLED');
 
-      // console.log('🔍 loadCalendarData: Final data with persistent leaves:', finalData);
+      // 🧹 Clear any existing localStorage leave data to prevent flashing (ONLY on first load)
+      const existingLeaves = loadLeaveDataFromStorage();
+      if (existingLeaves.length > 0) {
+        console.log(`🧹 Clearing ${existingLeaves.length} localStorage leave items to prevent conflicts`);
+        localStorage.removeItem('leaveData');
+        console.log('🧹 LocalStorage leave data cleared - calendar now uses pure database data');
+      }
 
-      // ✅ DATABASE ONLY - No more localStorage team member mixing
-      console.log('🔍 Using PURE DATABASE DATA - no localStorage mixing');
+      const finalData = data; // Use pure database data without localStorage contamination
       const dataWithTeamChanges = finalData;
 
       // No more local task assignments - all tasks come from backend
@@ -1078,24 +1107,17 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     try {
       console.log('🔍 Finding remaining tasks in source slot for left-packing...');
 
-      // ULTRA-FIX: Always fetch fresh calendar data directly from API
-      console.log('🔄 Fetching FRESH calendar data for left-packing...');
-      const freshCalendarData = await scheduleService.getCalendarView({
-        startDate: date,
-        viewType: CalendarViewType.Week,
-        teamId: teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined
-      });
-
-      if (!freshCalendarData || !freshCalendarData.employees) {
-        console.log('❌ Failed to get fresh calendar data for left-packing');
+      // Use existing calendar data instead of making a fresh API call to avoid triggering view changes
+      if (!calendarData || !calendarData.employees) {
+        console.log('❌ No calendar data available for left-packing');
         return;
       }
 
-      console.log('✅ Fresh calendar data loaded for left-packing');
+      console.log('✅ Using existing calendar data for left-packing');
 
-      // Find all tasks in the source slot (excluding the removed task) using FRESH data
+      // Find all tasks in the source slot (excluding the removed task) using existing data
       const dateStr = date.toDateString();
-      const employee = freshCalendarData.employees.find(emp => emp.employeeId === employeeId);
+      const employee = calendarData.employees.find(emp => emp.employeeId === employeeId);
       if (!employee) {
         console.log('❌ Employee not found for left-packing');
         return;
@@ -1190,13 +1212,12 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('✅ Source slot left-packing completed');
 
-      // Refresh the calendar to show updated positions
-      await loadCalendarData(teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined, teamViewMode);
+      // Calendar data will refresh automatically via useEffect dependencies
 
     } catch (error) {
       console.error('❌ Error during source slot left-packing:', error);
     }
-  }, [loadCalendarData, teamViewMode, managedTeamId]);
+  }, [calendarData, teamViewMode, managedTeamId]);
 
   /**
    * Left-pack tasks directly from captured task data
@@ -1236,8 +1257,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('✅ Direct left-packing completed');
 
-      // Refresh the calendar to show updated positions
-      await loadCalendarData(teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined, teamViewMode);
+      // Calendar data will refresh automatically via useEffect dependencies
 
     } catch (error) {
       console.error('❌ Error during direct left-packing:', error);
@@ -1311,7 +1331,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       console.log('Task moved successfully with column position');
 
-      // Refresh calendar data first to get updated state
+      // Refresh calendar data immediately without changing window position
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
         teamViewMode
@@ -1916,12 +1936,17 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   /**
    * Detect all task conflicts for bank holiday setting
    */
-  const detectBankHolidayConflicts = useCallback((date: Date): { hasConflicts: boolean; conflicts: string[] } => {
+  const detectBankHolidayConflicts = useCallback((date: Date): {
+    hasConflicts: boolean;
+    conflicts: string[];
+    conflictingAssignmentIds: number[]
+  } => {
     if (!calendarData) {
-      return { hasConflicts: false, conflicts: [] };
+      return { hasConflicts: false, conflicts: [], conflictingAssignmentIds: [] };
     }
 
     const conflicts: string[] = [];
+    const conflictingAssignmentIds: number[] = [];
     const targetDateStr = date.toDateString();
 
     calendarData.employees.forEach(employee => {
@@ -1938,19 +1963,22 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       if (morningTasks.length > 0) {
         morningTasks.forEach(task => {
           conflicts.push(`${employee.employeeName}: Morning - ${task.taskName}`);
+          conflictingAssignmentIds.push(task.assignmentId);
         });
       }
 
       if (afternoonTasks.length > 0) {
         afternoonTasks.forEach(task => {
           conflicts.push(`${employee.employeeName}: Afternoon - ${task.taskName}`);
+          conflictingAssignmentIds.push(task.assignmentId);
         });
       }
     });
 
     return {
       hasConflicts: conflicts.length > 0,
-      conflicts
+      conflicts,
+      conflictingAssignmentIds
     };
   }, [calendarData]);
 
@@ -2167,6 +2195,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
     // Detect task conflicts for all days
     let allConflicts: string[] = [];
+    let allConflictingAssignmentIds: number[] = [];
     let totalConflictCount = 0;
 
     daysToProcess.forEach(date => {
@@ -2175,6 +2204,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         const dayStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         const dayConflicts = conflictCheck.conflicts.map(conflict => `${dayStr}: ${conflict}`);
         allConflicts.push(...dayConflicts);
+        allConflictingAssignmentIds.push(...conflictCheck.conflictingAssignmentIds);
         totalConflictCount += conflictCheck.conflicts.length;
       }
     });
@@ -2203,14 +2233,58 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
           // Mark that user has created leave (to disable mock data)
           localStorage.setItem('hasUserCreatedLeave', 'true');
 
+          // ✅ STEP 1: Delete conflicting tasks FIRST (before creating bank holidays)
+          if (allConflictingAssignmentIds.length > 0) {
+            console.log(`🗑️ Deleting ${allConflictingAssignmentIds.length} conflicting assignments:`, allConflictingAssignmentIds);
+
+            for (const assignmentId of allConflictingAssignmentIds) {
+              try {
+                await scheduleService.deleteAssignment(assignmentId);
+                console.log(`✅ Deleted assignment ${assignmentId}`);
+              } catch (error) {
+                console.error(`❌ Failed to delete assignment ${assignmentId}:`, error);
+                // Continue with other deletions, don't abort the whole process
+              }
+            }
+            console.log('✅ All conflicting tasks deleted successfully');
+          }
+
+          // ✅ STEP 2: DATABASE-BASED bank holiday creation
           // Process all captured days (use daysToProcess from closure, not state!)
           for (const date of daysToProcess) {
-            // Save to persistent storage first
-            addHolidayToStorage(date, 'Bank Holiday');
+            try {
+              // Create bank holiday for ALL team members using absence records
+              const allEmployees = calendarData?.employees || [];
+              console.log(`🏦 Creating bank holiday for ${date.toLocaleDateString()} for ${allEmployees.length} employees`);
 
-            // Update calendar data immediately
-            addBankHolidayToCalendarData(date, 'Bank Holiday');
+              for (const employee of allEmployees) {
+                // Fix timezone issue - use local date instead of UTC
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+
+                const bankHolidayRecord = {
+                  employeeId: employee.employeeId,
+                  startDate: dateStr,
+                  endDate: dateStr,
+                  absenceType: 4, // BankHoliday = 4
+                  hours: 8, // Full day
+                  notes: 'Bank Holiday'
+                  // Note: Backend auto-approves records (IsApproved = true)
+                };
+
+                await absenceService.createAbsenceRecord(bankHolidayRecord);
+                console.log(`✅ Created bank holiday for employee ${employee.employeeName} on ${date.toLocaleDateString()}`);
+              }
+            } catch (error) {
+              console.error(`❌ Failed to create bank holiday for ${date.toLocaleDateString()}:`, error);
+              throw error; // Re-throw to show error notification
+            }
           }
+
+          // Refresh calendar data to show new bank holidays
+          await loadCalendarData();
 
           // Clear selections after successful operation
           setSelectedDays([]);
@@ -2312,11 +2386,31 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
           // Process all captured days (use daysToProcess from closure, not state!)
           for (const date of daysToProcess) {
-            // Remove from persistent storage first
-            removeLeaveFromStorage(date);
-
             // Clear from calendar data (immediate UI update)
             clearBlockingFromCalendarData(date);
+
+            // Clear only leave-related data - DO NOT delete regular tasks
+            try {
+              console.log(`🗑️ Clearing leave data for ${date.toLocaleDateString()}`);
+
+              // Delete absence records (annual leave, sick days, training, bank holidays)
+              const recordsResult = await absenceService.deleteAbsenceRecordsByDate(date);
+              console.log(`🗑️ Deleted ${recordsResult.deletedCount} absence records for ${date.toLocaleDateString()}`);
+
+              // Clear assignments that have AbsenceType set (leave-related assignments)
+              const assignmentsResult = await absenceService.clearAbsenceAssignmentsByDate(date);
+              console.log(`🗑️ Cleared ${assignmentsResult.clearedCount} absence assignments for ${date.toLocaleDateString()}`);
+
+              // Delete assignments with leave-related task types
+              const leaveTasksResult = await absenceService.deleteLeaveTasksByDate(date);
+              console.log(`🗑️ Deleted ${leaveTasksResult.deletedCount} leave task assignments for ${date.toLocaleDateString()}`);
+            } catch (error) {
+              console.warn(`Failed to delete absence data from backend for ${date.toLocaleDateString()}:`, error);
+              // Don't fail the whole operation if backend deletion fails
+            }
+
+            // Remove from persistent storage AFTER database deletion to prevent re-merging
+            removeLeaveFromStorage(date);
           }
 
           // Clear selections after successful operation
@@ -2352,12 +2446,13 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     duration: number;
     slot?: number;
     date: Date;
-  }): { hasConflicts: boolean; conflicts: string[] } => {
+  }): { hasConflicts: boolean; conflicts: string[]; conflictingAssignmentIds: number[] } => {
     if (!calendarData) {
-      return { hasConflicts: false, conflicts: [] };
+      return { hasConflicts: false, conflicts: [], conflictingAssignmentIds: [] };
     }
 
     const conflicts: string[] = [];
+    const conflictingAssignmentIds: number[] = [];
     const targetDateStr = leaveData.date.toDateString();
 
     leaveData.employeeIds.forEach(employeeId => {
@@ -2379,12 +2474,14 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         if (morningTasks.length > 0) {
           morningTasks.forEach(task => {
             conflicts.push(`${employee.employeeName}: Morning - ${task.taskName}`);
+            conflictingAssignmentIds.push(task.assignmentId);
           });
         }
 
         if (afternoonTasks.length > 0) {
           afternoonTasks.forEach(task => {
             conflicts.push(`${employee.employeeName}: Afternoon - ${task.taskName}`);
+            conflictingAssignmentIds.push(task.assignmentId);
           });
         }
       } else {
@@ -2396,6 +2493,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
           const slotName = leaveData.slot === 1 ? 'Morning' : 'Afternoon';
           slotTasks.forEach(task => {
             conflicts.push(`${employee.employeeName}: ${slotName} - ${task.taskName}`);
+            conflictingAssignmentIds.push(task.assignmentId);
           });
         }
       }
@@ -2403,7 +2501,8 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
     return {
       hasConflicts: conflicts.length > 0,
-      conflicts
+      conflicts,
+      conflictingAssignmentIds
     };
   }, [calendarData]);
 
@@ -2457,21 +2556,61 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       // No conflicts, proceed directly
       proceedWithLeaveCreation();
 
-      function proceedWithLeaveCreation() {
+      async function proceedWithLeaveCreation() {
         try {
           console.log('Creating leave:', leaveData);
 
-          // Mark that user has created leave (to disable mock data)
-          localStorage.setItem('hasUserCreatedLeave', 'true');
+          // ✅ STEP 1: Delete conflicting tasks FIRST (before creating leave)
+          if (conflictCheck.conflictingAssignmentIds.length > 0) {
+            console.log(`🗑️ Deleting ${conflictCheck.conflictingAssignmentIds.length} conflicting assignments:`, conflictCheck.conflictingAssignmentIds);
+
+            for (const assignmentId of conflictCheck.conflictingAssignmentIds) {
+              try {
+                await scheduleService.deleteAssignment(assignmentId);
+                console.log(`✅ Deleted assignment ${assignmentId}`);
+              } catch (error) {
+                console.error(`❌ Failed to delete assignment ${assignmentId}:`, error);
+                // Continue with other deletions, don't abort the whole process
+              }
+            }
+            console.log('✅ All conflicting tasks deleted successfully');
+          }
 
           // Process all captured days (for multi-day leave)
           const daysToProcess = capturedMultiDays.length > 0 ? capturedMultiDays : [leaveData.date];
 
           console.log('🎯 Processing leave for captured days:', daysToProcess.map(d => d.toLocaleDateString()));
 
-          // Save to persistent storage and update calendar for all days
-          daysToProcess.forEach(date => {
-            leaveData.employeeIds.forEach(employeeId => {
+          // Create AbsenceRecords for each employee and each day
+          for (const date of daysToProcess) {
+            for (const employeeId of leaveData.employeeIds) {
+              // Format date for API
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const startDate = `${year}-${month}-${day}`;
+              const endDate = startDate; // Single day leave
+
+              // Calculate hours based on duration
+              const hours = leaveData.duration === 1 ? 8 : 4; // Full day = 8 hours, Half day = 4 hours
+
+              // Create absence record
+              const absenceRecord = {
+                employeeId: employeeId,
+                startDate: startDate,
+                endDate: endDate,
+                absenceType: leaveData.leaveType,
+                hours: hours,
+                slot: leaveData.duration === 2 ? leaveData.slot : undefined, // Only include slot for half-day leaves
+                notes: `${leaveData.leaveType === 1 ? 'Annual Leave' : leaveData.leaveType === 2 ? 'Sick Day' : 'Training'}${leaveData.duration === 2 ? ' - Half Day' : ''}`
+              };
+
+              console.log('🎯 Creating absence record:', absenceRecord);
+
+              // Create absence record via API
+              await absenceService.createAbsenceRecord(absenceRecord);
+
+              // Also save to local storage for immediate UI update (like bank holidays)
               addLeaveToStorage(
                 employeeId,
                 date,
@@ -2479,11 +2618,11 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
                 leaveData.duration as LeaveDuration,
                 leaveData.slot as Slot | undefined
               );
-            });
+            }
 
             // Update calendar data immediately for each day
             addLeaveToCalendarData({ ...leaveData, date });
-          });
+          }
 
           // Clear selections after successful operation
           setSelectedDays([]);
@@ -2523,18 +2662,11 @@ ${dateInfo}`;
             message: `${leaveDetails}${conflictMessage ? '\n\n' + conflictMessage : ''}`
           });
 
-          // Show persistence warning for first-time users
-          const isFirstLeave = !localStorage.getItem('hasShownPersistenceWarning');
-          if (isFirstLeave) {
-            localStorage.setItem('hasShownPersistenceWarning', 'true');
-            setTimeout(() => {
-              showNotification({
-                type: 'info',
-                title: 'Note: Temporary Data',
-                message: 'Leave data is currently stored locally and will be lost on page refresh. Full backend integration coming soon!'
-              });
-            }, 2000);
-          }
+          // Refresh calendar data to show new assignments
+          await loadCalendarData(
+            teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+            teamViewMode
+          );
 
           // Close modal
           setSetLeaveModalOpen(false);
@@ -2671,7 +2803,7 @@ ${dateInfo}`;
       // Set up schedule update listeners
       const handleAssignmentUpdate = (assignment: any) => {
         console.log('🔄 Real-time assignment update received:', assignment);
-        // Reload calendar data to show the update
+        // Reload calendar data to show the update immediately
         loadCalendarData(
           teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
           teamViewMode
@@ -2680,11 +2812,8 @@ ${dateInfo}`;
 
       const handleBulkAssignmentsUpdate = (assignments: any[]) => {
         console.log('🔄 Real-time bulk assignments update received:', assignments);
-        // Reload calendar data to show the updates
-        loadCalendarData(
-          teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-          teamViewMode
-        );
+        // Calendar data will refresh automatically via useEffect dependencies
+        // DO NOT call loadCalendarData here as it can trigger window position changes
       };
 
       signalRService.addListener('assignmentUpdated', handleAssignmentUpdate);
@@ -3360,6 +3489,16 @@ ${dateInfo}`;
       <AnalyticsDashboardModal
         open={showAnalyticsModal}
         onClose={() => setShowAnalyticsModal(false)}
+      />
+
+      {/* Absence Management Modal */}
+      <AbsenceManagementModal
+        open={showAbsenceModal}
+        onClose={() => setShowAbsenceModal(false)}
+        onRequestProcessed={() => {
+          // Refresh data after absence changes
+          loadCalendarData();
+        }}
       />
 
       {/* Day Details Modal */}

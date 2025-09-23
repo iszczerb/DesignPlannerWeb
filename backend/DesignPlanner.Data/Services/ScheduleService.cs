@@ -136,6 +136,7 @@ namespace DesignPlanner.Data.Services
                 Notes = createDto.Notes,
                 Hours = createDto.Hours, // Support custom hours during creation
                 SlotOrder = maxSlotOrder + 1, // New tasks go to the right
+                AbsenceType = createDto.AbsenceType, // For leave assignments
                 IsActive = true
             };
 
@@ -868,9 +869,21 @@ namespace DesignPlanner.Data.Services
         {
             var schedules = new List<EmployeeScheduleDto>();
 
+            // Fetch all absence records for the date range and employees
+            var employeeIds = employees.Select(e => e.Id).ToList();
+            var absenceRecords = await _context.AbsenceRecords
+                .Where(ar => employeeIds.Contains(ar.EmployeeId) &&
+                            ar.StartDate <= endDate &&
+                            ar.EndDate >= startDate &&
+                            ar.IsApproved)
+                .Include(ar => ar.Employee)
+                    .ThenInclude(e => e.User)
+                .ToListAsync();
+
             foreach (var employee in employees)
             {
                 var employeeAssignments = assignments.Where(a => a.EmployeeId == employee.Id).ToList();
+                var employeeAbsences = absenceRecords.Where(ar => ar.EmployeeId == employee.Id).ToList();
                 var dayAssignments = new List<DayAssignmentDto>();
 
                 var currentDate = startDate.Date;
@@ -880,12 +893,16 @@ namespace DesignPlanner.Data.Services
                     if (IsBusinessDay(currentDate))
                     {
                         var dayTasks = employeeAssignments.Where(a => a.AssignedDate == currentDate).ToList();
-                        
+
                         var morningAssignments = dayTasks.Where(a => a.Slot == Slot.Morning).ToList();
                         var afternoonAssignments = dayTasks.Where(a => a.Slot == Slot.Afternoon).ToList();
-                        
+
                         var morningTasks = morningAssignments.Select(a => MapToAssignmentTaskDto(a, morningAssignments.Count)).ToList();
                         var afternoonTasks = afternoonAssignments.Select(a => MapToAssignmentTaskDto(a, afternoonAssignments.Count)).ToList();
+
+                        // Check for absence records for this date
+                        var dayAbsences = employeeAbsences.Where(ar =>
+                            ar.StartDate.Date <= currentDate && ar.EndDate.Date >= currentDate).ToList();
 
                         var dayAssignment = new DayAssignmentDto
                         {
@@ -894,25 +911,81 @@ namespace DesignPlanner.Data.Services
                             HasConflicts = morningTasks.Count > MAX_TASKS_PER_SLOT || afternoonTasks.Count > MAX_TASKS_PER_SLOT
                         };
 
-                        if (morningTasks.Any())
+                        // Handle full-day and half-day leaves
+                        LeaveSlotDto? dayLeave = null;
+                        LeaveSlotDto? morningLeave = null;
+                        LeaveSlotDto? afternoonLeave = null;
+
+                        foreach (var absence in dayAbsences)
+                        {
+                            var isHalfDay = absence.Hours <= 4; // Half day if 4 hours or less
+                            var duration = isHalfDay ? DesignPlanner.Core.Enums.LeaveDuration.HalfDay : DesignPlanner.Core.Enums.LeaveDuration.FullDay;
+
+                            var leaveSlot = new LeaveSlotDto
+                            {
+                                LeaveType = absence.AbsenceType,
+                                Duration = duration,
+                                EmployeeId = absence.EmployeeId,
+                                EmployeeName = absence.Employee?.User != null
+                                    ? $"{absence.Employee.User.FirstName} {absence.Employee.User.LastName}".Trim()
+                                    : "Unknown Employee",
+                                StartDate = absence.StartDate,
+                                EndDate = absence.EndDate
+                            };
+
+                            if (isHalfDay)
+                            {
+                                // For half-day leaves, use the slot specified in the absence record
+                                // Default to morning if slot is not specified (for backward compatibility)
+                                var slot = absence.Slot ?? Slot.Morning;
+                                leaveSlot.Slot = slot;
+
+                                if (slot == Slot.Afternoon)
+                                {
+                                    afternoonLeave = leaveSlot;
+                                }
+                                else
+                                {
+                                    morningLeave = leaveSlot;
+                                }
+                            }
+                            else
+                            {
+                                // Full day leave - blocks the entire day
+                                dayLeave = leaveSlot;
+                                break; // Full day leave takes precedence
+                            }
+                        }
+
+                        // Set day-level leave for full-day absences
+                        if (dayLeave != null)
+                        {
+                            dayAssignment.Leave = dayLeave;
+                        }
+
+                        // Create morning slot if there are tasks or leave
+                        if (morningTasks.Any() || morningLeave != null)
                         {
                             dayAssignment.MorningSlot = new TimeSlotAssignmentDto
                             {
                                 Slot = Slot.Morning,
                                 Tasks = morningTasks,
-                                AvailableCapacity = MAX_TASKS_PER_SLOT - morningTasks.Count,
-                                IsOverbooked = morningTasks.Count > MAX_TASKS_PER_SLOT
+                                AvailableCapacity = morningLeave != null ? 0 : MAX_TASKS_PER_SLOT - morningTasks.Count,
+                                IsOverbooked = morningLeave == null && morningTasks.Count > MAX_TASKS_PER_SLOT,
+                                Leave = morningLeave
                             };
                         }
 
-                        if (afternoonTasks.Any())
+                        // Create afternoon slot if there are tasks or leave
+                        if (afternoonTasks.Any() || afternoonLeave != null)
                         {
                             dayAssignment.AfternoonSlot = new TimeSlotAssignmentDto
                             {
                                 Slot = Slot.Afternoon,
                                 Tasks = afternoonTasks,
-                                AvailableCapacity = MAX_TASKS_PER_SLOT - afternoonTasks.Count,
-                                IsOverbooked = afternoonTasks.Count > MAX_TASKS_PER_SLOT
+                                AvailableCapacity = afternoonLeave != null ? 0 : MAX_TASKS_PER_SLOT - afternoonTasks.Count,
+                                IsOverbooked = afternoonLeave == null && afternoonTasks.Count > MAX_TASKS_PER_SLOT,
+                                Leave = afternoonLeave
                             };
                         }
 

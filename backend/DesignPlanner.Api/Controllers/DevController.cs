@@ -527,4 +527,14 @@ public class DevController : ControllerBase
         });
     }
 
+    [HttpDelete("clear-absence-allocations")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ClearAbsenceAllocations()
+    {
+        var allocations = await _context.AbsenceAllocations.ToListAsync();
+        _context.AbsenceAllocations.RemoveRange(allocations);
+        await _context.SaveChangesAsync();
+        return Ok($"Cleared {allocations.Count} absence allocations");
+    }
+
 }

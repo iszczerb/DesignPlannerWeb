@@ -43,6 +43,9 @@ namespace DesignPlanner.Core.DTOs
         public TaskPriority? Priority { get; set; }
         public DesignPlanner.Core.Enums.TaskStatus? Status { get; set; }
         public double? Hours { get; set; } // Custom hours for this assignment
+
+        // For leave assignments
+        public AbsenceType? AbsenceType { get; set; }
     }
 
     public class UpdateAssignmentDto
@@ -68,10 +71,13 @@ namespace DesignPlanner.Core.DTOs
         public TaskPriority? Priority { get; set; }
 
         public DateTime? DueDate { get; set; }
-        
+
         public DesignPlanner.Core.Enums.TaskStatus? TaskStatus { get; set; }
 
         public int? TaskTypeId { get; set; }
+
+        // For leave assignments
+        public AbsenceType? AbsenceType { get; set; }
     }
 
     public class BulkAssignmentDto
@@ -133,5 +139,17 @@ namespace DesignPlanner.Core.DTOs
         public DesignPlanner.Core.Enums.TaskStatus? TaskStatus { get; set; }
         public DateTime? DueDate { get; set; }
         public string? Notes { get; set; }
+    }
+
+    // Leave Slot DTOs for schedule integration
+    public class LeaveSlotDto
+    {
+        public AbsenceType LeaveType { get; set; }
+        public DesignPlanner.Core.Enums.LeaveDuration Duration { get; set; }
+        public Slot? Slot { get; set; } // Only for half-day leaves
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 }

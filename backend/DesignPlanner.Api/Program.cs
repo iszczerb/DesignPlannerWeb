@@ -113,6 +113,8 @@ builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<ITeamAuthorizationService, TeamAuthorizationService>();
+builder.Services.AddScoped<IAbsenceService, AbsenceService>();
 
 // SEEDING COMPLETELY DISABLED - DO NOT REGISTER SEEDING SERVICES
 // builder.Services.AddScoped<IMinimalInitializer, MinimalInitializer>();

@@ -37,6 +37,9 @@ namespace DesignPlanner.Core.Entities
         // This specifies the exact column where the task starts
         public int? ColumnStart { get; set; }
 
+        // Absence type for leave assignments (null for regular work assignments)
+        public AbsenceType? AbsenceType { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

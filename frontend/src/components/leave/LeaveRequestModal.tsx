@@ -188,8 +188,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         return 'Annual Leave';
       case LeaveType.Sick:
         return 'Sick Leave';
-      case LeaveType.Training:
-        return 'Training Leave';
+      case LeaveType.OtherLeave:
+        return 'Other Leave';
       default:
         return 'Leave';
     }
@@ -263,7 +263,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               >
                 <MenuItem value={LeaveType.Annual}>Annual Leave (Requires Approval)</MenuItem>
                 <MenuItem value={LeaveType.Sick}>Sick Leave (Auto-Approved)</MenuItem>
-                <MenuItem value={LeaveType.Training}>Training Leave (Auto-Approved)</MenuItem>
+                <MenuItem value={LeaveType.OtherLeave}>Other Leave (Auto-Approved)</MenuItem>
               </Select>
             </FormControl>
 
@@ -433,7 +433,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 <Typography variant="body2">
                   <strong>Available for New Requests:</strong> {leaveBalance.remainingLeaveDays - leaveBalance.pendingLeaveDays} days
                   <br />
-                  <strong>Note:</strong> Sick leave and training leave don't count against your annual leave balance.
+                  <strong>Note:</strong> Sick leave and other leave don't count against your annual leave balance.
                 </Typography>
               </Alert>
             </Box>

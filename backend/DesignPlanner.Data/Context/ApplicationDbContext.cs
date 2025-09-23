@@ -30,6 +30,8 @@ namespace DesignPlanner.Data.Context
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<UserTeamManagement> UserTeamManagements { get; set; }
+        public DbSet<AbsenceAllocation> AbsenceAllocations { get; set; }
+        public DbSet<AbsenceRecord> AbsenceRecords { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -53,6 +55,8 @@ namespace DesignPlanner.Data.Context
             modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
             modelBuilder.ApplyConfiguration(new CategoryConfiguration());
             modelBuilder.ApplyConfiguration(new UserTeamManagementConfiguration());
+            modelBuilder.ApplyConfiguration(new AbsenceAllocationConfiguration());
+            modelBuilder.ApplyConfiguration(new AbsenceRecordConfiguration());
 
             // SEEDING COMPLETELY DISABLED - DO NOT CREATE ANY DEFAULT DATA
             // var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
