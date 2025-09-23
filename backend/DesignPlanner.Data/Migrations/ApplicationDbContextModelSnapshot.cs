@@ -727,6 +727,31 @@ namespace DesignPlanner.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("DesignPlanner.Core.Entities.UserTeamManagement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TeamId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeamId");
+
+                    b.HasIndex("UserId", "TeamId")
+                        .IsUnique();
+
+                    b.ToTable("UserTeamManagements");
+                });
+
             modelBuilder.Entity("DesignPlanner.Core.Entities.Assignment", b =>
                 {
                     b.HasOne("DesignPlanner.Core.Entities.Employee", "Employee")
@@ -879,6 +904,25 @@ namespace DesignPlanner.Data.Migrations
                     b.Navigation("TaskType");
                 });
 
+            modelBuilder.Entity("DesignPlanner.Core.Entities.UserTeamManagement", b =>
+                {
+                    b.HasOne("DesignPlanner.Core.Entities.Team", "Team")
+                        .WithMany("Managers")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DesignPlanner.Core.Entities.User", "User")
+                        .WithMany("ManagedTeams")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Team");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DesignPlanner.Core.Entities.Category", b =>
                 {
                     b.Navigation("Projects");
@@ -924,12 +968,16 @@ namespace DesignPlanner.Data.Migrations
 
             modelBuilder.Entity("DesignPlanner.Core.Entities.Team", b =>
                 {
+                    b.Navigation("Managers");
+
                     b.Navigation("Members");
                 });
 
             modelBuilder.Entity("DesignPlanner.Core.Entities.User", b =>
                 {
                     b.Navigation("Employee");
+
+                    b.Navigation("ManagedTeams");
                 });
 #pragma warning restore 612, 618
         }

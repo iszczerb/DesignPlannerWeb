@@ -36,13 +36,30 @@ namespace DesignPlanner.Data.Services
                 })
                 .ToListAsync();
 
+            // Determine team name for the view
+            string teamName = "Mixed"; // Default for multi-team views
+            if (employees.Count == 1 && employees[0].Team != null)
+            {
+                // Single employee view - use their team name
+                teamName = employees[0].Team.Name;
+            }
+            else if (request.EmployeeId.HasValue)
+            {
+                // Single employee requested - find their team
+                var employee = employees.FirstOrDefault(e => e.Id == request.EmployeeId.Value);
+                if (employee?.Team != null)
+                {
+                    teamName = employee.Team.Name;
+                }
+            }
+
             var calendarView = new CalendarViewDto
             {
                 StartDate = startDate,
                 EndDate = endDate,
                 ViewType = request.ViewType,
                 Days = GenerateCalendarDays(startDate, endDate),
-                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate, "Mixed"),
+                Employees = await BuildEmployeeSchedulesAsync(employees, assignments, startDate, endDate, teamName),
                 TaskTypes = taskTypes
             };
 
@@ -996,11 +1013,14 @@ namespace DesignPlanner.Data.Services
         // Team management operations
         public async Task<List<object>> GetManagerTeamsAsync(int userId)
         {
-            // Get teams where the user is designated as a manager
-            // This assumes there's a way to identify team managers - you might need to add a ManagerId to Team entity
+            // Get teams where the user is designated as a manager using UserTeamManagement table
+            var managedTeamIds = await _context.UserTeamManagements
+                .Where(utm => utm.UserId == userId)
+                .Select(utm => utm.TeamId)
+                .ToListAsync();
+
             var managedTeams = await _context.Teams
-                .Where(t => t.IsActive)
-                // For now, we'll assume all teams can be managed by managers - you should add proper team management logic
+                .Where(t => t.IsActive && managedTeamIds.Contains(t.Id))
                 .Select(t => new
                 {
                     Id = t.Id,
@@ -1009,7 +1029,7 @@ namespace DesignPlanner.Data.Services
                     Description = t.Description,
                     Color = "#6b7280", // Simple default gray color
                     MemberCount = t.Members.Count(),
-                    IsManaged = true // This should be based on actual manager relationship
+                    IsManaged = true
                 })
                 .ToListAsync<object>();
 
@@ -1018,6 +1038,12 @@ namespace DesignPlanner.Data.Services
 
         public async Task<List<object>> GetAllTeamsWithManagedStatusAsync(int userId)
         {
+            // Get the user's managed team IDs using UserTeamManagement table
+            var managedTeamIds = await _context.UserTeamManagements
+                .Where(utm => utm.UserId == userId)
+                .Select(utm => utm.TeamId)
+                .ToListAsync();
+
             // Get all teams with indication of which ones the user manages
             var allTeams = await _context.Teams
                 .Where(t => t.IsActive)
@@ -1029,7 +1055,7 @@ namespace DesignPlanner.Data.Services
                     Description = t.Description,
                     Color = "#6b7280", // Simple default gray color
                     MemberCount = t.Members.Count(),
-                    IsManaged = true // This should be based on actual manager relationship with userId
+                    IsManaged = managedTeamIds.Contains(t.Id)
                 })
                 .ToListAsync<object>();
 
@@ -1062,10 +1088,10 @@ namespace DesignPlanner.Data.Services
                 throw new ArgumentException($"Team with ID {request.TeamId} not found");
             }
 
-            // Get all users who manage teams (to include managers in their managed teams)
+            // Get all users who manage teams using UserTeamManagement table
             var allManagerUsers = await _context.Users
                 .Include(u => u.Employee)
-                .Where(u => u.ManagedTeamIds != null && u.ManagedTeamIds != "")
+                .Where(u => u.ManagedTeams.Any())
                 .ToListAsync();
 
             // Get employees for this team including managers who manage it
@@ -1095,22 +1121,50 @@ namespace DesignPlanner.Data.Services
             return calendarView;
         }
 
-        public async Task<object> GetGlobalCalendarViewAsync(int userId, ScheduleRequestDto request)
+        public async Task<object> GetGlobalCalendarViewAsync(int userId, ScheduleRequestDto request, string userRole = "Admin")
         {
-            Console.WriteLine("🔍 ✅ GetGlobalCalendarViewAsync called - CORRECT for Admin users!");
+            Console.WriteLine($"🔍 ✅ GetGlobalCalendarViewAsync called for {userRole} user (ID: {userId})");
             var startDate = GetViewStartDate(request.StartDate, request.ViewType);
             var endDate = GetViewEndDate(startDate, request.ViewType);
 
-            // Get all teams with their employees - REMOVED IsActive filter to show all teams
-            var teamsWithEmployees = await _context.Teams
-                .Include(t => t.Members)
-                    .ThenInclude(m => m.User)
+            // Get the user's managed team IDs using UserTeamManagement table
+            var managedTeamIds = await _context.UserTeamManagements
+                .Where(utm => utm.UserId == userId)
+                .Select(utm => utm.TeamId)
                 .ToListAsync();
 
-            // Get all users who manage teams (to include managers in their managed teams)
+            // 🚨 CRITICAL FIX: Filter teams based on user role
+            List<Team> teamsWithEmployees;
+
+            // Admin users see all teams, Managers see only their managed teams
+            if (userRole == "Admin")
+            {
+                Console.WriteLine("🔍 Admin user - loading ALL teams");
+                teamsWithEmployees = await _context.Teams
+                    .Include(t => t.Members)
+                        .ThenInclude(m => m.User)
+                    .ToListAsync();
+            }
+            else if (userRole == "Manager")
+            {
+                Console.WriteLine($"🔍 Manager user - filtering to only managed teams: [{string.Join(", ", managedTeamIds)}]");
+                teamsWithEmployees = await _context.Teams
+                    .Include(t => t.Members)
+                        .ThenInclude(m => m.User)
+                    .Where(t => managedTeamIds.Contains(t.Id))
+                    .ToListAsync();
+            }
+            else
+            {
+                // TeamMembers shouldn't reach this method, but just in case
+                teamsWithEmployees = new List<Team>();
+            }
+            Console.WriteLine($"🔍 Loaded {teamsWithEmployees.Count} teams for {userRole} user");
+
+            // Get all users who manage teams using UserTeamManagement table
             var allManagerUsers = await _context.Users
                 .Include(u => u.Employee)
-                .Where(u => u.ManagedTeamIds != null && u.ManagedTeamIds != "")
+                .Where(u => _context.UserTeamManagements.Any(utm => utm.UserId == u.Id))
                 .ToListAsync();
 
             // Get all assignments for the date range
@@ -1128,7 +1182,7 @@ namespace DesignPlanner.Data.Services
                     Name = team.Name,
                     Code = team.Code,
                     Color = "#6b7280", // Simple default gray color
-                    IsManaged = true, // This should be based on actual manager relationship with userId
+                    IsManaged = userRole == "Manager" ? true : managedTeamIds.Contains(team.Id), // Managers only see managed teams, Admins see all with managed status
                     Employees = await BuildEmployeeSchedulesAsync(
                         GetTeamEmployeesIncludingManagers(team, allManagerUsers),
                         assignments.Where(a => GetTeamEmployeeIds(team, allManagerUsers).Contains(a.EmployeeId)).ToList(),

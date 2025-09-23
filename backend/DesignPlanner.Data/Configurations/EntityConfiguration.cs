@@ -200,4 +200,27 @@ namespace DesignPlanner.Data.Configurations
                 .OnDelete(DeleteBehavior.SetNull);
         }
     }
+
+    public class UserTeamManagementConfiguration : IEntityTypeConfiguration<UserTeamManagement>
+    {
+        public void Configure(EntityTypeBuilder<UserTeamManagement> builder)
+        {
+            // Configure the many-to-many relationship between Users and Teams
+            builder.HasOne(utm => utm.User)
+                .WithMany(u => u.ManagedTeams)
+                .HasForeignKey(utm => utm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(utm => utm.Team)
+                .WithMany(t => t.Managers)
+                .HasForeignKey(utm => utm.TeamId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique constraint to prevent duplicate management relationships
+            builder.HasIndex(utm => new { utm.UserId, utm.TeamId }).IsUnique();
+
+            // Additional index for performance when querying by team
+            builder.HasIndex(utm => utm.TeamId);
+        }
+    }
 }

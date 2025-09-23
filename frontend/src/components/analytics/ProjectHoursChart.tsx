@@ -11,7 +11,6 @@ import {
   VictoryChart,
   VictoryBar,
   VictoryAxis,
-  VictoryTooltip,
   VictoryTheme,
 } from 'victory';
 import { ProjectHoursDto } from '../../services/analyticsService';
@@ -23,6 +22,9 @@ interface ProjectHoursChartProps {
 type ColorMode = 'default' | 'client' | 'category';
 
 const ProjectHoursChart: React.FC<ProjectHoursChartProps> = ({ data }) => {
+  console.log('🔍 PROJECT HOURS DATA:', data);
+  console.log('🔍 DATA LENGTH:', data?.length);
+  console.log('🔍 IS ARRAY:', Array.isArray(data));
   const [colorMode, setColorMode] = useState<ColorMode>('default');
 
   const getBarColor = (project: ProjectHoursDto) => {
@@ -40,18 +42,6 @@ const ProjectHoursChart: React.FC<ProjectHoursChartProps> = ({ data }) => {
     return `${hours.toFixed(1)}h`;
   };
 
-  const processedData = data.map((project, index) => ({
-    x: index + 1,
-    y: project.hours,
-    label: project.projectCode,
-    projectName: project.projectName,
-    clientName: project.clientName,
-    categoryName: project.categoryName,
-    hours: project.hours,
-    percentage: project.percentage,
-    fill: getBarColor(project),
-  }));
-
   const getTooltipText = (datum: any) => {
     if (!datum) return '';
 
@@ -64,12 +54,26 @@ const ProjectHoursChart: React.FC<ProjectHoursChartProps> = ({ data }) => {
     ];
   };
 
+  const processedData = data?.map((project, index) => ({
+    x: index + 1,
+    y: project.hours,
+    projectName: project.projectName,
+    clientName: project.clientName,
+    categoryName: project.categoryName,
+    hours: project.hours,
+    percentage: project.percentage,
+    fill: getBarColor(project),
+  })) || [];
+
+  console.log('🔍 PROCESSED DATA:', processedData);
+  console.log('🔍 PROCESSED DATA LENGTH:', processedData.length);
+
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            PROJECT HOURS
+            PROJECT HOURS - COMPONENT IS WORKING
           </Typography>
           <ButtonGroup size="small" variant="outlined">
             <Button
@@ -98,82 +102,42 @@ const ProjectHoursChart: React.FC<ProjectHoursChartProps> = ({ data }) => {
 
         <Box sx={{ flex: 1, minHeight: 0, width: '100%', height: 300 }}>
           <VictoryChart
-            theme={VictoryTheme.material}
-            padding={{ left: 60, top: 20, right: 20, bottom: 80 }}
             height={300}
             width={500}
+            padding={{ left: 40, top: 10, right: 10, bottom: 60 }}
+            theme={VictoryTheme.material}
           >
             <VictoryAxis
               dependentAxis
-              tickFormat={(x) => `${x}h`}
               style={{
-                tickLabels: { fontSize: 10, padding: 5 },
-                grid: { stroke: "#e0e0e0", strokeDasharray: "3,3" }
+                axis: { stroke: "transparent" },
+                tickLabels: { fontSize: 12, fill: "#666" },
+                grid: { stroke: "none" }
               }}
             />
             <VictoryAxis
-              tickFormat={(x, i) => data[i]?.projectCode || ''}
               style={{
-                tickLabels: {
-                  fontSize: 9,
-                  padding: 5,
-                  angle: -45,
-                  textAnchor: 'end'
-                }
+                axis: { stroke: "transparent" },
+                tickLabels: { fontSize: 10, fill: "#666", angle: -45 },
+                grid: { stroke: "none" }
               }}
             />
             <VictoryBar
               data={processedData}
+              x="projectName"
+              y="hours"
               style={{
                 data: {
-                  fill: ({ datum }) => datum.fill,
+                  fill: ({ datum }) => getBarColor(datum),
                   fillOpacity: 0.8,
-                  stroke: ({ datum }) => datum.fill,
-                  strokeWidth: 1
+                  stroke: "none"
                 }
               }}
-              labelComponent={
-                <VictoryTooltip
-                  flyoutStyle={{
-                    fill: "rgba(0, 0, 0, 0.8)",
-                    stroke: "#ccc",
-                    strokeWidth: 1
-                  }}
-                  style={{
-                    fill: "white",
-                    fontSize: 11,
-                    fontFamily: "inherit"
-                  }}
-                  renderInPortal={false}
-                />
-              }
-              events={[{
-                target: "data",
-                eventHandlers: {
-                  onMouseOver: () => {
-                    return [
-                      {
-                        target: "labels",
-                        mutation: (props) => {
-                          return {
-                            text: getTooltipText(props.datum)
-                          };
-                        }
-                      }
-                    ];
-                  },
-                  onMouseOut: () => {
-                    return [
-                      {
-                        target: "labels",
-                        mutation: () => {
-                          return null;
-                        }
-                      }
-                    ];
-                  }
-                }
-              }]}
+              cornerRadius={{ top: 4, bottom: 0 }}
+              animate={{
+                duration: 1000,
+                onLoad: { duration: 500 }
+              }}
             />
           </VictoryChart>
         </Box>

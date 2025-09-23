@@ -1945,6 +1945,8 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     overflow: 'auto',
     width: '100%',
     minWidth: '100%',
+    transition: 'opacity 0.2s ease-in-out',
+    opacity: 1,
   });
 
   const getEmployeeRowStyle = (): React.CSSProperties => ({

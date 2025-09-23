@@ -49,6 +49,6 @@ namespace DesignPlanner.Core.Services
         Task<List<object>> GetAllTeamsWithManagedStatusAsync(int userId);
         Task<bool> UserCanViewTeamAsync(int userId, int teamId);
         Task<CalendarViewDto> GetTeamCalendarViewAsync(ScheduleRequestDto request);
-        Task<object> GetGlobalCalendarViewAsync(int userId, ScheduleRequestDto request);
+        Task<object> GetGlobalCalendarViewAsync(int userId, ScheduleRequestDto request, string userRole = "Admin");
     }
 }

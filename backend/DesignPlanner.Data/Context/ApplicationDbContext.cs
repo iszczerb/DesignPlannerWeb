@@ -29,6 +29,7 @@ namespace DesignPlanner.Data.Context
         public DbSet<TaskTypeSkill> TaskTypeSkills { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<UserTeamManagement> UserTeamManagements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +52,7 @@ namespace DesignPlanner.Data.Context
             modelBuilder.ApplyConfiguration(new TaskTypeSkillConfiguration());
             modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
             modelBuilder.ApplyConfiguration(new CategoryConfiguration());
+            modelBuilder.ApplyConfiguration(new UserTeamManagementConfiguration());
 
             // SEEDING COMPLETELY DISABLED - DO NOT CREATE ANY DEFAULT DATA
             // var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);

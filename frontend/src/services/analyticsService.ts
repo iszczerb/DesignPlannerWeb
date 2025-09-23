@@ -5,6 +5,7 @@ export interface AnalyticsFilterDto {
   endDate?: string;
   teamId?: number;
   teamIds?: number[];  // EMPLOYEE TEAM IDs (Structural Team, Non-Structural Team, BIM, R&D)
+  employeeId?: number;  // For filtering by specific employee (used for TeamMember role)
   clientId?: number;
   projectId?: number;
   categoryIds?: number[];  // PROJECT CATEGORY IDs (Structural Category, Non-Structural Category, Manifold, Miscellaneous)

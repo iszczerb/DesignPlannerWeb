@@ -37,11 +37,16 @@ namespace DesignPlanner.Core.Entities
 
         public DateTime? LastLoginAt { get; set; }
 
-        // Managed teams for Manager/Admin roles (comma-separated team IDs)
+        // Managed teams for Manager/Admin roles (comma-separated team IDs) - LEGACY: Will be removed after migration
         [MaxLength(500)]
         public string? ManagedTeamIds { get; set; }
 
-        // Navigation property
+        // Navigation properties
         public Employee? Employee { get; set; }
+
+        /// <summary>
+        /// Many-to-many relationship: Teams this user manages (for Manager/Admin roles)
+        /// </summary>
+        public virtual ICollection<UserTeamManagement> ManagedTeams { get; set; } = new List<UserTeamManagement>();
     }
 }

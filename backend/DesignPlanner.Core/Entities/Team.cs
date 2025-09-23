@@ -23,5 +23,10 @@ namespace DesignPlanner.Core.Entities
 
         // Navigation properties
         public virtual ICollection<Employee> Members { get; set; } = new List<Employee>();
+
+        /// <summary>
+        /// Many-to-many relationship: Users (managers) who manage this team
+        /// </summary>
+        public virtual ICollection<UserTeamManagement> Managers { get; set; } = new List<UserTeamManagement>();
     }
 }

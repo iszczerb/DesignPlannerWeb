@@ -5,6 +5,7 @@ using DesignPlanner.Core.Entities;
 using DesignPlanner.Core.Enums;
 using DesignPlanner.Core.Services;
 using DesignPlanner.Data.Context;
+using BCrypt.Net;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -246,14 +247,35 @@ namespace DesignPlanner.Data.Services
 
         private static string HashPassword(string password)
         {
-            using var sha256 = SHA256.Create();
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
 
         private static bool VerifyPassword(string password, string hashedPassword)
         {
-            return HashPassword(password) == hashedPassword;
+            try
+            {
+                // First try BCrypt verification (for new users)
+                if (hashedPassword.StartsWith("$2a$") || hashedPassword.StartsWith("$2b$") || hashedPassword.StartsWith("$2y$"))
+                {
+                    return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+                }
+
+                // Fallback to SHA256 verification (for existing users)
+                return VerifyPasswordSHA256(password, hashedPassword);
+            }
+            catch
+            {
+                // If both verifications fail, return false
+                return false;
+            }
+        }
+
+        private static bool VerifyPasswordSHA256(string password, string hashedPassword)
+        {
+            using var sha256 = SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            var computedHash = Convert.ToBase64String(hashedBytes);
+            return computedHash == hashedPassword;
         }
 
         private static string GetDeviceInfo()

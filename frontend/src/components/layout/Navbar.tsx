@@ -17,7 +17,8 @@ import {
   Dashboard as DashboardIcon,
   People,
   AdminPanelSettings,
-  Storage
+  Storage,
+  Analytics as AnalyticsIcon
 } from '@mui/icons-material';
 import { AbsenceButton } from '../leave';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -25,6 +26,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
 import { UserRole } from '../../types/auth';
 import DatabaseManagementModal from '../database/DatabaseManagementModal';
+import SettingsModal from '../settings/SettingsModal';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +36,7 @@ const Navbar: React.FC = () => {
   
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [databaseModalOpen, setDatabaseModalOpen] = React.useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = React.useState(false);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -67,19 +70,36 @@ const Navbar: React.FC = () => {
         
         {/* Navigation Links */}
         <Box sx={{ flexGrow: 1, display: 'flex', gap: 1 }}>
-          <Button
-            color="inherit"
-            startIcon={<DashboardIcon />}
-            onClick={() => navigate('/dashboard')}
-            variant={isActive('/dashboard') ? 'outlined' : 'text'}
-            sx={{ 
-              borderColor: isActive('/dashboard') ? 'white' : 'transparent',
-              color: 'white'
-            }}
-          >
-            Dashboard
-          </Button>
-          
+          {canAccessManagement && (
+            <Button
+              color="inherit"
+              startIcon={<DashboardIcon />}
+              onClick={() => navigate('/dashboard')}
+              variant={isActive('/dashboard') ? 'outlined' : 'text'}
+              sx={{
+                borderColor: isActive('/dashboard') ? 'white' : 'transparent',
+                color: 'white'
+              }}
+            >
+              Dashboard
+            </Button>
+          )}
+
+          {canAccessManagement && (
+            <Button
+              color="inherit"
+              startIcon={<AnalyticsIcon />}
+              onClick={() => navigate('/analytics')}
+              variant={isActive('/analytics') ? 'outlined' : 'text'}
+              sx={{
+                borderColor: isActive('/analytics') ? 'white' : 'transparent',
+                color: 'white'
+              }}
+            >
+              Analytics
+            </Button>
+          )}
+
           {canAccessManagement && (
             <Button
               color="inherit"
@@ -164,7 +184,7 @@ const Navbar: React.FC = () => {
               <AccountCircle sx={{ mr: 1 }} />
               Profile
             </MenuItem>
-            <MenuItem onClick={handleClose}>
+            <MenuItem onClick={() => { handleClose(); setSettingsModalOpen(true); }}>
               <Settings sx={{ mr: 1 }} />
               Settings
             </MenuItem>
@@ -180,6 +200,12 @@ const Navbar: React.FC = () => {
       <DatabaseManagementModal
         isOpen={databaseModalOpen}
         onClose={() => setDatabaseModalOpen(false)}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
       />
     </AppBar>
   );

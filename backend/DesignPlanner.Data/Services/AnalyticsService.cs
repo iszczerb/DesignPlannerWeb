@@ -36,6 +36,11 @@ namespace DesignPlanner.Data.Services
             {
                 query = query.Where(a => a.Employee.TeamId == filter.TeamId.Value);
             }
+            // SPECIFIC EMPLOYEE FILTERING (for TeamMember role)
+            if (filter.EmployeeId.HasValue)
+            {
+                query = query.Where(a => a.EmployeeId == filter.EmployeeId.Value);
+            }
             // PROJECT CATEGORY FILTERING (NOT TEAM!)
             if (filter.CategoryIds != null && filter.CategoryIds.Any())
             {
@@ -98,6 +103,11 @@ namespace DesignPlanner.Data.Services
             if (filter.TeamId.HasValue)
             {
                 query = query.Where(a => a.Employee.TeamId == filter.TeamId.Value);
+            }
+            // SPECIFIC EMPLOYEE FILTERING (for TeamMember role)
+            if (filter.EmployeeId.HasValue)
+            {
+                query = query.Where(a => a.EmployeeId == filter.EmployeeId.Value);
             }
             // PROJECT CATEGORY FILTERING (NOT TEAM!)
             if (filter.CategoryIds != null && filter.CategoryIds.Any())
@@ -171,6 +181,11 @@ namespace DesignPlanner.Data.Services
             {
                 query = query.Where(a => a.Employee.TeamId == filter.TeamId.Value);
             }
+            // SPECIFIC EMPLOYEE FILTERING (for TeamMember role)
+            if (filter.EmployeeId.HasValue)
+            {
+                query = query.Where(a => a.EmployeeId == filter.EmployeeId.Value);
+            }
             // PROJECT CATEGORY FILTERING (NOT TEAM!)
             if (filter.CategoryIds != null && filter.CategoryIds.Any())
             {
@@ -227,6 +242,11 @@ namespace DesignPlanner.Data.Services
             if (filter.TeamId.HasValue)
             {
                 query = query.Where(a => a.Employee.TeamId == filter.TeamId.Value);
+            }
+            // SPECIFIC EMPLOYEE FILTERING (for TeamMember role)
+            if (filter.EmployeeId.HasValue)
+            {
+                query = query.Where(a => a.EmployeeId == filter.EmployeeId.Value);
             }
             // PROJECT CATEGORY FILTERING (NOT TEAM!)
             if (filter.CategoryIds != null && filter.CategoryIds.Any())
@@ -290,6 +310,11 @@ namespace DesignPlanner.Data.Services
             if (filter.TeamId.HasValue)
             {
                 query = query.Where(a => a.Employee.TeamId == filter.TeamId.Value);
+            }
+            // SPECIFIC EMPLOYEE FILTERING (for TeamMember role)
+            if (filter.EmployeeId.HasValue)
+            {
+                query = query.Where(a => a.EmployeeId == filter.EmployeeId.Value);
             }
             // PROJECT CATEGORY FILTERING (NOT TEAM!)
             if (filter.CategoryIds != null && filter.CategoryIds.Any())
@@ -372,6 +397,11 @@ namespace DesignPlanner.Data.Services
             {
                 query = query.Where(a => a.Employee.TeamId == filter.TeamId.Value);
             }
+            // SPECIFIC EMPLOYEE FILTERING (for TeamMember role)
+            if (filter.EmployeeId.HasValue)
+            {
+                query = query.Where(a => a.EmployeeId == filter.EmployeeId.Value);
+            }
             // PROJECT CATEGORY FILTERING (NOT TEAM!)
             if (filter.CategoryIds != null && filter.CategoryIds.Any())
             {
@@ -451,6 +481,11 @@ namespace DesignPlanner.Data.Services
             if (filter.TeamId.HasValue)
             {
                 query = query.Where(a => a.Employee.TeamId == filter.TeamId.Value);
+            }
+            // SPECIFIC EMPLOYEE FILTERING (for TeamMember role)
+            if (filter.EmployeeId.HasValue)
+            {
+                query = query.Where(a => a.EmployeeId == filter.EmployeeId.Value);
             }
             // PROJECT CATEGORY FILTERING (NOT TEAM!)
             if (filter.CategoryIds != null && filter.CategoryIds.Any())

@@ -39,21 +39,31 @@ namespace DesignPlanner.Api.Controllers
                 var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
+                Console.WriteLine($"🔍 Regular calendar endpoint called for {userRole} user (ID: {userId})");
+                Console.WriteLine($"🔍 Request - ViewType: {request.ViewType}, TeamId: {request.TeamId}, EmployeeId: {request.EmployeeId}, StartDate: {request.StartDate}");
+
                 // Team members can only see their own schedule unless they're managers
                 if (userRole != "Manager" && userRole != "Admin")
                 {
+                    Console.WriteLine($"🔍 TeamMember accessing regular calendar endpoint - looking up employee for userId={userId}");
+
                     // Convert User ID to Employee ID for team members
                     var employee = await _context.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
+                    Console.WriteLine($"🔍 Employee lookup result: {(employee != null ? $"Found EmployeeId={employee.Id}, TeamId={employee.TeamId}" : "NOT FOUND")}");
+
                     if (employee == null)
                     {
+                        Console.WriteLine("❌ No employee record found for TeamMember user");
                         return NotFound("Employee record not found for current user");
                     }
 
                     if (request.EmployeeId != employee.Id && request.EmployeeId != null)
                     {
+                        Console.WriteLine($"❌ Forbid - TeamMember tried to access different employee. Requested: {request.EmployeeId}, Allowed: {employee.Id}");
                         return Forbid("You can only view your own schedule");
                     }
                     request.EmployeeId = employee.Id; // Use Employee ID, not User ID
+                    Console.WriteLine($"🔍 Set request.EmployeeId = {employee.Id} for TeamMember");
                 }
 
                 var calendarView = await _scheduleService.GetCalendarViewAsync(request);
@@ -588,34 +598,43 @@ namespace DesignPlanner.Api.Controllers
                 // TeamMembers should only see their own row
                 if (userRole == "TeamMember")
                 {
+                    Console.WriteLine($"🔍 TeamMember login: userId={userId}");
+
                     // Get the employee record for this user
                     var employee = await _context.Employees
                         .Include(e => e.User)
                         .FirstOrDefaultAsync(e => e.UserId == userId);
 
+                    Console.WriteLine($"🔍 Employee found: {employee != null}, EmployeeId={employee?.Id}, TeamId={employee?.TeamId}");
+
                     if (employee == null)
                     {
+                        Console.WriteLine("❌ No employee record found for TeamMember user - returning empty data");
                         return Ok(new { employees = new List<object>(), days = new List<object>() });
                     }
 
                     // Get calendar view for just this employee
                     var calendarView = await _scheduleService.GetCalendarViewAsync(request);
+                    Console.WriteLine($"🔍 CalendarView returned {calendarView.Employees?.Count ?? 0} employees total");
 
                     // Filter to only show the current employee
                     // NOTE: In CalendarViewDto, EmployeeId is actually the User ID, not the Employee table ID
                     if (calendarView.Employees != null)
                     {
-                        calendarView.Employees = calendarView.Employees
+                        var filteredEmployees = calendarView.Employees
                             .Where(e => e.EmployeeId == userId) // Compare with userId, not employee.Id
                             .ToList();
+
+                        Console.WriteLine($"🔍 Filtered to {filteredEmployees.Count} employees for userId={userId}");
+                        calendarView.Employees = filteredEmployees;
                     }
 
                     return Ok(calendarView);
                 }
                 else
                 {
-                    // Managers and Admins see the global view with all teams
-                    var globalView = await _scheduleService.GetGlobalCalendarViewAsync(userId, request);
+                    // Admins see all teams, Managers see only their managed teams
+                    var globalView = await _scheduleService.GetGlobalCalendarViewAsync(userId, request, userRole);
                     return Ok(globalView);
                 }
             }

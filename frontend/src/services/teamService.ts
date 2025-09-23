@@ -115,15 +115,22 @@ class TeamService {
    * Transform global calendar view to standard calendar format
    */
   transformGlobalViewToCalendarData(globalView: GlobalCalendarView): CalendarViewDto {
-    // Flatten all employees from all teams
-    const allEmployees = globalView.teams.flatMap(team => 
+    // Check if this is already a CalendarViewDto (for TeamMembers)
+    // TeamMembers get a CalendarViewDto directly, not a GlobalCalendarView
+    if ('employees' in globalView && !('teams' in globalView)) {
+      return globalView as CalendarViewDto;
+    }
+
+    // For Admins/Managers, flatten all employees from all managed teams
+    // This now properly supports multiple teams per manager
+    const allEmployees = globalView.teams?.flatMap(team =>
       team.employees.map(employee => ({
         ...employee,
         teamId: team.id,
         teamColor: team.color,
         isTeamManaged: team.isManaged
       }))
-    );
+    ) || [];
 
     return {
       startDate: globalView.startDate,
@@ -132,6 +139,25 @@ class TeamService {
       days: globalView.days,
       employees: allEmployees
     };
+  }
+
+  /**
+   * Get a summary of managed teams for display
+   */
+  getManagedTeamsSummary(teams: TeamInfo[]): string {
+    const managedTeams = this.getUserManagedTeams(teams);
+    if (managedTeams.length === 0) return 'No teams managed';
+    if (managedTeams.length === 1) return managedTeams[0].name;
+    if (managedTeams.length <= 3) return managedTeams.map(t => t.name).join(', ');
+    return `${managedTeams.slice(0, 2).map(t => t.name).join(', ')} and ${managedTeams.length - 2} more`;
+  }
+
+  /**
+   * Get total employee count across all managed teams
+   */
+  getTotalManagedEmployeeCount(teams: TeamInfo[]): number {
+    const managedTeams = this.getUserManagedTeams(teams);
+    return managedTeams.reduce((total, team) => total + team.memberCount, 0);
   }
 
   /**
@@ -190,7 +216,15 @@ class TeamService {
   }
 
   /**
-   * Get user's managed team (assuming user manages only one team)
+   * Get user's managed teams (supports multiple teams per manager)
+   */
+  getUserManagedTeams(teams: TeamInfo[]): TeamInfo[] {
+    return teams.filter(team => team.isManaged);
+  }
+
+  /**
+   * Get user's primary managed team (backward compatibility)
+   * @deprecated Use getUserManagedTeams() for multiple team support
    */
   getUserManagedTeam(teams: TeamInfo[]): TeamInfo | undefined {
     return teams.find(team => team.isManaged);

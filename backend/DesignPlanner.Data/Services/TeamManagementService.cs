@@ -249,21 +249,12 @@ namespace DesignPlanner.Data.Services
             var memberCount = await GetTeamMemberCountAsync(team.Id);
             var activeMemberCount = await GetActiveTeamMemberCountAsync(team.Id);
 
-            // Find the team manager - properly parse ManagedTeamIds field
-            var manager = await _context.Users
-                .Include(u => u.Employee)
-                .Where(u => (u.Role == Core.Enums.UserRole.Admin || u.Role == Core.Enums.UserRole.Manager) &&
-                           u.ManagedTeamIds != null)
-                .ToListAsync();
-
-            // Filter in memory to properly parse comma-separated team IDs
-            manager = manager.Where(u =>
-                u.ManagedTeamIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(id => int.TryParse(id.Trim(), out var teamId) ? teamId : 0)
-                    .Contains(team.Id))
-                .ToList();
-
-            var teamManager = manager.FirstOrDefault();
+            // Find the team managers using UserTeamManagement table
+            var teamManager = await _context.UserTeamManagements
+                .Include(utm => utm.User)
+                .Where(utm => utm.TeamId == team.Id)
+                .Select(utm => utm.User)
+                .FirstOrDefaultAsync();
 
             return new TeamDetailDto
             {

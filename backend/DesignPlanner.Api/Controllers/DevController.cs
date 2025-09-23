@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DesignPlanner.Data.Context;
 using DesignPlanner.Core.Enums;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DesignPlanner.Api.Controllers;
 
@@ -401,6 +403,128 @@ public class DevController : ControllerBase
             _logger.LogError(ex, "Failed to get projects-categories debug info");
             return StatusCode(500, "Failed to get projects-categories debug info");
         }
+    }
+
+    [HttpPost("fix-user-passwords")]
+    public async Task<IActionResult> FixUserPasswords()
+    {
+        try
+        {
+            var users = await _context.Users
+                .Where(u => u.Username != "admin")
+                .ToListAsync();
+
+            var updatedUsers = new List<object>();
+
+            foreach (var user in users)
+            {
+                // Hash the password using the same method as AuthService
+                var hashedPassword = HashPasswordSHA256("password123");
+                user.PasswordHash = hashedPassword;
+
+                updatedUsers.Add(new {
+                    userId = user.Id,
+                    username = user.Username,
+                    passwordChanged = true
+                });
+
+                _logger.LogInformation($"Updated password hash for user {user.Username}");
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new {
+                message = $"Successfully updated password hashes for {users.Count} users",
+                defaultPassword = "password123",
+                updatedUsers = updatedUsers,
+                note = "All users can now login with 'password123'"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fix user passwords");
+            return StatusCode(500, "Failed to fix user passwords");
+        }
+    }
+
+    private static string HashPasswordSHA256(string password)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+        return Convert.ToBase64String(hashedBytes);
+    }
+
+    [HttpPost("set-manager-teams")]
+    public async Task<IActionResult> SetManagerTeams()
+    {
+        try
+        {
+            // Set tcastanha to manage teams 2 (Structural) and 5 (R&D)
+            var manager = await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == "tcastanha");
+
+            if (manager == null)
+            {
+                return NotFound("Manager user 'tcastanha' not found");
+            }
+
+            manager.ManagedTeamIds = "2,5";
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Updated manager {Username} to manage teams: {ManagedTeamIds}",
+                manager.Username, manager.ManagedTeamIds);
+
+            return Ok(new {
+                message = "Manager teams updated successfully",
+                username = manager.Username,
+                managedTeamIds = manager.ManagedTeamIds
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set manager teams");
+            return StatusCode(500, "Failed to set manager teams");
+        }
+    }
+
+    [HttpGet("test-auth")]
+    public async Task<IActionResult> TestAuth()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value;
+        var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        return Ok(new {
+            userId = userId,
+            userName = userName,
+            userRole = userRole,
+            isAuthenticated = User.Identity?.IsAuthenticated,
+            claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+        });
+    }
+
+    [HttpGet("user-team-management")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetUserTeamManagement()
+    {
+        var userTeamManagement = await _context.UserTeamManagements
+            .Include(utm => utm.User)
+            .Include(utm => utm.Team)
+            .Select(utm => new {
+                Id = utm.Id,
+                UserId = utm.UserId,
+                TeamId = utm.TeamId,
+                UserName = utm.User.Username,
+                TeamName = utm.Team.Name,
+                CreatedAt = utm.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(new {
+            message = "UserTeamManagement data",
+            data = userTeamManagement,
+            totalRecords = userTeamManagement.Count
+        });
     }
 
 }

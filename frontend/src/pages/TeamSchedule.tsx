@@ -39,12 +39,12 @@ import scheduleService from '../services/scheduleService';
 import { employeeService } from '../services/employeeService';
 import projectService, { TaskTypeOption } from '../services/projectService';
 import { CreateEmployeeRequest } from '../types/employee';
-import { UserRole } from '../types/auth';
-import { useAppDispatch } from '../store/hooks';
+import { UserRole, User } from '../types/auth';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
 import signalRService from '../services/signalRService';
 
-// Mock user context (in real app, this would come from auth context)
+// User context interface for local component usage
 interface UserContext {
   id: number;
   role: string;
@@ -352,8 +352,21 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   const dispatch = useAppDispatch();
 
   // State management
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [windowStartDate, setWindowStartDate] = useState(new Date()); // Track window start for day navigation
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [windowStartDate, setWindowStartDate] = useState(() => {
+    // Initialize with a stable date - not "now" which changes on every render
+    const today = new Date();
+    const day = today.getDay();
+    // If weekend, move to Monday
+    if (day === 0) { // Sunday
+      today.setDate(today.getDate() + 1);
+    } else if (day === 6) { // Saturday
+      today.setDate(today.getDate() + 2);
+    }
+    // Set to start of day to avoid time drift
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
   const [lastNavigatedDate, setLastNavigatedDate] = useState<Date | null>(null); // Track navigation direction
   const [viewType, setViewType] = useState(CalendarViewType.Week);
   const [teamViewMode, setTeamViewMode] = useState(TeamViewMode.MyTeam);
@@ -585,12 +598,42 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     onConfirm: () => {}
   });
 
-  // Mock user context
-  const [userContext] = useState<UserContext>({
-    id: 1,
-    role: 'Admin', // Updated to Admin role
-    name: 'I S' // Updated to match database admin user
-  });
+  // Get real user context from Redux auth state
+  const authUser = useAppSelector(state => state.auth.user);
+  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
+
+  // Convert Redux auth user to local UserContext format
+  const userContext = useMemo<UserContext | null>(() => {
+    if (!authUser || !isAuthenticated) return null;
+
+    // Convert numeric UserRole enum to string
+    const roleString = {
+      [UserRole.Admin]: 'Admin',
+      [UserRole.Manager]: 'Manager',
+      [UserRole.TeamMember]: 'TeamMember'
+    }[authUser.role] || 'Unknown';
+
+    // Create initials from firstName and lastName
+    const initials = `${authUser.firstName.charAt(0).toUpperCase()} ${authUser.lastName.charAt(0).toUpperCase()}`;
+
+    return {
+      id: authUser.id,
+      role: roleString,
+      name: initials
+    };
+  }, [authUser, isAuthenticated]);
+
+  // Early return if user is not authenticated
+  if (!userContext) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Required</h2>
+          <p className="text-gray-600">Please log in to access the schedule.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Filter employees based on selected team
   const filteredEmployees = useMemo(() => {
@@ -688,17 +731,35 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
     if (userContext.role === 'Admin') {
       // Admin users should see ALL teams - return null to indicate "show all"
       return null;
+    } else if (userContext.role === 'Manager') {
+      // For Manager users, use their first managed team
+      const managedTeam = teams.find(team => team.isManaged);
+      return managedTeam;
+    } else if (userContext.role === 'TeamMember') {
+      // For TeamMember users, they don't manage teams - they belong to a team
+      // Since TeamMembers only see their own schedule, we don't need team filtering
+      // The backend regular calendar endpoint handles this via employeeId filtering
+      return null;
     }
-
-    // For Manager/TeamMember users, use their managed team
-    const managedTeam = teams.find(team => team.isManaged);
-    return managedTeam;
+    return null;
   };
 
+  // Get all managed teams for multiple team support
+  const managedTeams = teamService.getUserManagedTeams(teams);
   const managedTeam = getDefaultTeamForUser();
-  // CRITICAL FIX: Admin users should NEVER have a managedTeamId
-  const managedTeamId = userContext.role === 'Admin' ? undefined : managedTeam?.id;
-  const currentTeamName = userContext.role === 'Admin' ? 'All Teams' : (managedTeam?.name || 'No Team');
+
+  // CRITICAL FIX: Admin, Manager, and TeamMember users should NOT have a managedTeamId - backend handles filtering
+  // For Managers: Backend already filters to only managed teams, so no need for teamId filter
+  // For Admins: Should see all teams
+  // For TeamMembers: Backend regular calendar endpoint filters by employeeId, not teamId
+  const managedTeamId = undefined; // Always undefined - let backend handle all filtering
+
+  // Show summary of all managed teams for managers
+  const currentTeamName = userContext.role === 'Admin'
+    ? 'All Teams'
+    : userContext.role === 'Manager' && managedTeams.length > 0
+      ? teamService.getManagedTeamsSummary(teams)
+      : (managedTeam?.name || 'No Team');
 
   /**
    * Get all tasks in the same slot as the given task
@@ -730,12 +791,18 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       setError(null);
       console.log('🏢 LoadTeams called for role:', userContext.role);
 
-      if (userContext.role === 'Manager' || userContext.role === 'Admin') {
-        console.log('🏢 Calling getAllTeamsWithManagedStatus...');
+      if (userContext.role === 'Admin') {
+        console.log('🏢 ADMIN: Calling getAllTeamsWithManagedStatus...');
         const allTeams = await teamService.getAllTeamsWithManagedStatus();
-        console.log('🏢 Teams received:', allTeams);
+        console.log('🏢 ADMIN: Teams received:', allTeams);
         setTeams(allTeams);
-        console.log('🏢 Teams state updated');
+        console.log('🏢 ADMIN: Teams state updated');
+      } else if (userContext.role === 'Manager') {
+        console.log('🏢 MANAGER: Calling getManagerTeams (only managed teams)...');
+        const managedTeams = await teamService.getManagerTeams();
+        console.log('🏢 MANAGER: Managed teams received:', managedTeams);
+        setTeams(managedTeams);
+        console.log('🏢 MANAGER: Teams state updated');
       } else {
         // For regular team members, we might load just their team
         setTeams([]);
@@ -788,7 +855,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
       // EXACT ROLE-BASED ACCESS CONTROL:
       // Admin = ALL TeamMember users from ALL teams (global view)
-      // Manager = Only TeamMember users from their managed team
+      // Manager = Only TeamMember users from all their managed teams
       // TeamMember = ONLY THEIR OWN ROW (not their whole team!)
 
 
@@ -797,15 +864,10 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         const globalView = await teamService.getGlobalCalendarView(request);
         data = teamService.transformGlobalViewToCalendarData(globalView);
       } else if (userContext.role === 'Manager') {
-        // Manager users see only TeamMember users from their managed team
-        if (teamId) {
-          console.log('📅 ✅ MANAGER USER: Loading TeamMember users from managed team:', teamId);
-          request.teamId = teamId;
-          data = await teamService.getTeamCalendarView(teamId, request);
-        } else {
-          console.log('📅 ❌ MANAGER USER: No managed team found, using fallback');
-          data = await scheduleService.getCalendarView(request);
-        }
+        // Manager users see TeamMember users from ALL their managed teams (using global view)
+        console.log('📅 ✅ MANAGER USER: Loading TeamMember users from ALL managed teams');
+        const globalView = await teamService.getGlobalCalendarView(request);
+        data = teamService.transformGlobalViewToCalendarData(globalView);
       } else if (userContext.role === 'TeamMember') {
         // TeamMember users see ONLY THEIR OWN ROW
         console.log('📅 ✅ TEAMMEMBER USER: Loading ONLY own schedule row');
@@ -1021,7 +1083,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       const freshCalendarData = await scheduleService.getCalendarView({
         startDate: date,
         viewType: CalendarViewType.Week,
-        teamId: teamViewMode === 'managed' ? managedTeamId : undefined
+        teamId: teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined
       });
 
       if (!freshCalendarData || !freshCalendarData.employees) {
@@ -1129,7 +1191,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       console.log('✅ Source slot left-packing completed');
 
       // Refresh the calendar to show updated positions
-      await loadCalendarData(teamViewMode === 'managed' ? managedTeamId : undefined, teamViewMode);
+      await loadCalendarData(teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined, teamViewMode);
 
     } catch (error) {
       console.error('❌ Error during source slot left-packing:', error);
@@ -1175,7 +1237,7 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       console.log('✅ Direct left-packing completed');
 
       // Refresh the calendar to show updated positions
-      await loadCalendarData(teamViewMode === 'managed' ? managedTeamId : undefined, teamViewMode);
+      await loadCalendarData(teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined, teamViewMode);
 
     } catch (error) {
       console.error('❌ Error during direct left-packing:', error);
@@ -2611,11 +2673,8 @@ ${dateInfo}`;
         console.log('🔄 Real-time assignment update received:', assignment);
         // Reload calendar data to show the update
         loadCalendarData(
-          windowStartDate,
-          teamViewMode,
-          viewType,
-          teamViewMode === TeamViewMode.SingleTeam ? managedTeamId : undefined,
-          teamFilters.length > 0 ? teamFilters : undefined
+          teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+          teamViewMode
         );
       };
 
@@ -2623,11 +2682,8 @@ ${dateInfo}`;
         console.log('🔄 Real-time bulk assignments update received:', assignments);
         // Reload calendar data to show the updates
         loadCalendarData(
-          windowStartDate,
-          teamViewMode,
-          viewType,
-          teamViewMode === TeamViewMode.SingleTeam ? managedTeamId : undefined,
-          teamFilters.length > 0 ? teamFilters : undefined
+          teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+          teamViewMode
         );
       };
 
@@ -2658,14 +2714,21 @@ ${dateInfo}`;
 
   // Load calendar data when ONLY essential dependencies change (not windowStartDate or viewType!)
   useEffect(() => {
-    if (teams.length > 0 || teamViewMode === TeamViewMode.AllTeams) {
+    // Load calendar data if:
+    // 1. Teams are loaded (for Admin/Manager users), OR
+    // 2. We're in AllTeams mode (for Admin users), OR
+    // 3. We have a valid userContext and it's a TeamMember (they don't need teams loaded)
+    if (teams.length > 0 || teamViewMode === TeamViewMode.AllTeams || (userContext && userContext.role === 'TeamMember')) {
       console.log('🔍 Loading calendar data due to team/mode change');
+      console.log('🔍 Condition met - teams.length:', teams.length, 'teamViewMode:', teamViewMode, 'userContext.role:', userContext?.role);
       loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
         teamViewMode
       );
+    } else {
+      console.log('🔍 Calendar data loading skipped - teams.length:', teams.length, 'teamViewMode:', teamViewMode, 'userContext.role:', userContext?.role);
     }
-  }, [loadCalendarData, teams.length, managedTeamId, teamViewMode]); // REMOVED windowStartDate and viewType to prevent constant reloads!
+  }, [loadCalendarData, teams.length, managedTeamId, teamViewMode, userContext]); // Added userContext dependency
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -2944,7 +3007,7 @@ ${dateInfo}`;
             onTaskPaste={handleTaskPaste}
             onTaskPasteMultiple={handleTaskPasteMultiple}
             hasCopiedTask={!!copiedTask}
-            isReadOnly={userContext.role === 'TeamMember'}
+            isReadOnly={false}
             onSetBankHoliday={handleSetBankHoliday}
             onSetLeave={handleSetLeave}
             onClearBlocking={handleClearBlocking}

@@ -155,8 +155,8 @@ const LoginPage: React.FC = () => {
             <Box
               sx={{
                 position: 'absolute',
-                top: { xs: 12, sm: 16 },
-                right: { xs: 12, sm: 16 },
+                top: { xs: 20, sm: 24 },
+                right: { xs: 20, sm: 24 },
                 opacity: 0.9,
               }}
             >
@@ -164,20 +164,20 @@ const LoginPage: React.FC = () => {
                 src="/assets/logos/tate-logo.png"
                 alt="Tate Logo"
                 style={{
-                  height: '28px',
+                  height: '36px',
                   filter: 'brightness(0) invert(1)',
                 }}
               />
             </Box>
 
             {/* DesignPlanner Logo */}
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3, mt: 2 }}>
               <img
                 src="/assets/logos/design-planner-logo.png"
                 alt="DesignPlanner Logo"
                 style={{
-                  height: '80px',
-                  width: '80px',
+                  height: '100px',
+                  width: '100px',
                   filter: 'brightness(0) invert(1)',
                 }}
               />
@@ -194,17 +194,7 @@ const LoginPage: React.FC = () => {
                 fontSize: { xs: '1.75rem', sm: '2.125rem', md: '3rem' },
               }}
             >
-              DesignPlanner
-            </Typography>
-            <Typography
-              variant="h6"
-              sx={{
-                opacity: 0.95,
-                fontWeight: 300,
-                mb: 1,
-              }}
-            >
-              by Tate
+              Design Planner
             </Typography>
             <Typography
               variant="body1"
@@ -360,26 +350,6 @@ const LoginPage: React.FC = () => {
         </Paper>
       </Container>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          textAlign: 'center',
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#64748b',
-            fontSize: '0.75rem',
-          }}
-        >
-          © 2024 Tate. All rights reserved. | Internal Use Only
-        </Typography>
-      </Box>
     </Box>
   );
 };

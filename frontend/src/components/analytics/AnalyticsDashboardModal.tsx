@@ -17,6 +17,10 @@ import {
   Select,
   MenuItem,
   Chip,
+  InputLabel,
+  Menu,
+  Checkbox,
+  ListItemIcon,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -114,6 +118,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
   const [selectedPriority, setSelectedPriority] = useState<string>('All');
   const [colorMode, setColorMode] = useState<ColorMode>('default');
+  const [teamFilters, setTeamFilters] = useState<number[]>([]); // Team IDs for filtering - empty array means show all teams
+  const [teamFilterOpen, setTeamFilterOpen] = useState(false);
+  const [teamFilterAnchorEl, setTeamFilterAnchorEl] = useState<HTMLElement | null>(null);
+  const [allOriginalEmployeeAnalytics, setAllOriginalEmployeeAnalytics] = useState<EmployeeAnalyticsDto[]>([]); // Cache original data for available teams
 
 
   // Data state
@@ -168,7 +176,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
       loadCategories();
       loadAnalyticsData();
     }
-  }, [open, timelineMode, currentPeriod, selectedProjects, selectedTeamMembers, selectedClients, selectedCategories]);
+  }, [open, timelineMode, currentPeriod, selectedProjects, selectedTeamMembers, selectedClients, selectedCategories, teamFilters]);
 
   const loadTeams = async () => {
     try {
@@ -195,14 +203,19 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
       const filter: AnalyticsFilterDto = {
         startDate: startDate.format('YYYY-MM-DD'),
         endDate: endDate.format('YYYY-MM-DD'),
-        // NEVER filter by team members at the backend level - this causes data to disappear!
-        // Team member filtering will be done on the frontend only
+        // FIXED: Now use backend team filtering for managers - backend handles role-based filtering correctly
 
         // IMPORTANT: DO NOT CONFUSE TEAMS AND CATEGORIES!
         // TEAMS: Employee groups (Structural Team, Non-Structural Team, BIM Team, R&D Team)
         // CATEGORIES: Project types (Structural Category, Non-Structural Category, Manifold, Miscellaneous)
         // They have similar names but are COMPLETELY DIFFERENT entities!
         // teamIds in the filter refers to EMPLOYEE TEAMS, not PROJECT CATEGORIES
+
+        // Let backend handle team filtering for managers (backend will filter by managed teams automatically)
+        // Additional frontend team filtering for Admin/Manager users to filter within their managed teams
+        ...(teamFilters.length > 0 && {
+          teamIds: teamFilters // These are EMPLOYEE TEAM IDs for additional filtering
+        }),
 
         // Use categoryIds for PROJECT CATEGORY filtering
         ...(selectedCategories.length > 0 && {
@@ -267,6 +280,11 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
 
         setEmployeeAnalytics(employeeData);
         setAllEmployeeAnalytics(employeeData); // Cache for later use
+
+        // Cache original employee data for available teams calculation (only when no filters)
+        if (teamFilters.length === 0 && selectedCategories.length === 0) {
+          setAllOriginalEmployeeAnalytics(employeeData);
+        }
       }
     } catch (error) {
       console.error('Failed to load analytics data:', error);
@@ -358,6 +376,47 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         ? prev.filter(c => c !== categoryId)
         : [...prev, categoryId]
     );
+  };
+
+  const toggleTeamFilter = (teamId: number) => {
+    setTeamFilters(prev =>
+      prev.includes(teamId)
+        ? prev.filter(id => id !== teamId)
+        : [...prev, teamId]
+    );
+  };
+
+  const clearTeamFilters = () => {
+    setTeamFilters([]);
+  };
+
+  const handleTeamFilterToggle = (event: React.MouseEvent<HTMLElement>) => {
+    setTeamFilterAnchorEl(event.currentTarget);
+    setTeamFilterOpen(!teamFilterOpen);
+  };
+
+  const handleTeamFilterClose = () => {
+    setTeamFilterOpen(false);
+    setTeamFilterAnchorEl(null);
+  };
+
+  // Get only teams that have employees with data in the ORIGINAL period (before any team filtering)
+  const getAvailableTeams = () => {
+    const availableTeamIds = new Set<number>();
+
+    // Use ORIGINAL employee data, not filtered data, to determine available teams
+    const dataToUse = allOriginalEmployeeAnalytics.length > 0 ? allOriginalEmployeeAnalytics : employeeAnalytics;
+
+    dataToUse.forEach(emp => {
+      if (emp.totalHours > 0) {
+        const team = teams.find(t => t.name === emp.teamName);
+        if (team) {
+          availableTeamIds.add(team.id);
+        }
+      }
+    });
+
+    return teams.filter(team => availableTeamIds.has(team.id));
   };
 
 
@@ -1603,9 +1662,26 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'white' }}>
                 TEAM
               </Typography>
-              <Button size="small" onClick={() => setSelectedTeamMembers([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'white' }}>
-                clear
-              </Button>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Button
+                  size="small"
+                  onClick={handleTeamFilterToggle}
+                  sx={{
+                    fontSize: '12px',
+                    minWidth: '50px',
+                    color: 'white',
+                    backgroundColor: teamFilters.length > 0 ? 'rgba(255,255,255,0.2)' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.3)'
+                    }
+                  }}
+                >
+                  {teamFilters.length > 0 ? `filter (${teamFilters.length})` : 'filter'}
+                </Button>
+                <Button size="small" onClick={() => setSelectedTeamMembers([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'white' }}>
+                  clear
+                </Button>
+              </Box>
             </CardContent>
             <Box sx={{ flex: 1, overflow: 'auto', px: 1, py: 0.25 }}>
               <Box>
@@ -1751,6 +1827,120 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           </Card>
         </Box>
       </Box>
+
+      {/* Team Filter Dropdown */}
+      {teamFilterOpen && teamFilterAnchorEl && (
+        <>
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 9998
+            }}
+            onClick={handleTeamFilterClose}
+          />
+          <Card
+            sx={{
+              position: 'fixed',
+              top: (() => {
+                const rect = teamFilterAnchorEl.getBoundingClientRect();
+                return rect.bottom + 8;
+              })(),
+              left: (() => {
+                const rect = teamFilterAnchorEl.getBoundingClientRect();
+                return Math.max(8, rect.left - 150); // Position to left of button, but not off screen
+              })(),
+              backgroundColor: 'white',
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              minWidth: '280px',
+              maxWidth: '350px',
+              maxHeight: '60vh',
+              overflow: 'auto',
+              zIndex: 9999
+            }}
+          >
+            <CardContent sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#00265C' }}>
+                  Filter Teams
+                </Typography>
+                <IconButton onClick={handleTeamFilterClose} size="small">
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={clearTeamFilters}
+                  disabled={teamFilters.length === 0}
+                  sx={{
+                    color: '#00265C',
+                    borderColor: '#00265C',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 38, 92, 0.1)'
+                    }
+                  }}
+                >
+                  Clear All Filters
+                </Button>
+              </Box>
+
+              <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>
+                Select teams to filter data:
+              </Typography>
+
+              <Box>
+                {getAvailableTeams().map((team) => (
+                  <Box
+                    key={team.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTeamFilter(team.id);
+                    }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      py: 1,
+                      px: 1,
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 38, 92, 0.1)'
+                      }
+                    }}
+                  >
+                    <Checkbox
+                      checked={teamFilters.includes(team.id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleTeamFilter(team.id);
+                      }}
+                      size="small"
+                      sx={{
+                        color: '#00265C',
+                        '&.Mui-checked': {
+                          color: '#00265C'
+                        },
+                        mr: 1
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ fontSize: '14px' }}>
+                      {team.name}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Footer with Filters */}
       <Box sx={{

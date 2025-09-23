@@ -82,13 +82,25 @@ namespace DesignPlanner.Data.Services
                     Role = request.Role,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
-                    ManagedTeamIds = request.ManagedTeamIds != null && request.ManagedTeamIds.Any()
-                        ? string.Join(",", request.ManagedTeamIds)
-                        : null
+                    // ManagedTeamIds field is now legacy - team management is handled via UserTeamManagement table
                 };
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
+
+                // Create team management relationships if specified
+                if (request.ManagedTeamIds != null && request.ManagedTeamIds.Any())
+                {
+                    var teamManagements = request.ManagedTeamIds.Select(teamId => new UserTeamManagement
+                    {
+                        UserId = user.Id,
+                        TeamId = teamId,
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList();
+
+                    _context.UserTeamManagements.AddRange(teamManagements);
+                    await _context.SaveChangesAsync();
+                }
 
                 // Create employee
                 var employee = new Employee
@@ -179,9 +191,25 @@ namespace DesignPlanner.Data.Services
                 user.Role = request.Role;
                 user.IsActive = request.IsActive;
                 user.UpdatedAt = DateTime.UtcNow;
-                user.ManagedTeamIds = request.ManagedTeamIds != null && request.ManagedTeamIds.Any()
-                    ? string.Join(",", request.ManagedTeamIds)
-                    : null;
+                // Update team management relationships
+                // Remove existing team management relationships
+                var existingManagements = await _context.UserTeamManagements
+                    .Where(utm => utm.UserId == userId)
+                    .ToListAsync();
+                _context.UserTeamManagements.RemoveRange(existingManagements);
+
+                // Add new team management relationships
+                if (request.ManagedTeamIds != null && request.ManagedTeamIds.Any())
+                {
+                    var newManagements = request.ManagedTeamIds.Select(teamId => new UserTeamManagement
+                    {
+                        UserId = userId,
+                        TeamId = teamId,
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList();
+
+                    _context.UserTeamManagements.AddRange(newManagements);
+                }
 
                 // Update employee
                 if (user.Employee != null)
@@ -301,7 +329,7 @@ namespace DesignPlanner.Data.Services
                 .ThenInclude(es => es.Skill)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
-            return user != null ? MapToUserResponseDto(user) : null;
+            return user != null ? await MapToUserResponseDto(user) : null;
         }
 
         /// <summary>
@@ -375,7 +403,7 @@ namespace DesignPlanner.Data.Services
                 .Take(query.PageSize)
                 .ToListAsync();
 
-            var users = userEntities.Select(u => MapToUserResponseDto(u)).ToList();
+            var users = (await Task.WhenAll(userEntities.Select(u => MapToUserResponseDto(u)))).ToList();
 
             return new UserListResponseDto
             {
@@ -405,7 +433,7 @@ namespace DesignPlanner.Data.Services
                 .ThenBy(u => u.LastName)
                 .ToListAsync();
 
-            var users = userEntities.Select(u => MapToUserResponseDto(u)).ToList();
+            var users = (await Task.WhenAll(userEntities.Select(u => MapToUserResponseDto(u)))).ToList();
             return users;
         }
 
@@ -486,7 +514,7 @@ namespace DesignPlanner.Data.Services
                 .ThenBy(u => u.LastName)
                 .ToListAsync();
 
-            var users = userEntities.Select(u => MapToUserResponseDto(u)).ToList();
+            var users = (await Task.WhenAll(userEntities.Select(u => MapToUserResponseDto(u)))).ToList();
             return users;
         }
 
@@ -509,7 +537,7 @@ namespace DesignPlanner.Data.Services
                 .ThenBy(u => u.LastName);
 
             var userEntities = await queryable.ToListAsync();
-            var users = userEntities.Select(u => MapToUserResponseDto(u)).ToList();
+            var users = (await Task.WhenAll(userEntities.Select(u => MapToUserResponseDto(u)))).ToList();
 
             return users;
         }
@@ -519,7 +547,7 @@ namespace DesignPlanner.Data.Services
         /// </summary>
         /// <param name="user">The user entity</param>
         /// <returns>The user response DTO</returns>
-        private UserResponseDto MapToUserResponseDto(User user)
+        private async Task<UserResponseDto> MapToUserResponseDto(User user)
         {
             // Get all teams the user belongs to (primary + managed)
             var allTeamIds = new List<int>();
@@ -530,15 +558,12 @@ namespace DesignPlanner.Data.Services
                 allTeamIds.Add(user.Employee.TeamId.Value);
             }
 
-            // Add managed teams
-            if (!string.IsNullOrEmpty(user.ManagedTeamIds))
-            {
-                var managedIds = user.ManagedTeamIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(id => int.TryParse(id.Trim(), out var teamId) ? teamId : 0)
-                    .Where(id => id > 0)
-                    .ToList();
-                allTeamIds.AddRange(managedIds);
-            }
+            // Add managed teams from UserTeamManagement table
+            var managedTeamIds = await _context.UserTeamManagements
+                .Where(utm => utm.UserId == user.Id)
+                .Select(utm => utm.TeamId)
+                .ToListAsync();
+            allTeamIds.AddRange(managedTeamIds);
 
             // Remove duplicates and get unique team IDs
             allTeamIds = allTeamIds.Distinct().ToList();
@@ -588,9 +613,10 @@ namespace DesignPlanner.Data.Services
                         Category = es.Skill.Category
                     }).ToList() ?? new List<UserSkillDto>()
                 } : null,
-                ManagedTeamIds = !string.IsNullOrEmpty(user.ManagedTeamIds)
-                    ? user.ManagedTeamIds.Split(',').Select(int.Parse).ToList()
-                    : null
+                ManagedTeamIds = await _context.UserTeamManagements
+                    .Where(utm => utm.UserId == user.Id)
+                    .Select(utm => utm.TeamId)
+                    .ToListAsync()
             };
         }
     }

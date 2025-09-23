@@ -44,7 +44,11 @@
       "Bash(wmic process where ProcessId=20716 delete:*)",
       "Bash(wmic:*)",
       "Bash(python:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Read(//c//**)",
+      "WebSearch",
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(netsh advfirewall firewall add rule:*)"
     ],
     "deny": [],
     "ask": []

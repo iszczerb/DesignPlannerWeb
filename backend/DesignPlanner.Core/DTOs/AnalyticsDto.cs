@@ -86,6 +86,7 @@ namespace DesignPlanner.Core.DTOs
         public DateTime? EndDate { get; set; }
         public int? TeamId { get; set; }
         public List<int>? TeamIds { get; set; }  // EMPLOYEE TEAM IDs (Structural Team, Non-Structural Team, BIM, R&D)
+        public int? EmployeeId { get; set; }  // For filtering by specific employee (used for TeamMember role)
         public int? ClientId { get; set; }
         public int? ProjectId { get; set; }
         public List<int>? CategoryIds { get; set; }  // PROJECT CATEGORY IDs (Structural Category, Non-Structural Category, Manifold, Miscellaneous)
