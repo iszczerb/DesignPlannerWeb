@@ -40,11 +40,11 @@ const BiweeklyView: React.FC<BiweeklyViewProps> = ({
   const loadCalendarData = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Get the bi-week start date for the current date
       const biweekStartDate = scheduleService.getViewStartDate(currentDate, CalendarViewType.BiWeek);
-      
+
       const request: ScheduleRequestDto = {
         startDate: scheduleService.formatDateForApi(biweekStartDate),
         viewType: CalendarViewType.BiWeek,

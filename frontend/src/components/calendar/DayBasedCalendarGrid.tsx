@@ -2184,10 +2184,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   const getDayHeaderStyle = (day: CalendarDayDto): React.CSSProperties => {
     const isTodayDate = isToday(new Date(day.date));
     const isSelected = isDaySelected(new Date(day.date));
+    // Dynamic column width: 250px for ≤5 days (weekly), 125px for >5 days (biweekly)
+    const dynamicMinWidth = days.length <= 5 ? '250px' : '125px';
 
     return {
       flex: '1 1 0',
-      minWidth: '250px',
+      minWidth: dynamicMinWidth,
       maxWidth: 'none',
       padding: '12px 8px',
       fontSize: '1rem',
@@ -2254,14 +2256,18 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     backgroundColor: isAM ? '#60a5fa' : '#1e40af',
   });
 
-  const getDayCellStyle = (): React.CSSProperties => ({
-    flex: '1 1 0',
-    minWidth: '250px',
-    maxWidth: 'none',
-    borderRight: '1px solid #e5e7eb',
-    display: 'flex',
-    flexDirection: 'column',
-  });
+  const getDayCellStyle = (): React.CSSProperties => {
+    // Dynamic column width: 250px for ≤5 days (weekly), 125px for >5 days (biweekly)
+    const dynamicMinWidth = days.length <= 5 ? '250px' : '125px';
+    return {
+      flex: '1 1 0',
+      minWidth: dynamicMinWidth,
+      maxWidth: 'none',
+      borderRight: '1px solid #e5e7eb',
+      display: 'flex',
+      flexDirection: 'column',
+    };
+  };
 
   const getTimeSlotStyle = (isAM: boolean): React.CSSProperties => ({
     height: '65px',

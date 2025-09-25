@@ -64,6 +64,10 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   onTeamAddMember,
   onTeamManage
 }) => {
+  console.log(`🔍🔍🔍 CALENDAR GRID RENDER: viewType=${viewType}, calendarData.days.length=${calendarData?.days?.length || 'NO DAYS'}`);
+  if (calendarData?.days) {
+    console.log(`🔍🔍🔍 CALENDAR GRID DAYS:`, calendarData.days.map(d => `${d.dayName} ${d.displayDate}`));
+  }
   const handleTaskClick = (task: AssignmentTaskDto) => {
     if (onTaskClick) {
       onTaskClick(task);
@@ -86,7 +90,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
     backgroundColor: '#ffffff',
     borderRadius: '8px',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
-    overflow: 'hidden',
+    overflow: viewType === CalendarViewType.BiWeek ? 'auto' : 'hidden', // Enable horizontal scroll for biweekly
     position: 'relative',
   });
 
@@ -143,53 +147,61 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
     fontSize: '1rem',
   });
 
-  const renderDayHeader = (day: any) => (
-    <div
-      key={day.date}
-      style={{
-        ...getHeaderCellStyle(),
-        backgroundColor: day.isToday ? '#dbeafe' : '#f8fafc',
-        color: day.isToday ? '#1d4ed8' : '#374151',
-        border: day.isToday ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-        borderBottom: '2px solid #e2e8f0',
-        marginRight: '8px', // Match the gap in EmployeeRow
-      }}
-    >
-      <div>{day.dayName}</div>
-      <div style={{ fontSize: '1.25rem', fontWeight: '700' }}>
-        {day.displayDate}
-      </div>
-      <div style={{
-        fontSize: '0.6875rem',
-        fontWeight: '400',
-        color: day.isToday ? '#3b82f6' : '#9ca3af',
-        marginTop: '2px',
-      }}>
-        AM / PM
-      </div>
-    </div>
-  );
-
-  const renderHeader = () => (
-    <div style={getHeaderRowStyle()}>
-      {/* Employee column header */}
-      <div style={getHeaderCellStyle(true)}>
-        <div style={{ fontSize: '1rem', fontWeight: '700' }}>
-          Team Members
+  const renderDayHeader = (day: any, index: number) => {
+    console.log(`🔍🔍🔍 RENDERING DAY HEADER ${index + 1}: ${day.dayName} ${day.displayDate} (${day.date})`);
+    return (
+      <div
+        key={day.date}
+        style={{
+          ...getHeaderCellStyle(),
+          backgroundColor: day.isToday ? '#dbeafe' : '#f8fafc',
+          color: day.isToday ? '#1d4ed8' : '#374151',
+          border: day.isToday ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+          borderBottom: '2px solid #e2e8f0',
+          marginRight: '8px', // Match the gap in EmployeeRow
+        }}
+      >
+        <div>{day.dayName}</div>
+        <div style={{ fontSize: '1.25rem', fontWeight: '700' }}>
+          {day.displayDate}
         </div>
         <div style={{
-          fontSize: '0.75rem',
-          color: '#6b7280',
+          fontSize: '0.6875rem',
           fontWeight: '400',
+          color: day.isToday ? '#3b82f6' : '#9ca3af',
+          marginTop: '2px',
         }}>
-          {calendarData.employees.length} {calendarData.employees.length === 1 ? 'person' : 'people'}
+          AM / PM
         </div>
       </div>
+    );
+  };
 
-      {/* Day headers */}
-      {calendarData.days.map(renderDayHeader)}
-    </div>
-  );
+  const renderHeader = () => {
+    console.log(`🔍🔍🔍 RENDER HEADER: calendarData.days.length = ${calendarData.days.length}`);
+    console.log(`🔍🔍🔍 RENDER HEADER: calendarData.days =`, calendarData.days.map(d => `${d.dayName} ${d.displayDate}`));
+
+    return (
+      <div style={getHeaderRowStyle()}>
+        {/* Employee column header */}
+        <div style={getHeaderCellStyle(true)}>
+          <div style={{ fontSize: '1rem', fontWeight: '700' }}>
+            Team Members
+          </div>
+          <div style={{
+            fontSize: '0.75rem',
+            color: '#6b7280',
+            fontWeight: '400',
+          }}>
+            {calendarData.employees.length} {calendarData.employees.length === 1 ? 'person' : 'people'}
+          </div>
+        </div>
+
+        {/* Day headers */}
+        {calendarData.days.map(renderDayHeader)}
+      </div>
+    );
+  };
 
   const getViewTypeLabel = () => {
     switch (viewType) {

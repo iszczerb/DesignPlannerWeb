@@ -1058,8 +1058,7 @@ const TeamScheduleContent: React.FC<{
       return targetDate;
     };
 
-    // Set view to Weekly and go to current week
-    setViewType(CalendarViewType.Week);
+    // Navigate to current week (preserve current view type)
     setCurrentDate(today);
 
     // Calculate window start for the current week
@@ -1091,8 +1090,7 @@ const TeamScheduleContent: React.FC<{
       return adjustedDate;
     };
 
-    // Set view to Weekly and go to target date's week
-    setViewType(CalendarViewType.Week);
+    // Navigate to target date's week (preserve current view type)
     setCurrentDate(targetDate);
 
     // Calculate window start for the target date's week
@@ -1718,19 +1716,19 @@ const TeamScheduleContent: React.FC<{
       setCurrentDate(date);
 
     } else if (viewType === CalendarViewType.BiWeek) {
-      // For BiWeek view, find the Monday of the target week
-      const targetDay = new Date(date);
-      const dayOfWeek = targetDay.getDay();
+      // For BiWeek view, shift the window start by one business day (same as weekly)
+      const currentWindowStart = new Date(windowStartDate);
+      const targetDate = new Date(date);
+      const currentDateCopy = new Date(currentDate);
 
-      // Calculate days to subtract to get to Monday
-      let daysToMonday = dayOfWeek - 1; // 1 = Monday
-      if (dayOfWeek === 0) daysToMonday = 6; // Sunday -> go back 6 days
+      console.log('🔍 BiWeek navigation: Current date:', currentDateCopy.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+      console.log('🔍 BiWeek navigation: Target date:', targetDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
 
-      const monday = new Date(targetDay);
-      monday.setDate(targetDay.getDate() - daysToMonday);
+      const direction = targetDate > currentDateCopy ? 1 : -1;
+      const newWindowStart = direction > 0 ? getNextBusinessDay(currentWindowStart) : getPreviousBusinessDay(currentWindowStart);
 
-      console.log('🔍 BiWeek navigation: Setting window to Monday:', monday.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }));
-      setWindowStartDate(monday);
+      console.log('🔍 BiWeek navigation: New window start:', newWindowStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+      setWindowStartDate(newWindowStart);
       setCurrentDate(date);
 
     } else {

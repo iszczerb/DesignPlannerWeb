@@ -561,23 +561,29 @@ namespace DesignPlanner.Data.Services
         public DateTime GetViewStartDate(DateTime baseDate, CalendarViewType viewType)
         {
             var date = baseDate.Date;
+            Console.WriteLine($"🔍🔍🔍 GetViewStartDate called with baseDate: {baseDate:yyyy-MM-dd} ({baseDate.DayOfWeek}), viewType: {viewType}");
 
-            return viewType switch
+            var result = viewType switch
             {
                 CalendarViewType.Day => date,
                 // For Week view, use the exact date provided (sliding window mode)
                 // The frontend manages the window start position
                 CalendarViewType.Week => SkipWeekendIfNecessary(date),
-                // For BiWeek view, also use sliding window from the provided date
-                CalendarViewType.BiWeek => SkipWeekendIfNecessary(date),
+                // For BiWeek view, TRUST the frontend's calculated date (avoid double calculation)
+                CalendarViewType.BiWeek => date,
                 CalendarViewType.Month => new DateTime(date.Year, date.Month, 1),
                 _ => date
             };
+
+            Console.WriteLine($"🔍🔍🔍 GetViewStartDate returning: {result:yyyy-MM-dd} ({result.DayOfWeek})");
+            return result;
         }
 
         public DateTime GetViewEndDate(DateTime startDate, CalendarViewType viewType)
         {
-            return viewType switch
+            Console.WriteLine($"🔍🔍🔍 GetViewEndDate called with startDate: {startDate:yyyy-MM-dd} ({startDate.DayOfWeek}), viewType: {viewType}");
+
+            var result = viewType switch
             {
                 CalendarViewType.Day => startDate,
                 CalendarViewType.Week => GetWeekdayEndDate(startDate, 5), // 5 weekdays
@@ -585,10 +591,15 @@ namespace DesignPlanner.Data.Services
                 CalendarViewType.Month => GetMonthWeekdayEndDate(startDate),
                 _ => startDate
             };
+
+            Console.WriteLine($"🔍🔍🔍 GetViewEndDate returning: {result:yyyy-MM-dd} ({result.DayOfWeek})");
+            return result;
         }
 
         public List<CalendarDayDto> GenerateCalendarDays(DateTime startDate, DateTime endDate)
         {
+            Console.WriteLine($"🔍🔍🔍 GenerateCalendarDays called with startDate: {startDate:yyyy-MM-dd} ({startDate.DayOfWeek}), endDate: {endDate:yyyy-MM-dd} ({endDate.DayOfWeek})");
+
             var days = new List<CalendarDayDto>();
             var currentDate = startDate.Date;
             var today = DateTime.Today;
@@ -598,6 +609,7 @@ namespace DesignPlanner.Data.Services
                 // Only include weekdays (Monday-Friday)
                 if (IsBusinessDay(currentDate))
                 {
+                    Console.WriteLine($"🔍🔍🔍 GenerateCalendarDays: Adding business day #{days.Count + 1}: {currentDate:yyyy-MM-dd} ({currentDate.DayOfWeek})");
                     days.Add(new CalendarDayDto
                     {
                         Date = currentDate,
@@ -610,6 +622,7 @@ namespace DesignPlanner.Data.Services
                 currentDate = currentDate.AddDays(1);
             }
 
+            Console.WriteLine($"🔍🔍🔍 GenerateCalendarDays returning {days.Count} days");
             return days;
         }
 
@@ -786,22 +799,27 @@ namespace DesignPlanner.Data.Services
         
         private DateTime GetWeekdayEndDate(DateTime startDate, int weekdayCount)
         {
+            Console.WriteLine($"🔍🔍🔍 GetWeekdayEndDate called with startDate: {startDate:yyyy-MM-dd} ({startDate.DayOfWeek}), weekdayCount: {weekdayCount}");
+
             var currentDate = startDate;
             var weekdaysFound = 0;
-            
+
             while (weekdaysFound < weekdayCount)
             {
                 if (IsBusinessDay(currentDate))
                 {
                     weekdaysFound++;
+                    Console.WriteLine($"🔍🔍🔍 GetWeekdayEndDate: Found weekday #{weekdaysFound}: {currentDate:yyyy-MM-dd} ({currentDate.DayOfWeek})");
                     if (weekdaysFound == weekdayCount)
                     {
+                        Console.WriteLine($"🔍🔍🔍 GetWeekdayEndDate returning: {currentDate:yyyy-MM-dd} ({currentDate.DayOfWeek})");
                         return currentDate;
                     }
                 }
                 currentDate = currentDate.AddDays(1);
             }
-            
+
+            Console.WriteLine($"🔍🔍🔍 GetWeekdayEndDate returning (fallback): {currentDate:yyyy-MM-dd} ({currentDate.DayOfWeek})");
             return currentDate;
         }
         
@@ -816,8 +834,12 @@ namespace DesignPlanner.Data.Services
             var weekStart = GetWeekStart(date);
             var weekNumber = GetWeekOfYear(weekStart);
             var isOddWeek = weekNumber % 2 == 1;
-            
-            return isOddWeek ? weekStart : weekStart.AddDays(-7);
+
+            Console.WriteLine($"🔍🔍🔍 GetBiWeekStart: input={date:yyyy-MM-dd} ({date.DayOfWeek}), weekStart={weekStart:yyyy-MM-dd} ({weekStart.DayOfWeek}), weekNumber={weekNumber}, isOddWeek={isOddWeek}");
+
+            var result = isOddWeek ? weekStart : weekStart.AddDays(-7);
+            Console.WriteLine($"🔍🔍🔍 GetBiWeekStart returning: {result:yyyy-MM-dd} ({result.DayOfWeek})");
+            return result;
         }
 
         private int GetWeekOfYear(DateTime date)
