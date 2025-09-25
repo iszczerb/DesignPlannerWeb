@@ -204,6 +204,11 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
           fontSize: size === 'small' ? '0.6875rem' : (size === 'large' ? '0.875rem' : '0.75rem'),
           lineHeight: '1.2',
           textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+          flex: 1,
+          marginRight: '8px',
         }}>
           {task.projectName}
         </span>

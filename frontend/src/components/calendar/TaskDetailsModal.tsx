@@ -146,6 +146,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     if (task && open) {
       setEditedTask({
         notes: task.notes || '',
+        description: task.description || '',
         dueDate: task.dueDate,
         priority: task.priority,
         taskStatus: task.taskStatus,
@@ -191,6 +192,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     if (task) {
       setEditedTask({
         notes: task.notes || '',
+        description: task.description || '',
         dueDate: task.dueDate,
         priority: task.priority,
         taskStatus: task.taskStatus,
@@ -222,6 +224,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
         assignmentId: task.assignmentId,
         taskId: selectedTaskId || task.taskId, // Use selectedTaskId if available, otherwise keep original
         notes: editedTask.notes !== undefined ? editedTask.notes : task.notes,
+        description: editedTask.description !== undefined ? editedTask.description : task.description,
         dueDate: editedTask.dueDate || undefined,
         priority: editedTask.priority !== undefined ? editedTask.priority : undefined,
         taskStatus: editedTask.taskStatus !== undefined ? editedTask.taskStatus : undefined,
@@ -305,6 +308,31 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                     : getTaskTypeName(task)
                   }
                 </Typography>
+
+                {/* Enhanced Task Type Information */}
+                <Box sx={{ mb: 2 }}>
+                  <Chip
+                    label={`Category: ${getTaskTypeName(task)}`}
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    sx={{ mr: 1, mb: 1 }}
+                  />
+                  <Chip
+                    label={`ID: ${task.taskId}`}
+                    variant="outlined"
+                    size="small"
+                    sx={{ mr: 1, mb: 1 }}
+                  />
+                  {task.taskTitle && task.taskTitle !== getTaskTypeName(task) && (
+                    <Chip
+                      label={`Title: ${task.taskTitle}`}
+                      variant="outlined"
+                      size="small"
+                      sx={{ mr: 1, mb: 1 }}
+                    />
+                  )}
+                </Box>
                 
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -511,6 +539,20 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
               </CardContent>
             </Card>
 
+            {/* Task Description Section */}
+            {task.description && (
+              <Card elevation={1}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    📋 Task Description
+                  </Typography>
+                  <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {task.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+
             <Divider />
 
             {/* Editable Fields */}
@@ -582,6 +624,27 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       Based on visual column occupancy
                     </Typography>
                   </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Task Description
+                  </Typography>
+                  {mode === 'edit' ? (
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      value={editedTask.description || ''}
+                      onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
+                      placeholder="Enter task description..."
+                      size="small"
+                    />
+                  ) : (
+                    <Typography variant="body1">
+                      {task.description || 'No description provided'}
+                    </Typography>
+                  )}
                 </Grid>
 
                 <Grid item xs={12}>

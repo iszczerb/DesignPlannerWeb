@@ -1710,6 +1710,9 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               letterSpacing: '0.025em',
               color: '#ffffff',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
             }}>
               {task.projectName || 'PROJ'}
             </div>

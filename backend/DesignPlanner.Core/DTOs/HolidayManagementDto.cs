@@ -234,7 +234,7 @@ namespace DesignPlanner.Core.DTOs
         /// <summary>
         /// Number of items per page
         /// </summary>
-        public int PageSize { get; set; } = 10;
+        public int PageSize { get; set; } = 1000;
 
         /// <summary>
         /// Search term for filtering holidays

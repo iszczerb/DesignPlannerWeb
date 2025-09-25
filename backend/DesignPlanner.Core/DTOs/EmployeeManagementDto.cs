@@ -99,7 +99,7 @@ namespace DesignPlanner.Core.DTOs
     public class EmployeeQueryDto
     {
         public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
+        public int PageSize { get; set; } = 1000;
         public string? SearchTerm { get; set; }
         public UserRole? Role { get; set; }
         public int? TeamId { get; set; }

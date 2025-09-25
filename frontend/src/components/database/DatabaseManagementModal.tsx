@@ -108,9 +108,9 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
         apiService.get<any[]>('/client').catch(() => []),
         apiService.get<{projects: any[], totalCount: number}>('/project').catch(() => ({projects: [], totalCount: 0})),
         apiService.get<{users: any[], totalCount: number}>('/user').catch(() => ({users: [], totalCount: 0})),
-        apiService.get<any[]>('/team').catch(() => []),
-        apiService.get<any[]>('/skill').catch(() => []),
-        apiService.get<any[]>('/tasktype').catch(() => []),
+        apiService.get<{teams: any[]}>('/team').catch(() => ({teams: []})),
+        apiService.get<{skills: any[]}>('/skill').catch(() => ({skills: []})),
+        apiService.get<{taskTypes: any[]}>('/tasktype').catch(() => ({taskTypes: []})),
         apiService.get<any[]>('/category').catch(() => [])
       ]);
 
@@ -118,9 +118,9 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
         [EntityType.Clients]: clients.status === 'fulfilled' ? (Array.isArray(clients.value) ? clients.value.length : 0) : 0,
         [EntityType.Projects]: projects.status === 'fulfilled' ? (projects.value?.totalCount || projects.value?.projects?.length || 0) : 0,
         [EntityType.Users]: users.status === 'fulfilled' ? (users.value?.totalCount || users.value?.users?.length || 0) : 0,
-        [EntityType.Teams]: teams.status === 'fulfilled' ? (Array.isArray(teams.value) ? teams.value.length : 0) : 0,
-        [EntityType.Skills]: skills.status === 'fulfilled' ? (Array.isArray(skills.value) ? skills.value.length : 0) : 0,
-        [EntityType.TaskTypes]: taskTypes.status === 'fulfilled' ? (Array.isArray(taskTypes.value) ? taskTypes.value.length : 0) : 0,
+        [EntityType.Teams]: teams.status === 'fulfilled' ? (teams.value?.teams?.length || 0) : 0,
+        [EntityType.Skills]: skills.status === 'fulfilled' ? (skills.value?.skills?.length || 0) : 0,
+        [EntityType.TaskTypes]: taskTypes.status === 'fulfilled' ? (taskTypes.value?.taskTypes?.length || 0) : 0,
         [EntityType.Categories]: categories.status === 'fulfilled' ? (Array.isArray(categories.value) ? categories.value.length : 0) : 0
       });
     } catch (error) {
@@ -152,12 +152,25 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
     if (e.key === 'Escape') {
       handleClose();
     } else if (e.key === 'Tab') {
-      e.preventDefault();
-      const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
-      const nextIndex = e.shiftKey
-        ? (currentIndex - 1 + tabs.length) % tabs.length
-        : (currentIndex + 1) % tabs.length;
-      setActiveTab(tabs[nextIndex].id);
+      // Check if the user is currently focused on a form element
+      const activeElement = document.activeElement;
+      const isInFormField = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        activeElement.getAttribute('contenteditable') === 'true' ||
+        activeElement.closest('form') !== null
+      );
+
+      // Only prevent default tab behavior if NOT in a form field
+      if (!isInFormField) {
+        e.preventDefault();
+        const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
+        const nextIndex = e.shiftKey
+          ? (currentIndex - 1 + tabs.length) % tabs.length
+          : (currentIndex + 1) % tabs.length;
+        setActiveTab(tabs[nextIndex].id);
+      }
     }
   };
 

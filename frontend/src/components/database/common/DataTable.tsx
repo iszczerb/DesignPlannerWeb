@@ -57,7 +57,7 @@ function DataTable<T>({
   onBulkAction,
   searchFields = [],
   quickFilters = [],
-  pageSize = 20,
+  pageSize = 100,
   enableSelection = true,
   enableBulkActions = true,
   getItemKey,
@@ -141,12 +141,12 @@ function DataTable<T>({
 
   // Paginated data
   const paginatedData = useMemo(() => {
-    const start = ((tableState.pagination.pageNumber || 1) - 1) * (tableState.pagination.pageSize || 10);
-    const end = start + (tableState.pagination.pageSize || 10);
+    const start = ((tableState.pagination.pageNumber || 1) - 1) * (tableState.pagination.pageSize || 100);
+    const end = start + (tableState.pagination.pageSize || 100);
     return processedData.slice(start, end);
   }, [processedData, tableState.pagination.pageNumber, tableState.pagination.pageSize]);
 
-  const totalPages = Math.ceil(processedData.length / (tableState.pagination.pageSize || 10));
+  const totalPages = Math.ceil(processedData.length / (tableState.pagination.pageSize || 100));
 
   const handleSort = (field: string) => {
     setTableState(prev => ({

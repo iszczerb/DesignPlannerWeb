@@ -126,6 +126,7 @@ export interface AssignmentTaskDto {
   taskId: number;
   taskTitle: string;
   taskName?: string; // Alias for taskTitle for backward compatibility
+  description?: string; // Task description (separate from assignment notes)
   taskTypeName: string;
   projectName: string;
   clientCode: string;
@@ -136,7 +137,7 @@ export interface AssignmentTaskDto {
   taskStatus: TaskStatus;
   priority: TaskPriority;
   dueDate?: string;
-  notes?: string;
+  notes?: string; // Assignment-specific notes (separate from task description)
   isActive: boolean;
   employeeId: number;
   employeeName: string;
