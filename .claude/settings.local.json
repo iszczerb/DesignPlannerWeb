@@ -48,7 +48,8 @@
       "Read(//c//**)",
       "WebSearch",
       "WebFetch(domain:stackoverflow.com)",
-      "Bash(netsh advfirewall firewall add rule:*)"
+      "Bash(netsh advfirewall firewall add rule:*)",
+      "WebFetch(domain:pageflows.com)"
     ],
     "deny": [],
     "ask": []
