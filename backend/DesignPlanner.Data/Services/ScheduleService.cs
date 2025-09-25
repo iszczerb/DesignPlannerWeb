@@ -21,8 +21,14 @@ namespace DesignPlanner.Data.Services
         // Calendar view operations
         public async Task<CalendarViewDto> GetCalendarViewAsync(ScheduleRequestDto request)
         {
+            Console.WriteLine($"🔍 ScheduleService.GetCalendarViewAsync - Received request.StartDate: {request.StartDate}");
+            Console.WriteLine($"🔍 ScheduleService.GetCalendarViewAsync - request.StartDate.Kind: {request.StartDate.Kind}");
+
             var startDate = GetViewStartDate(request.StartDate, request.ViewType);
             var endDate = GetViewEndDate(startDate, request.ViewType);
+
+            Console.WriteLine($"🔍 ScheduleService.GetCalendarViewAsync - Calculated startDate: {startDate} ({startDate.DayOfWeek})");
+            Console.WriteLine($"🔍 ScheduleService.GetCalendarViewAsync - Calculated endDate: {endDate}");
 
             var employees = await GetEmployeesForViewAsync(request.EmployeeId, request.IncludeInactive);
             var assignments = await GetAssignmentsForDateRangeAsync(startDate, endDate, request.EmployeeId);
@@ -1197,8 +1203,14 @@ namespace DesignPlanner.Data.Services
         public async Task<object> GetGlobalCalendarViewAsync(int userId, ScheduleRequestDto request, string userRole = "Admin")
         {
             Console.WriteLine($"🔍 ✅ GetGlobalCalendarViewAsync called for {userRole} user (ID: {userId})");
+            Console.WriteLine($"🔍 GetGlobalCalendarViewAsync - Received request.StartDate: {request.StartDate}");
+            Console.WriteLine($"🔍 GetGlobalCalendarViewAsync - request.StartDate.Kind: {request.StartDate.Kind}");
+
             var startDate = GetViewStartDate(request.StartDate, request.ViewType);
             var endDate = GetViewEndDate(startDate, request.ViewType);
+
+            Console.WriteLine($"🔍 GetGlobalCalendarViewAsync - Calculated startDate: {startDate} ({startDate.DayOfWeek})");
+            Console.WriteLine($"🔍 GetGlobalCalendarViewAsync - Calculated endDate: {endDate}");
 
             // Get the user's managed team IDs using UserTeamManagement table
             var managedTeamIds = await _context.UserTeamManagements

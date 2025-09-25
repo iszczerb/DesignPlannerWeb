@@ -11,6 +11,7 @@ import {
 import { formatHours } from '../../utils/hoursCalculator';
 import { ItemTypes, DragItem } from '../../types/dragDrop';
 import scheduleService from '../../services/scheduleService';
+import { createCardColorScheme } from '../../utils/colorUtils';
 import ContextMenu from './ContextMenu';
 
 interface ProjectTaskCardProps extends TaskCardProps {
@@ -137,21 +138,21 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
   const priorityColor = scheduleService.getPriorityColor(task.priority);
   const statusColor = scheduleService.getStatusColor(task.taskStatus);
   const sizeStyles = getSizeStyles();
-  
+  const colorScheme = createCardColorScheme(task.clientColor);
+
   const cardStyles: React.CSSProperties = {
     ...sizeStyles,
-    backgroundColor: task.clientColor || '#f8f9fa',
-    borderTop: `1px solid ${task.clientColor ? task.clientColor : '#dee2e6'}`,
-    borderRight: `1px solid ${task.clientColor ? task.clientColor : '#dee2e6'}`,
-    borderBottom: `1px solid ${task.clientColor ? task.clientColor : '#dee2e6'}`,
+    background: `linear-gradient(135deg, ${colorScheme.gradient.start}, ${colorScheme.gradient.end})`,
+    border: `1.5px solid ${colorScheme.border}`,
     borderLeft: `4px solid ${priorityColor}`,
-    color: '#212529',
+    borderRadius: '8px',
+    color: colorScheme.text,
     cursor: isDraggable ? (isDragging ? 'grabbing' : 'grab') : (onClick ? 'pointer' : 'default'),
     position: 'relative',
     width: '100%',
     maxWidth,
     boxSizing: 'border-box',
-    transition: 'all 0.2s ease-in-out',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
@@ -159,14 +160,14 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     opacity: isDragging ? 0.5 : 1,
     transform: isDragging ? 'rotate(5deg)' : 'none',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
   };
 
   const hoverStyles: React.CSSProperties = {
     transform: 'translateY(-1px)',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    borderTop: `1px solid ${priorityColor}`,
-    borderRight: `1px solid ${priorityColor}`,
-    borderBottom: `1px solid ${priorityColor}`,
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+    border: `1.5px solid ${colorScheme.border}`,
+    borderLeft: `4px solid ${priorityColor}`,
   };
 
   const [isHovered, setIsHovered] = React.useState(false);
@@ -198,10 +199,11 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
         marginBottom: size === 'small' ? '2px' : (size === 'large' ? '6px' : '3px'),
       }}>
         <span style={{
-          fontWeight: '700',
-          color: '#212529',
+          fontWeight: '600',
+          color: colorScheme.text,
           fontSize: size === 'small' ? '0.6875rem' : (size === 'large' ? '0.875rem' : '0.75rem'),
-          lineHeight: '1.1',
+          lineHeight: '1.2',
+          textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
         }}>
           {task.projectName}
         </span>
@@ -242,13 +244,14 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
       {/* Client name */}
       <div style={{
         fontWeight: '500',
-        color: '#495057',
+        color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.9)' : 'rgba(33,37,41,0.8)',
         fontSize: size === 'small' ? '0.625rem' : (size === 'large' ? '0.75rem' : '0.6875rem'),
-        lineHeight: '1.2',
+        lineHeight: '1.3',
         marginBottom: size === 'small' ? '1px' : (size === 'large' ? '4px' : '2px'),
         overflow: 'hidden',
         whiteSpace: 'nowrap',
         textOverflow: 'ellipsis',
+        textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
       }}>
         {task.clientName}
       </div>
@@ -256,7 +259,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
       {/* Task Type and Hours */}
       <div style={{
         fontSize: size === 'small' ? '0.5625rem' : (size === 'large' ? '0.6875rem' : '0.625rem'),
-        color: '#6c757d',
+        color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.8)' : 'rgba(108,117,125,0.9)',
         marginTop: 'auto',
         display: 'flex',
         justifyContent: 'space-between',
@@ -273,8 +276,9 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
         </span>
         <span style={{
           fontWeight: '600',
-          color: '#495057',
+          color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.95)' : '#495057',
           flexShrink: 0,
+          textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
         }}>
           {calculatedHours !== undefined ? formatHours(calculatedHours) : (task.hours ? formatHours(task.hours) : '')}
         </span>
@@ -284,9 +288,10 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
       {size !== 'small' && task.dueDate && (
         <div style={{
           fontSize: '0.6875rem',
-          color: isOverdue ? '#dc3545' : '#6c757d',
+          color: isOverdue ? '#dc3545' : (colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.8)' : '#6c757d'),
           fontWeight: isOverdue ? '600' : 'normal',
           marginTop: '2px',
+          textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
         }}>
           Due: {new Date(task.dueDate).toLocaleDateString()}
         </div>
@@ -374,7 +379,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
           bottom: '2px',
           right: '2px',
           fontSize: '0.625rem',
-          color: '#6c757d',
+          color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.7)' : '#6c757d',
           opacity: 0.7,
         }}>
           📝

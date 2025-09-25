@@ -537,4 +537,50 @@ public class DevController : ControllerBase
         return Ok($"Cleared {allocations.Count} absence allocations");
     }
 
+    [HttpPost("update-client-colors")]
+    [AllowAnonymous]
+    public async Task<IActionResult> UpdateClientColors()
+    {
+        try
+        {
+            // Professional color palette for better task card design
+            var colorUpdates = new Dictionary<string, string>
+            {
+                { "LHR095", "#0066CC" },  // Professional Blue (Amazon-inspired, more muted)
+                { "HEL016", "#2563EB" },  // Modern Blue (Microsoft-inspired, refined)
+                { "EQX040", "#1E40AF" },  // Deep Blue (Google-inspired, sophisticated)
+                { "Internal", "#059669" }, // Professional Green
+                { "GOG010", "#DC2626" }   // Professional Red
+            };
+
+            var updatedClients = new List<string>();
+
+            foreach (var update in colorUpdates)
+            {
+                var clients = await _context.Clients
+                    .Where(c => c.Code == update.Key)
+                    .ToListAsync();
+
+                foreach (var client in clients)
+                {
+                    client.Color = update.Value;
+                    updatedClients.Add($"{client.Code}: {client.Name} -> {update.Value}");
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new {
+                message = "Client colors updated successfully",
+                updatedClients = updatedClients,
+                totalUpdated = updatedClients.Count
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update client colors");
+            return StatusCode(500, "Failed to update client colors");
+        }
+    }
+
 }

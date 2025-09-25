@@ -27,11 +27,18 @@ const CategoryForm: React.FC<EntityFormProps<Category, CreateCategory, UpdateCat
   const [isDirty, setIsDirty] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
-  // Predefined colors for quick selection
+  // Modern iOS-inspired color palette for 2025 (20 professional colors)
   const presetColors = [
-    '#0066CC', '#FF6B6B', '#4ECDC4', '#52B788',
-    '#F8B739', '#BB8FCE', '#FF6F61', '#6C5CE7',
-    '#6B7280', '#9CA3AF', '#374151', '#1F2937'
+    // Primary Brand Colors
+    '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+    '#8b5cf6', '#06b6d4', '#84cc16', '#f97316',
+
+    // Secondary Modern Colors
+    '#6366f1', '#14b8a6', '#eab308', '#ec4899',
+    '#a855f7', '#0ea5e9', '#22c55e', '#dc2626',
+
+    // Professional Neutrals
+    '#64748b', '#475569', '#334155', '#1e293b'
   ];
 
   useEffect(() => {
@@ -46,7 +53,7 @@ const CategoryForm: React.FC<EntityFormProps<Category, CreateCategory, UpdateCat
         setFormData({
           name: '',
           description: '',
-          color: '#0066CC'
+          color: '#3b82f6'
         });
       }
       setErrors({});

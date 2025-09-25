@@ -88,15 +88,15 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
   const navigateToPrevious = () => {
     let newDate: Date;
-    
+
     switch (viewType) {
       case CalendarViewType.Day:
         // Navigate to previous weekday
         newDate = scheduleService.getPreviousWeekday(currentDate);
         break;
       case CalendarViewType.Week:
-        // Navigate back 7 days (1 calendar week), but start date will be adjusted to weekday
-        newDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+        // Navigate back 1 business day for day-by-day scrolling
+        newDate = scheduleService.getPreviousWeekday(currentDate);
         break;
       case CalendarViewType.BiWeek:
         // Navigate back 14 days (2 calendar weeks)
@@ -121,8 +121,8 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         newDate = scheduleService.getNextWeekday(currentDate);
         break;
       case CalendarViewType.Week:
-        // Navigate forward 7 days (1 calendar week), but start date will be adjusted to weekday
-        newDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        // Navigate forward 1 business day for day-by-day scrolling
+        newDate = scheduleService.getNextWeekday(currentDate);
         break;
       case CalendarViewType.BiWeek:
         // Navigate forward 14 days (2 calendar weeks)

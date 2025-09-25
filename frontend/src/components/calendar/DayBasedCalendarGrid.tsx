@@ -35,6 +35,7 @@ import {
   addColumnGuides,
   removeColumnGuides
 } from '../../utils/columnDropHelpers';
+import { createCardColorScheme, lightenColor } from '../../utils/colorUtils';
 
 interface DayBasedCalendarGridProps {
   employees: EmployeeCalendarDto[];
@@ -595,12 +596,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
 
     const menuItems = [
       {
-        label: '➕ Create Task',
+        label: '◯⁺ Create Task',
         action: () => onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId),
         enabled: !hasLeave && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
       },
       {
-        label: '📋 Paste Task',
+        label: '⧉ Paste Task',
         action: () => handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId),
         enabled: !hasLeave && hasCopiedTask && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
       }
@@ -1056,7 +1057,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             transition: 'all 0.2s ease-in-out',
             backgroundColor: isSelected ? '#dbeafe' : (isHovered ? '#fafbff' : 'transparent'),
             border: isSelected ? '3px solid #3b82f6' : 'none',
-            borderRadius: '4px',
+            borderRadius: '8px',
             boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none',
             transform: isSelected ? 'scale(1.02)' : 'scale(1)'
           }}
@@ -1098,7 +1099,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               display: 'flex',
               gap: '4px',
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '4px',
+              borderRadius: '8px',
               padding: '2px',
               boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
             }}>
@@ -1108,22 +1109,36 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
                 }}
                 style={{
-                  background: '#3b82f6',
+                  background: 'rgba(59, 130, 246, 0.9)',
+                  backdropFilter: 'blur(10px)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
+                  borderRadius: '6px',
+                  width: '22px',
+                  height: '22px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.75rem',
+                  fontSize: '1.25rem',
+                  fontWeight: '700',
+                  lineHeight: '1',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.9)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                 }}
                 title="Add task"
               >
-                +
+                ＋
               </button>
               {hasCopiedTask && (
                 <button
@@ -1132,22 +1147,36 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
                   }}
                   style={{
-                    background: '#10b981',
+                    background: 'rgba(16, 185, 129, 0.9)',
+                    backdropFilter: 'blur(10px)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '3px',
-                    width: '20px',
-                    height: '20px',
+                    borderRadius: '6px',
+                    width: '22px',
+                    height: '22px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.6875rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '700',
+                    lineHeight: '1',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                   }}
                   title="Paste task"
                 >
-                  📋
+                  ⧉
                 </button>
               )}
             </div>
@@ -1178,7 +1207,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             transition: 'all 0.2s ease-in-out',
             backgroundColor: isSelected ? '#dbeafe' : (isHovered ? '#fafbff' : 'transparent'),
             border: isSelected ? '3px solid #3b82f6' : 'none',
-            borderRadius: '4px',
+            borderRadius: '8px',
             boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none',
             transform: isSelected ? 'scale(1.02)' : 'scale(1)'
           }}
@@ -1220,7 +1249,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               display: 'flex',
               gap: '4px',
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '4px',
+              borderRadius: '8px',
               padding: '2px',
               boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
             }}>
@@ -1230,22 +1259,36 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
                 }}
                 style={{
-                  background: '#3b82f6',
+                  background: 'rgba(59, 130, 246, 0.9)',
+                  backdropFilter: 'blur(10px)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
+                  borderRadius: '6px',
+                  width: '22px',
+                  height: '22px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.75rem',
+                  fontSize: '1.25rem',
+                  fontWeight: '700',
+                  lineHeight: '1',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.9)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                 }}
                 title="Add task"
               >
-                +
+                ＋
               </button>
               {hasCopiedTask && (
                 <button
@@ -1254,22 +1297,36 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
                   }}
                   style={{
-                    background: '#10b981',
+                    background: 'rgba(16, 185, 129, 0.9)',
+                    backdropFilter: 'blur(10px)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '3px',
-                    width: '20px',
-                    height: '20px',
+                    borderRadius: '6px',
+                    width: '22px',
+                    height: '22px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.6875rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '700',
+                    lineHeight: '1',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                   }}
                   title="Paste task"
                 >
-                  📋
+                  ⧉
                 </button>
               )}
             </div>
@@ -1508,15 +1565,30 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               };
               setTimeout(() => document.addEventListener('click', removeMenu), 0);
             }}
+            onMouseEnter={() => {
+              setHoveredTask(task.assignmentId);
+            }}
+            onMouseLeave={() => {
+              setHoveredTask(null);
+            }}
             style={{
-              backgroundColor: task.clientColor || '#f8f9fa',
+              background: (() => {
+                const colorScheme = createCardColorScheme(task.clientColor || '#3b82f6');
+                const isHovered = hoveredTask === task.assignmentId;
+                const adjustedStart = isHovered ? lightenColor(colorScheme.gradient.start, 8) : colorScheme.gradient.start;
+                const adjustedEnd = isHovered ? lightenColor(colorScheme.gradient.end, 8) : colorScheme.gradient.end;
+                return `linear-gradient(135deg, ${adjustedStart} 0%, ${adjustedEnd} 100%)`;
+              })(),
               color: '#ffffff',
               border: resizingTask && resizingTask.taskId === task.assignmentId
-                ? '3px dashed #10b981' // Green dashed border during resize
+                ? '3px dashed #10b981'
                 : selectedTaskIds.includes(task.assignmentId)
                   ? '3px solid #3b82f6'
-                  : `2px solid ${task.clientColor || '#dee2e6'}`,
-              borderRadius: '4px',
+                  : (() => {
+                    const colorScheme = createCardColorScheme(task.clientColor || '#3b82f6');
+                    return `2px solid ${colorScheme.border}`;
+                  })(),
+              borderRadius: '12px',
               fontSize: '0.625rem',
               fontWeight: '500',
               cursor: isReadOnly ? 'pointer' : 'grab',
@@ -1528,17 +1600,24 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               left: `${finalLeft}%`, // NEW: Column-based position with bounds checking
               height: '62px',
               boxShadow: resizingTask && resizingTask.taskId === task.assignmentId
-                ? '0 6px 16px rgba(16, 185, 129, 0.4)' // Green glow during resize
+                ? '0 6px 16px rgba(16, 185, 129, 0.4)'
                 : selectedTaskIds.includes(task.assignmentId)
                   ? '0 4px 12px rgba(59, 130, 246, 0.3)'
-                  : '0 1px 2px rgba(0,0,0,0.1)',
+                  : (() => {
+                    const colorScheme = createCardColorScheme(task.clientColor || '#3b82f6');
+                    const isHovered = hoveredTask === task.assignmentId;
+                    const shadowIntensity = isHovered ? '0.25' : '0.15';
+                    return `0 4px 16px rgba(0, 0, 0, ${shadowIntensity}), 0 2px 8px ${colorScheme.glass.shadow}40, inset 0 1px 0 ${colorScheme.glass.highlight}60`;
+                  })(),
               overflow: 'hidden', // Hidden overflow for clean task appearance
               flexShrink: 0,
               transform: resizingTask && resizingTask.taskId === task.assignmentId
                 ? 'scale(1.05)' // Slightly larger during resize
                 : selectedTaskIds.includes(task.assignmentId)
                   ? 'scale(1.02)'
-                  : 'scale(1)',
+                  : hoveredTask === task.assignmentId
+                    ? 'scale(1.01)' // Subtle hover scale
+                    : 'scale(1)',
               opacity: resizingTask && resizingTask.taskId === task.assignmentId ? 0.9 : 1, // Slight transparency during resize
               transition: resizingTask && resizingTask.taskId === task.assignmentId
                 ? 'none' // No transition during resize for immediate feedback
@@ -1546,38 +1625,54 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             }}
           >
             {/* Top colored section with project code */}
-            <div style={{ 
-              padding: '4px 8px 2px 8px',
-              fontWeight: '600', 
-              fontSize: '0.7rem',
+            <div style={{
+              padding: `6px ${tasksToShow.length === 4 ? '4px' : '8px'} 3px ${tasksToShow.length === 4 ? '4px' : '8px'}`, // Responsive padding for small cards
+              fontWeight: '700',
+              fontSize: '0.75rem',
               textAlign: 'center',
+              textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              letterSpacing: '0.025em',
+              color: '#ffffff',
             }}>
               {task.projectName || 'PROJ'}
             </div>
-            <div style={{ 
-              fontSize: '0.6rem', 
-              opacity: 0.9,
-              padding: '0 8px 4px 8px',
+            <div style={{
+              fontSize: '0.7rem', // Increased client text size
+              opacity: 0.95,
+              padding: `0 ${tasksToShow.length === 4 ? '4px' : '8px'} 6px ${tasksToShow.length === 4 ? '4px' : '8px'}`, // Responsive padding for small cards
               textAlign: 'center',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              fontWeight: '600',
+              color: '#ffffff',
+              lineHeight: '1.1',
             }}>
               {(task.clientName === 'Amazon Web Services' ? 'Amazon' : task.clientName) || 'CLIENT'}
             </div>
             
             {/* White bottom section with task type */}
             <div style={{
-              backgroundColor: '#ffffff',
-              color: '#374151',
-              padding: '4px 2px',
-              fontSize: tasksToShow.length === 4 ? '0.5rem' : '0.6rem',
-              fontWeight: '500',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              color: '#1f2937',
+              padding: `4px ${tasksToShow.length === 4 ? '4px' : '8px'} 8px ${tasksToShow.length === 4 ? '4px' : '8px'}`, // Responsive padding + move text UP from bottom
+              fontSize: tasksToShow.length === 4 ? '0.52rem' : '0.62rem', // Slightly smaller font
+              fontWeight: '700',
               textAlign: 'center',
-              borderRadius: '0 0 6px 6px',
+              borderRadius: '0 0 10px 10px',
               marginTop: 'auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              lineHeight: '1.1',
-              minHeight: '16px'
+              lineHeight: '1.2',
+              minHeight: '18px',
+              maxHeight: '18px',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 -1px 0 rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
             }}>
               {task.taskTypeName || task.taskName || 'Task'}
             </div>
@@ -1587,13 +1682,16 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               <div style={{
                 position: 'absolute',
                 top: '4px',
-                right: '4px',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 display: 'flex',
-                gap: '2px',
+                gap: '3px',
                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                borderRadius: '4px',
-                padding: '2px',
-                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+                backdropFilter: 'blur(15px)',
+                border: '0.5px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '8px',
+                padding: '3px',
+                boxShadow: '0 3px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
                 zIndex: 100
               }}>
                 {/* Copy icon */}
@@ -1603,22 +1701,35 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     onTaskCopy?.(task);
                   }}
                   style={{
-                    background: '#10b981',
+                    background: 'rgba(16, 185, 129, 0.9)',
+                    backdropFilter: 'blur(10px)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '3px',
-                    width: '16px',
-                    height: '16px',
+                    borderRadius: '6px',
+                    width: '18px',
+                    height: '18px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.625rem',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                   }}
-                  title="Copy task"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(16, 185, 129, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                  }}
+                  title="Duplicate task"
                 >
-                  📋
+                  ⧉
                 </button>
 
                 {/* Edit icon */}
@@ -1628,22 +1739,35 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     onTaskEdit?.(task);
                   }}
                   style={{
-                    background: '#6b7280',
+                    background: 'rgba(107, 114, 128, 0.9)',
+                    backdropFilter: 'blur(10px)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '3px',
-                    width: '16px',
-                    height: '16px',
+                    borderRadius: '6px',
+                    width: '18px',
+                    height: '18px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.625rem',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(107, 114, 128, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(107, 114, 128, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(107, 114, 128, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                   }}
                   title="Edit task"
                 >
-                  ✏️
+                  ✎
                 </button>
 
                 {/* Delete icon */}
@@ -1653,22 +1777,35 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     onTaskDelete?.(task.assignmentId);
                   }}
                   style={{
-                    background: '#ef4444',
+                    background: 'rgba(239, 68, 68, 0.9)',
+                    backdropFilter: 'blur(10px)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '3px',
-                    width: '16px',
-                    height: '16px',
+                    borderRadius: '6px',
+                    width: '18px',
+                    height: '18px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.625rem',
+                    fontSize: '0.7rem',
+                    fontWeight: '600',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(239, 68, 68, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                   }}
                   title="Delete task"
                 >
-                  🗑️
+                  ✕
                 </button>
               </div>
             )}
@@ -1750,7 +1887,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             display: 'flex',
             gap: '4px',
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: '4px',
+            borderRadius: '8px',
             padding: '2px',
             boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
             zIndex: 10
@@ -1762,22 +1899,36 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
                 }}
                 style={{
-                  background: '#3b82f6',
+                  background: 'rgba(59, 130, 246, 0.9)',
+                  backdropFilter: 'blur(10px)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
+                  borderRadius: '6px',
+                  width: '22px',
+                  height: '22px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.75rem',
+                  fontSize: '1.25rem',
+                  fontWeight: '700',
+                  lineHeight: '1',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.9)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                 }}
                 title="Add new task"
               >
-                +
+                ＋
               </button>
             )}
             {!hasLeaveInSlot(employee, day, isAM) && hasCopiedTask && slotData.tasks.length < 4 && (
@@ -1787,22 +1938,35 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
                 }}
                 style={{
-                  background: '#10b981',
+                  background: 'rgba(16, 185, 129, 0.9)',
+                  backdropFilter: 'blur(10px)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
+                  borderRadius: '6px',
+                  width: '22px',
+                  height: '22px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.6875rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '700',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.background = 'rgba(16, 185, 129, 1)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                 }}
                 title="Paste task"
               >
-                📋
+                ⧉
               </button>
             )}
           </div>
@@ -1870,7 +2034,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   top: 0,
                   backgroundColor: 'rgba(59, 130, 246, 0.15)',
                   border: '2px dashed #3b82f6',
-                  borderRadius: '4px',
+                  borderRadius: '8px',
                   pointerEvents: 'none',
                   zIndex: 2,
                   display: 'flex',

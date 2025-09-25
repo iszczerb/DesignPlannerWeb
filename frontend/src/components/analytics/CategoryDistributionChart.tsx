@@ -44,13 +44,54 @@ const CategoryDistributionChart: React.FC<CategoryDistributionChartProps> = ({ d
   };
 
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+    <Card sx={{
+      height: '100%',
+      borderRadius: '24px',
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+      transition: 'all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)',
+      '&:hover': {
+        transform: 'translateY(-4px) scale(1.02)',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+        backdropFilter: 'blur(25px)'
+      }
+    }}>
+      <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 3 }}>
+        <Typography variant="h6" sx={{
+          fontWeight: 700,
+          color: 'rgba(15, 23, 42, 0.95)',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+          fontSize: '1.2rem',
+          letterSpacing: '-0.03em',
+          mb: 3,
+          textShadow: '0 1px 3px rgba(255, 255, 255, 0.9)',
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 58, 138, 0.8))',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
+        }}>
           CATEGORY DISTRIBUTION
         </Typography>
 
-        <Box sx={{ flex: 1, minHeight: 0, height: 400, position: 'relative' }}>
+        <Box sx={{
+          flex: 1,
+          minHeight: 0,
+          height: 400,
+          position: 'relative',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02))',
+          backdropFilter: 'blur(15px)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 20px rgba(0, 0, 0, 0.08)',
+          p: 2,
+          transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04))',
+            borderColor: 'rgba(255, 255, 255, 0.2)'
+          }
+        }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -59,37 +100,72 @@ const CategoryDistributionChart: React.FC<CategoryDistributionChartProps> = ({ d
                 nameKey="x"
                 cx="50%"
                 cy="45%"
-                innerRadius={60}
-                outerRadius={120}
-                paddingAngle={2}
-                animationDuration={250}
+                innerRadius={65}
+                outerRadius={130}
+                paddingAngle={3}
+                animationDuration={800}
                 animationEasing="ease-out"
+                stroke="rgba(255, 255, 255, 0.8)"
+                strokeWidth={2}
               >
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.categoryColor} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.categoryColor}
+                    style={{
+                      filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
+                      opacity: 0.95
+                    }}
+                  />
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: any, name: any, props: any) => [
-                  formatHours(value),
-                  'Hours'
-                ]}
-                labelFormatter={(label: any) => `Category: ${label}`}
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
                       <Box sx={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                        border: '1px solid #ccc',
-                        borderRadius: 1,
-                        p: 1,
-                        fontSize: '12px'
+                        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 58, 138, 0.9))',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '16px',
+                        p: 2.5,
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                        color: '#ffffff',
+                        minWidth: 200
                       }}>
-                        <Typography variant="body2">{`Category: ${data.x}`}</Typography>
-                        <Typography variant="body2">{`Hours: ${formatHours(data.y)}`}</Typography>
-                        <Typography variant="body2">{`Tasks: ${data.taskCount}`}</Typography>
-                        <Typography variant="body2">{`Percentage: ${data.label}`}</Typography>
+                        <Typography sx={{
+                          fontSize: '11px',
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                          fontWeight: 600,
+                          mb: 0.5
+                        }}>
+                          {`Category: ${data.x}`}
+                        </Typography>
+                        <Typography sx={{
+                          fontSize: '11px',
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                          fontWeight: 500,
+                          opacity: 0.9
+                        }}>
+                          {`Hours: ${formatHours(data.y)}`}
+                        </Typography>
+                        <Typography sx={{
+                          fontSize: '11px',
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                          fontWeight: 500,
+                          opacity: 0.9
+                        }}>
+                          {`Tasks: ${data.taskCount}`}
+                        </Typography>
+                        <Typography sx={{
+                          fontSize: '11px',
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                          fontWeight: 500,
+                          opacity: 0.9
+                        }}>
+                          {`Percentage: ${data.label}`}
+                        </Typography>
                       </Box>
                     );
                   }
@@ -98,11 +174,14 @@ const CategoryDistributionChart: React.FC<CategoryDistributionChartProps> = ({ d
               />
               <Legend
                 verticalAlign="bottom"
-                height={36}
+                height={40}
                 iconType="circle"
                 wrapperStyle={{
-                  paddingTop: '10px',
-                  fontSize: '12px'
+                  paddingTop: '15px',
+                  fontSize: '11px',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  fontWeight: 500,
+                  color: '#64748b'
                 }}
               />
             </PieChart>

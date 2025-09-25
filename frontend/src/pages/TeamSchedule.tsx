@@ -860,13 +860,21 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       setIsLoading(true);
       setError(null);
 
+      // Fix UTC timezone issue - use local date instead of UTC
+      const year = windowStartDate.getFullYear();
+      const month = String(windowStartDate.getMonth() + 1).padStart(2, '0');
+      const day = String(windowStartDate.getDate()).padStart(2, '0');
+      const startDateString = `${year}-${month}-${day}`;
+
       const request: ScheduleRequestDto = {
-        startDate: windowStartDate.toISOString().split('T')[0], // Use window start instead of current date
+        startDate: startDateString,
         viewType: viewType,
         includeInactive: false
       };
 
-      console.log('🔍 loadCalendarData: Sending request with windowStartDate:', windowStartDate);
+      console.log('🔍 loadCalendarData: windowStartDate in local timezone:', windowStartDate, '(', windowStartDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }), ')');
+      console.log('🔍 loadCalendarData: windowStartDate.toISOString():', windowStartDate.toISOString());
+      console.log('🔍 loadCalendarData: Sending startDate string to API:', startDateString);
       console.log('🔍 loadCalendarData: Request viewType:', viewType);
       console.log('📅 LoadCalendarData called with:', { teamId, mode });
       console.log('📅 Current teamViewMode:', teamViewMode);
@@ -1161,9 +1169,9 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         calendarDataTimestamp: new Date().toISOString()
       });
 
-      // ULTRA-SAFETY: Double-check by looking at ALL employees and slots using FRESH data
-      console.log('🔍 ULTRA-SAFETY CHECK - All slots for this employee on this date (FRESH DATA):');
-      const targetEmployee = freshCalendarData.employees.find(emp => emp.employeeId === employeeId);
+      // ULTRA-SAFETY: Double-check by looking at ALL employees and slots using current data
+      console.log('🔍 ULTRA-SAFETY CHECK - All slots for this employee on this date (CURRENT DATA):');
+      const targetEmployee = calendarData.employees.find(emp => emp.employeeId === employeeId);
       if (targetEmployee) {
         const targetDay = targetEmployee.dayAssignments.find(day =>
           new Date(day.date).toDateString() === dateStr
@@ -1280,7 +1288,8 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
         targetSlot,
         targetEmployeeId,
         columnStart: dragItem.task.columnStart,
-        hours: dragItem.task.hours
+        hours: dragItem.task.hours,
+        currentWindowStartDate: windowStartDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
       });
 
       // Detect if task is moving to a different slot
@@ -1330,12 +1339,16 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
       });
 
       console.log('Task moved successfully with column position');
+      console.log('🔍 BEFORE loadCalendarData - windowStartDate is:', windowStartDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
 
       // Refresh calendar data immediately without changing window position
+      // IMPORTANT: We need to reload to ensure the UI is in sync, but we must preserve window position
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
         teamViewMode
       );
+
+      console.log('🔍 AFTER loadCalendarData - windowStartDate is:', windowStartDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
 
       // If task moved to a different slot, left-pack the remaining tasks in the source slot
       if (isMovingToNewSlot && sourceSlotInfo) {
@@ -1443,11 +1456,62 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
   }, [windowStartDate, lastNavigatedDate, viewType, getNextBusinessDay, getPreviousBusinessDay]);
 
   /**
-   * Handle date changes - now uses WPF NavigateToDay logic
+   * Handle date changes - proper day-by-day navigation
    */
   const handleDateChange = useCallback((date: Date) => {
-    navigateToDay(date);
-  }, [navigateToDay]);
+    if (viewType === CalendarViewType.Week) {
+      // For Week view, shift the window start by one business day
+      const currentWindowStart = new Date(windowStartDate);
+      const targetDate = new Date(date);
+      const currentDateCopy = new Date(currentDate);
+
+      // Calculate the difference in days between old and new currentDate
+      const diffTime = targetDate.getTime() - currentDateCopy.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      console.log('🔍 Week navigation: Current window start:', currentWindowStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+      console.log('🔍 Week navigation: Current date was:', currentDateCopy.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+      console.log('🔍 Week navigation: New date is:', targetDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+      console.log('🔍 Week navigation: Shifting by', diffDays, 'days');
+
+      // Simple shift: move window start by one business day
+      let newWindowStart: Date;
+      if (diffDays > 0) {
+        // Moving forward - get next business day from window start
+        newWindowStart = getNextBusinessDay(currentWindowStart);
+      } else if (diffDays < 0) {
+        // Moving backward - get previous business day from window start
+        newWindowStart = getPreviousBusinessDay(currentWindowStart);
+      } else {
+        // No change
+        newWindowStart = currentWindowStart;
+      }
+
+      console.log('🔍 Week navigation: New window start:', newWindowStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+      setWindowStartDate(newWindowStart);
+      setCurrentDate(date);
+
+    } else if (viewType === CalendarViewType.BiWeek) {
+      // For BiWeek view, find the Monday of the target week
+      const targetDay = new Date(date);
+      const dayOfWeek = targetDay.getDay();
+
+      // Calculate days to subtract to get to Monday
+      let daysToMonday = dayOfWeek - 1; // 1 = Monday
+      if (dayOfWeek === 0) daysToMonday = 6; // Sunday -> go back 6 days
+
+      const monday = new Date(targetDay);
+      monday.setDate(targetDay.getDate() - daysToMonday);
+
+      console.log('🔍 BiWeek navigation: Setting window to Monday:', monday.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }));
+      setWindowStartDate(monday);
+      setCurrentDate(date);
+
+    } else {
+      // For Day view, use the existing navigateToDay logic
+      navigateToDay(date);
+    }
+  }, [navigateToDay, viewType, windowStartDate, currentDate, getNextBusinessDay, getPreviousBusinessDay]);
 
   /**
    * Handle task assignment creation
@@ -2803,11 +2867,10 @@ ${dateInfo}`;
       // Set up schedule update listeners
       const handleAssignmentUpdate = (assignment: any) => {
         console.log('🔄 Real-time assignment update received:', assignment);
-        // Reload calendar data to show the update immediately
-        loadCalendarData(
-          teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-          teamViewMode
-        );
+        console.log('🔍 SignalR - DISABLED auto-reload to prevent window jumping');
+        // DON'T reload calendar data here - this causes window position jumping
+        // The manual reload in handleTaskDrop is sufficient for immediate updates
+        // SignalR updates are for other users' changes, not our own
       };
 
       const handleBulkAssignmentsUpdate = (assignments: any[]) => {
@@ -3150,6 +3213,9 @@ ${dateInfo}`;
             onRefresh={loadCalendarData}
             onQuickEditTaskType={(task) => {
               console.log('QuickEdit TaskType clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
+
+              // Reload task types to get latest from database
+              loadTaskTypes();
 
               // CAPTURE selection immediately (like handleTaskPasteMultiple does)
               let tasksToEdit: AssignmentTaskDto[] = [];

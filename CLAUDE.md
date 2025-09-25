@@ -1,6 +1,6 @@
 # CRITICAL ISSUES AND SOLUTIONS
 
-## 0. DATABASE PROTECTION - MOST CRITICAL RULE
+## 0. CRITICAL PROTECTION RULES - MOST IMPORTANT
 
 ### ⚠️ NEVER DELETE DATABASE FILES ⚠️
 **ABSOLUTE RULE: NEVER DELETE designplanner.db FILES UNDER ANY CIRCUMSTANCES**
@@ -8,6 +8,16 @@
 - NEVER suggest database deletion as a solution
 - ALWAYS ask user before any database-related operations
 - If database issues occur, find alternative solutions that preserve data
+
+### ⚠️ NEVER USE GIT RESTORE OR REVERT COMMANDS ⚠️
+**ABSOLUTE RULE: NEVER REVERT OR RESTORE GIT FILES WITHOUT EXPLICIT USER PERMISSION**
+- NEVER run `git restore` on any files
+- NEVER run `git reset` or `git revert` commands
+- NEVER overwrite user's work or hours of development
+- ALWAYS preserve existing code and styling
+- If there are syntax errors, fix them directly - DO NOT revert files
+- User lost hours of iOS glassmorphism work due to accidental git restore
+- **THIS CAUSED USER TO LOSE SLEEP AT 3AM TRYING TO FIX THE DAMAGE**
 
 ## 1. 403 FORBIDDEN ERROR - RECURRING AUTHORIZATION ISSUE
 

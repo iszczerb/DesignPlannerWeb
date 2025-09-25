@@ -895,15 +895,28 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         }
       }}
     >
-      {/* Single Compact Header - Matching Reference */}
+      {/* Single Compact Header - iOS Glassmorphism Style */}
       <Box sx={{
         display: 'flex',
         flexDirection: 'column',
         px: 4,
         py: 1,
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e2e8f0',
-        minHeight: '90px'
+        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 58, 138, 0.9))',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        minHeight: '90px',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
+          pointerEvents: 'none'
+        }
       }}>
 
         {/* Single Row Layout */}
@@ -921,12 +934,12 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         <Box sx={{
           position: 'absolute',
           left: '50%',
-          top: '0px',
+          top: '10px',
           transform: 'translateX(-50%)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 1,
+          gap: 0.3,
           zIndex: 10,
           width: 'auto'
         }}>
@@ -937,19 +950,28 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             size="small"
             sx={{
               '& .MuiToggleButton-root': {
-                backgroundColor: '#00265C',
-                color: 'white',
-                border: '1px solid #00265C',
+                background: 'rgba(255, 255, 255, 0.08)',
+                backdropFilter: 'blur(20px)',
+                color: 'rgba(255, 255, 255, 0.9)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
                 fontSize: '12px',
                 px: 1.5,
                 py: 0.5,
                 fontWeight: 600,
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
-                  backgroundColor: '#003d7a'
+                  background: 'rgba(255, 255, 255, 0.12)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
                 },
                 '&.Mui-selected': {
-                  backgroundColor: '#001a3d',
-                  color: 'white'
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  color: 'rgba(15, 23, 42, 0.95)',
+                  fontWeight: 700,
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
                 }
               }
             }}
@@ -962,7 +984,18 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
 
           {/* Date aligned centered */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton onClick={() => navigatePeriod('prev')} size="small" sx={{ color: '#00265C' }}>
+            <IconButton onClick={() => navigatePeriod('prev')} size="small" sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+              }
+            }}>
               <ChevronLeft fontSize="small" />
             </IconButton>
             <Typography
@@ -970,16 +1003,29 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               sx={{
                 width: '150px',
                 textAlign: 'center',
-                fontWeight: 'bold',
-                fontSize: '16px',
+                fontWeight: 700,
+                fontSize: '14px',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
-                color: '#00265C'
+                color: 'rgba(255, 255, 255, 0.95)',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
               }}
             >
               {formatPeriodDisplay()}
             </Typography>
-            <IconButton onClick={() => navigatePeriod('next')} size="small" sx={{ color: '#00265C' }}>
+            <IconButton onClick={() => navigatePeriod('next')} size="small" sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+              }
+            }}>
               <ChevronRight fontSize="small" />
             </IconButton>
           </Box>
@@ -989,13 +1035,31 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <img
               src="/assets/logos/design-planner-logo.png"
               alt="Design Planner"
-              style={{ height: '50px', width: 'auto' }}
+              style={{
+                height: '50px',
+                width: 'auto',
+                filter: 'brightness(0) invert(1)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
             />
           </Box>
 
           {/* 2 KPIs BEFORE toggle - grouped */}
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-            <Card sx={{ minWidth: '120px', height: '60px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Card sx={{
+              minWidth: '120px',
+              height: '60px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              }
+            }}>
               <CardContent sx={{
                 textAlign: 'center',
                 py: 0.5,
@@ -1005,16 +1069,44 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 flexDirection: 'column',
                 justifyContent: 'space-between'
               }}>
-                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  letterSpacing: '0.5px',
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
                   PROJECTS
                 </Typography>
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '18px', color: '#00265C' }}>
+                <Typography variant="h6" sx={{
+                  fontSize: '18px',
+                  fontWeight: 800,
+                  color: 'rgba(255, 255, 255, 0.95)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                }}>
                   {getFilteredSummary().totalProjects}
                 </Typography>
               </CardContent>
             </Card>
 
-            <Card sx={{ minWidth: '120px', height: '60px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Card sx={{
+              minWidth: '120px',
+              height: '60px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              }
+            }}>
               <CardContent sx={{
                 textAlign: 'center',
                 py: 0.5,
@@ -1024,10 +1116,22 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 flexDirection: 'column',
                 justifyContent: 'space-between'
               }}>
-                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  letterSpacing: '0.5px'
+                }}>
                   HOURS
                 </Typography>
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '18px', color: '#00265C' }}>
+                <Typography variant="h6" sx={{
+                  fontSize: '18px',
+                  fontWeight: 800,
+                  color: 'rgba(255, 255, 255, 0.95)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                }}>
                   {formatHours(getFilteredSummary().totalHours)}
                 </Typography>
               </CardContent>
@@ -1039,7 +1143,20 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
 
           {/* 2 KPIs AFTER toggle - grouped */}
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-            <Card sx={{ minWidth: '120px', height: '60px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Card sx={{
+              minWidth: '120px',
+              height: '60px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              }
+            }}>
               <CardContent sx={{
                 textAlign: 'center',
                 py: 0.5,
@@ -1049,16 +1166,41 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 flexDirection: 'column',
                 justifyContent: 'space-between'
               }}>
-                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  letterSpacing: '0.5px'
+                }}>
                   TASKS
                 </Typography>
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '18px', color: '#00265C' }}>
+                <Typography variant="h6" sx={{
+                  fontSize: '18px',
+                  fontWeight: 800,
+                  color: 'rgba(255, 255, 255, 0.95)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                }}>
                   {getFilteredSummary().totalTasks}
                 </Typography>
               </CardContent>
             </Card>
 
-            <Card sx={{ minWidth: '120px', height: '60px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Card sx={{
+              minWidth: '120px',
+              height: '60px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              }
+            }}>
               <CardContent sx={{
                 textAlign: 'center',
                 py: 0.5,
@@ -1068,10 +1210,22 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 flexDirection: 'column',
                 justifyContent: 'space-between'
               }}>
-                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  letterSpacing: '0.5px'
+                }}>
                   PROJ/CLIENT
                 </Typography>
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '18px', color: '#00265C' }}>
+                <Typography variant="h6" sx={{
+                  fontSize: '18px',
+                  fontWeight: 800,
+                  color: 'rgba(255, 255, 255, 0.95)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                }}>
                   {getFilteredSummary().averageProjectClient.toFixed(1)}
                 </Typography>
               </CardContent>
@@ -1083,10 +1237,32 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <img
               src="/assets/logos/tate-logo.png"
               alt="Tate"
-              style={{ height: '50px', width: 'auto' }}
+              style={{
+                height: '50px',
+                width: 'auto',
+                filter: 'brightness(0) invert(1)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
             />
-            <IconButton onClick={onClose} size="medium" sx={{ color: '#00265C' }}>
-              <CloseIcon fontSize="large" />
+            <IconButton onClick={onClose} sx={{
+              width: '28px',
+              height: '28px',
+              color: 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '8px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+              },
+              '& .MuiSvgIcon-root': {
+                fontSize: '18px'
+              }
+            }}>
+              <CloseIcon />
             </IconButton>
           </Box>
         </Box>
@@ -1102,7 +1278,29 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
 
         {/* LEFT SIDEBAR - Projects */}
         <Box sx={{ width: '280px', display: 'flex', flexDirection: 'column', p: 0.5 }}>
-          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Card sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1))',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
+              pointerEvents: 'none',
+              zIndex: 0
+            }
+          }}>
             <CardContent sx={{
               backgroundColor: '#00265C',
               py: 0.5,
@@ -1118,7 +1316,29 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 clear
               </Button>
             </CardContent>
-            <Box sx={{ flex: 1, overflow: 'auto', px: 1, py: 0.25 }}>
+            <Box sx={{
+              flex: 1,
+              overflow: 'auto',
+              px: 1,
+              py: 0.25,
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05))',
+              backdropFilter: 'blur(15px)',
+              borderRadius: '0 0 20px 20px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderTop: 'none',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
+                pointerEvents: 'none',
+                zIndex: 0
+              }
+            }}>
               <Box>
                 {getFilteredProjectsForSidebar().map((project, index) => {
                   const isSelected = selectedProjects.includes(project.projectCode);
@@ -1341,9 +1561,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         })()}
                         cx="50%"
                         cy="50%"
-                        innerRadius={0}
+                        innerRadius={65}
                         outerRadius={110}
                         paddingAngle={2}
+                        cornerRadius={6}
                         dataKey="value"
                         isAnimationActive={true}
                         animationDuration={250}
@@ -1558,9 +1779,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         })()}
                         cx="50%"
                         cy="50%"
-                        innerRadius={45}
+                        innerRadius={65}
                         outerRadius={110}
                         paddingAngle={2}
+                        cornerRadius={6}
                         dataKey="value"
                         isAnimationActive={true}
                         animationDuration={250}
@@ -1650,7 +1872,29 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         <Box sx={{ width: '280px', display: 'flex', flexDirection: 'column', p: 0.5, gap: 0.5 }}>
 
           {/* Team Card */}
-          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Card sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1))',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
+              pointerEvents: 'none',
+              zIndex: 0
+            }
+          }}>
             <CardContent sx={{
               backgroundColor: '#00265C',
               py: 0.5,
@@ -1747,7 +1991,29 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           </Card>
 
           {/* Clients Card */}
-          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Card sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1))',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
+              pointerEvents: 'none',
+              zIndex: 0
+            }
+          }}>
             <CardContent sx={{
               backgroundColor: '#00265C',
               py: 0.5,
@@ -1942,30 +2208,68 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         </>
       )}
 
-      {/* Footer with Filters */}
+      {/* Footer with Filters - iOS Glassmorphism Style */}
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         px: 3,
         py: 1.5,
-        backgroundColor: '#00265C',
-        borderTop: '1px solid #e2e8f0'
+        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 58, 138, 0.9))',
+        backdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
+          pointerEvents: 'none'
+        }
       }}>
         {/* Category Filters */}
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, position: 'relative', zIndex: 1 }}>
           {categories.map(category => (
             <Chip
               key={category.id}
               label={category.name}
               onClick={() => toggleCategoryFilter(category.id)}
               sx={{
-                backgroundColor: selectedCategories.includes(category.id) ? '#001a3d' : category.color,
-                color: 'white',
-                borderColor: category.color,
+                background: selectedCategories.includes(category.id) ?
+                  'rgba(255, 255, 255, 0.95)' :
+                  'rgba(255, 255, 255, 0.08)',
+                backdropFilter: 'blur(20px)',
+                color: selectedCategories.includes(category.id) ?
+                  'rgba(15, 23, 42, 0.95)' :
+                  'rgba(255, 255, 255, 0.95)',
+                border: selectedCategories.includes(category.id) ?
+                  '1px solid rgba(255, 255, 255, 0.3)' :
+                  '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '20px',
+                fontWeight: 600,
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                fontSize: '12px',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: selectedCategories.includes(category.id) ?
+                  '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)' :
+                  '0 4px 12px rgba(0, 0, 0, 0.08)',
                 '&:hover': {
-                  backgroundColor: selectedCategories.includes(category.id) ? '#001a3d' : category.color,
-                  filter: 'brightness(1.1)'
+                  background: selectedCategories.includes(category.id) ?
+                    'rgba(255, 255, 255, 0.95)' :
+                    'rgba(255, 255, 255, 0.12)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+                },
+                '&:active': {
+                  transform: 'translateY(0px)'
+                },
+                '& .MuiChip-label': {
+                  px: 2,
+                  py: 0.5
                 }
               }}
             />

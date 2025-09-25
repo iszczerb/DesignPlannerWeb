@@ -46,21 +46,58 @@ const ClientDistributionChart: React.FC<ClientDistributionChartProps> = ({ data 
   };
 
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+    <Card sx={{
+      height: '100%',
+      borderRadius: '20px',
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1))',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.3)',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+      }
+    }}>
+      <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 3 }}>
+        <Typography variant="h6" sx={{
+          fontWeight: 600,
+          color: 'rgba(15, 23, 42, 0.9)',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
+          fontSize: '1.1rem',
+          letterSpacing: '-0.02em',
+          mb: 3,
+          textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)'
+        }}>
           CLIENT DISTRIBUTION
         </Typography>
 
-        <Box sx={{ flex: 1, minHeight: 0, height: 400 }}>
-          <VictoryContainer width={400} height={400}>
+        <Box sx={{
+          flex: 1,
+          minHeight: 0,
+          height: 400,
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05))',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '16px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 10px rgba(0, 0, 0, 0.05)',
+          p: 2
+        }}>
+          <VictoryContainer
+            width={500}
+            height={400}
+            style={{
+              borderRadius: '12px',
+              background: 'transparent'
+            }}
+          >
             <VictoryPie
               data={chartData}
               x="x"
               y="y"
-              innerRadius={60}
-              outerRadius={120}
-              padAngle={2}
+              innerRadius={70}
+              outerRadius={140}
+              padAngle={3}
               colorScale={chartData.map(d => d.clientColor)}
               labels={({ datum }) => [
                 `Client: ${datum.x}`,
@@ -73,34 +110,61 @@ const ClientDistributionChart: React.FC<ClientDistributionChartProps> = ({ data 
               labelComponent={
                 <VictoryTooltip
                   style={{
-                    fill: '#333',
-                    fontSize: 12,
-                    fontFamily: 'Roboto, sans-serif',
+                    fill: '#ffffff',
+                    fontSize: 11,
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                    fontWeight: 500
                   }}
                   flyoutStyle={{
-                    fill: '#fff',
-                    stroke: '#ccc',
+                    fill: 'rgba(30, 41, 59, 0.95)',
+                    stroke: 'rgba(255, 255, 255, 0.1)',
                     strokeWidth: 1,
+                    filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))',
                   }}
                 />
               }
               animate={{
-                duration: 1000,
+                duration: 800,
+                onLoad: { duration: 400 },
+                easing: "cubicInOut"
+              }}
+              style={{
+                data: {
+                  strokeWidth: 2,
+                  stroke: "rgba(255, 255, 255, 0.8)",
+                  fillOpacity: 0.95,
+                  filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
+                }
               }}
             />
             <VictoryLegend
-              x={20}
-              y={280}
+              x={40}
+              y={320}
               orientation="horizontal"
-              gutter={10}
+              gutter={15}
+              rowGutter={8}
               style={{
                 border: { stroke: 'transparent' },
-                title: { fontSize: 14, fill: '#333' },
-                labels: { fontSize: 10, fill: '#333' },
+                title: {
+                  fontSize: 12,
+                  fill: '#64748b',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  fontWeight: 600
+                },
+                labels: {
+                  fontSize: 11,
+                  fill: '#64748b',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
+                  fontWeight: 500
+                },
               }}
               data={chartData.map((item) => ({
                 name: item.x,
-                symbol: { fill: item.clientColor },
+                symbol: {
+                  fill: item.clientColor,
+                  type: 'circle',
+                  size: 4
+                },
               }))}
             />
           </VictoryContainer>
