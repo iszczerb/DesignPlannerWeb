@@ -368,7 +368,9 @@ const addMockLeaveData = (data: CalendarViewDto): CalendarViewDto => {
   return mockData;
 };
 
-const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => void }> = ({ showNotification }) => {
+const TeamScheduleContent: React.FC<{
+  showNotification: (notification: any) => void;
+}> = ({ showNotification }) => {
   // Redux hooks
   const dispatch = useAppDispatch();
 
@@ -1067,6 +1069,40 @@ const TeamScheduleContent: React.FC<{ showNotification: (notification: any) => v
 
     console.log('🎯 Navigated to current week:', today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
   }, []);
+
+  /**
+   * Handle direct date navigation - go to specific date selected from date picker
+   * This is exposed via the onDirectDateNavigation prop and called from AppHeader
+   */
+  const handleDirectDateNavigation = useCallback((targetDate: Date) => {
+    console.log('📅 TEAM SCHEDULE - Direct date navigation to:', targetDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+
+    // Calculate business day window start for target date
+    const getBusinessDayWindowStart = (date: Date): Date => {
+      const adjustedDate = new Date(date);
+
+      // If target date is weekend, move to next Monday
+      if (adjustedDate.getDay() === 0) { // Sunday
+        adjustedDate.setDate(adjustedDate.getDate() + 1); // Move to Monday
+      } else if (adjustedDate.getDay() === 6) { // Saturday
+        adjustedDate.setDate(adjustedDate.getDate() + 2); // Move to Monday
+      }
+
+      return adjustedDate;
+    };
+
+    // Set view to Weekly and go to target date's week
+    setViewType(CalendarViewType.Week);
+    setCurrentDate(targetDate);
+
+    // Calculate window start for the target date's week
+    const windowStart = getBusinessDayWindowStart(targetDate);
+    setWindowStartDate(windowStart);
+    setLastNavigatedDate(targetDate);
+
+    console.log('🎯 Navigated to selected date:', targetDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+  }, []);
+
 
   /**
    * Handle task clicks - disabled for now (use right-click context menu instead)
@@ -3372,6 +3408,7 @@ ${dateInfo}`;
           handleViewTypeChange(calendarViewType);
         }}
         onLogoClick={handleLogoClick}
+        onDirectDateNavigation={handleDirectDateNavigation}
       />
 
       {/* Error Display */}

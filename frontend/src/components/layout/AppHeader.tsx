@@ -15,7 +15,12 @@ import {
   styled,
   alpha,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -29,7 +34,8 @@ import {
   Person as PersonIcon,
   Menu as MenuIcon,
   ViewWeek as ViewIcon,
-  KeyboardArrowDown as ArrowDownIcon
+  KeyboardArrowDown as ArrowDownIcon,
+  DateRange as DateRangeIcon
 } from '@mui/icons-material';
 
 // Styled components for iOS-like appearance
@@ -105,38 +111,6 @@ const NavButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const SearchContainer = styled(Box)(({ theme }) => ({
-  position: 'relative',
-  borderRadius: '20px',
-  backgroundColor: '#f8f9fa',
-  border: '1px solid #e9ecef',
-  '&:hover': {
-    backgroundColor: '#f1f3f4',
-  },
-  marginRight: theme.spacing(2),
-  width: '300px',
-}));
-
-const SearchIconWrapper = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#6c757d',
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: '#1e3a5f',
-  fontSize: '14px',
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(1, 1, 1, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    width: '100%',
-  },
-}));
 
 const UserSection = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -157,6 +131,7 @@ interface AppHeaderProps {
   // Date navigation props
   currentDate?: Date;
   onDateChange?: (date: Date) => void;
+  onDirectDateNavigation?: (date: Date) => void;
   currentViewType?: 'Daily' | 'Weekly' | 'Biweekly' | 'Monthly';
   onViewTypeChange?: (viewType: 'Daily' | 'Weekly' | 'Biweekly' | 'Monthly') => void;
   // Logo click handler
@@ -175,6 +150,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onLogout,
   currentDate = new Date(),
   onDateChange,
+  onDirectDateNavigation,
   currentViewType = 'Weekly',
   onViewTypeChange,
   onLogoClick
@@ -185,6 +161,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
   const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const userMenuOpen = Boolean(userMenuAnchor);
   const mobileMenuOpen = Boolean(mobileMenuAnchor);
   const viewMenuOpen = Boolean(viewMenuAnchor);
@@ -201,9 +179,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
   const viewTypes: ('Daily' | 'Weekly' | 'Biweekly' | 'Monthly')[] = ['Daily', 'Weekly', 'Biweekly', 'Monthly'];
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onSearch?.(event.target.value);
-  };
 
   const handleNavigation = (pageId: string) => {
     onNavigate?.(pageId);
@@ -396,7 +371,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         <LogoContainer>
           <ClickableLogoContainer
             onClick={onLogoClick}
-            title="Go to current week"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              const today = new Date();
+              const todayStr = today.getFullYear() + '-' +
+                String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                String(today.getDate()).padStart(2, '0');
+              setSelectedDate(todayStr);
+              setDatePickerOpen(true);
+            }}
+            title="Left-click: Go to today | Right-click: Pick date"
           >
             <DesignPlannerLogo
               src="/assets/logos/design-planner-logo.png"
@@ -458,17 +442,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           )}
         </NavigationContainer>
 
-        {/* Search Bar */}
-        <SearchContainer>
-          <SearchIconWrapper>
-            <SearchIcon fontSize="small" />
-          </SearchIconWrapper>
-          <StyledInputBase
-            placeholder="Search tasks..."
-            inputProps={{ 'aria-label': 'search' }}
-            onChange={handleSearchChange}
-          />
-        </SearchContainer>
 
         {/* View Button - Always Visible */}
         <Button
@@ -712,6 +685,176 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             </MenuItem>
           ))}
         </Menu>
+
+        {/* Date Picker Dialog */}
+        <Dialog
+          open={datePickerOpen}
+          onClose={() => setDatePickerOpen(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: '12px',
+              padding: '8px'
+            }
+          }}
+        >
+          <DialogTitle sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            color: '#1e3a5f',
+            fontSize: '18px',
+            fontWeight: 600
+          }}>
+            <DateRangeIcon sx={{ color: '#3498db' }} />
+            Go to Date
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{ color: '#6c757d', mb: 2 }}>
+              Select a business day (Monday - Friday) to navigate to:
+            </Typography>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="date-picker"
+              label="Select Date"
+              type="date"
+              fullWidth
+              variant="outlined"
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+              }}
+              sx={{
+                mt: 1,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#3498db',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#3498db',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#3498db',
+                },
+                // Disable weekends in calendar picker
+                '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                  cursor: 'pointer',
+                },
+              }}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              inputProps={{
+                // Custom validation to prevent weekend selection
+                onInput: (e: React.FormEvent<HTMLInputElement>) => {
+                  const input = e.target as HTMLInputElement;
+                  const selectedDate = new Date(input.value + 'T12:00:00');
+                  const dayOfWeek = selectedDate.getDay();
+
+                  // If weekend is selected, find the nearest Monday
+                  if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    const nearestMonday = new Date(selectedDate);
+                    if (dayOfWeek === 0) { // Sunday
+                      nearestMonday.setDate(nearestMonday.getDate() + 1);
+                    } else if (dayOfWeek === 6) { // Saturday
+                      nearestMonday.setDate(nearestMonday.getDate() + 2);
+                    }
+                    const mondayStr = nearestMonday.getFullYear() + '-' +
+                      String(nearestMonday.getMonth() + 1).padStart(2, '0') + '-' +
+                      String(nearestMonday.getDate()).padStart(2, '0');
+                    input.value = mondayStr;
+                    setSelectedDate(mondayStr);
+                  }
+                },
+              }}
+            />
+            {selectedDate && (() => {
+              const date = new Date(selectedDate + 'T12:00:00');
+              const dayOfWeek = date.getDay();
+              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+              return (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: isWeekend ? '#dc3545' : '#6c757d',
+                    mt: 1,
+                    display: 'block',
+                    fontWeight: isWeekend ? 600 : 400
+                  }}
+                >
+                  {isWeekend ? '⚠️ Weekend selected - will navigate to nearest Monday' : 'Selected:'} {date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </Typography>
+              );
+            })()}
+          </DialogContent>
+          <DialogActions sx={{ padding: '16px 24px' }}>
+            <Button
+              onClick={() => setDatePickerOpen(false)}
+              sx={{
+                color: '#6c757d',
+                textTransform: 'none',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                '&:hover': {
+                  backgroundColor: alpha('#6c757d', 0.1),
+                },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedDate && onDirectDateNavigation) {
+                  const selectedDateObj = new Date(selectedDate + 'T12:00:00');
+
+                  // Ensure we're navigating to a business day
+                  const getBusinessDay = (date: Date): Date => {
+                    const targetDate = new Date(date);
+
+                    // If weekend, move to next Monday
+                    if (targetDate.getDay() === 0) { // Sunday
+                      targetDate.setDate(targetDate.getDate() + 1);
+                    } else if (targetDate.getDay() === 6) { // Saturday
+                      targetDate.setDate(targetDate.getDate() + 2);
+                    }
+
+                    return targetDate;
+                  };
+
+                  // Get the proper business day
+                  const businessDay = getBusinessDay(selectedDateObj);
+
+                  console.log('📅 Go to Date: Navigating to selected date:', businessDay.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+
+                  // Use direct navigation for all view types (Daily, Weekly, BiWeekly, Monthly)
+                  onDirectDateNavigation(businessDay);
+                }
+                setDatePickerOpen(false);
+              }}
+              disabled={!selectedDate || !onDirectDateNavigation}
+              sx={{
+                backgroundColor: '#3498db',
+                color: 'white',
+                textTransform: 'none',
+                borderRadius: '8px',
+                padding: '8px 24px',
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: '#2980b9',
+                },
+                '&:disabled': {
+                  backgroundColor: '#bdc3c7',
+                  color: '#7f8c8d',
+                },
+              }}
+            >
+              Go to Date
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Toolbar>
     </StyledAppBar>
   );
