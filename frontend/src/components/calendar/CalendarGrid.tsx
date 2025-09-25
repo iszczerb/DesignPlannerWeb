@@ -64,10 +64,6 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   onTeamAddMember,
   onTeamManage
 }) => {
-  console.log(`🔍🔍🔍 CALENDAR GRID RENDER: viewType=${viewType}, calendarData.days.length=${calendarData?.days?.length || 'NO DAYS'}`);
-  if (calendarData?.days) {
-    console.log(`🔍🔍🔍 CALENDAR GRID DAYS:`, calendarData.days.map(d => `${d.dayName} ${d.displayDate}`));
-  }
   const handleTaskClick = (task: AssignmentTaskDto) => {
     if (onTaskClick) {
       onTaskClick(task);
@@ -148,7 +144,6 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   });
 
   const renderDayHeader = (day: any, index: number) => {
-    console.log(`🔍🔍🔍 RENDERING DAY HEADER ${index + 1}: ${day.dayName} ${day.displayDate} (${day.date})`);
     return (
       <div
         key={day.date}
@@ -178,8 +173,6 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   };
 
   const renderHeader = () => {
-    console.log(`🔍🔍🔍 RENDER HEADER: calendarData.days.length = ${calendarData.days.length}`);
-    console.log(`🔍🔍🔍 RENDER HEADER: calendarData.days =`, calendarData.days.map(d => `${d.dayName} ${d.displayDate}`));
 
     return (
       <div style={getHeaderRowStyle()}>

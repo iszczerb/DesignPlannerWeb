@@ -2184,6 +2184,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   const getDayHeaderStyle = (day: CalendarDayDto): React.CSSProperties => {
     const isTodayDate = isToday(new Date(day.date));
     const isSelected = isDaySelected(new Date(day.date));
+    const isMonday = new Date(day.date).getDay() === 1;
     // Dynamic column width: 250px for ≤5 days (weekly), 125px for >5 days (biweekly)
     const dynamicMinWidth = days.length <= 5 ? '250px' : '125px';
 
@@ -2199,7 +2200,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       borderRight: '1px solid #e5e7eb',
       backgroundColor: isSelected
         ? '#3b82f6'
-        : (isTodayDate ? '#dbeafe' : '#f1f5f9'),
+        : (isTodayDate ? '#dbeafe' : (isMonday ? '#d1d5db' : '#f1f5f9')),
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -2278,6 +2279,87 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     overflow: 'hidden'
   });
 
+  // Week separator helper functions for biweekly and weekly views
+  const isWeekTransition = (currentDay: CalendarDayDto, nextDay: CalendarDayDto): boolean => {
+    // Enable for both weekly (5 days) and biweekly (>5 days) views
+    if (days.length < 5) return false; // Skip for day view
+
+    const currentDate = new Date(currentDay.date);
+    const nextDate = new Date(nextDay.date);
+    const currentDayOfWeek = currentDate.getDay();
+    const nextDayOfWeek = nextDate.getDay();
+
+    // Week transition: Friday (5) followed by Monday (1)
+    return currentDayOfWeek === 5 && nextDayOfWeek === 1;
+  };
+
+  const getWeekNumber = (date: Date): number => {
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date.getTime() - startOfYear.getTime()) / 86400000;
+    return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  };
+
+  const getWeekSeparatorHeaderStyle = (): React.CSSProperties => ({
+    width: '30px',
+    minWidth: '30px',
+    maxWidth: '30px',
+    backgroundColor: '#f3f4f6',
+    borderLeft: '2px solid #6b7280',
+    borderRight: '2px solid #6b7280',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.75rem',
+    fontWeight: '600',
+    color: '#374151',
+    padding: '4px 2px',
+    textAlign: 'center',
+    writingMode: 'vertical-rl',
+    textOrientation: 'mixed'
+  });
+
+  const getWeekSeparatorCellStyle = (): React.CSSProperties => ({
+    width: '30px',
+    minWidth: '30px',
+    maxWidth: '30px',
+    backgroundColor: '#f9fafb',
+    borderLeft: '2px solid #6b7280',
+    borderRight: '2px solid #6b7280',
+    display: 'flex',
+    flexDirection: 'column'
+  });
+
+  const getWeekSeparatorSlotStyle = (): React.CSSProperties => ({
+    height: '65px',
+    backgroundColor: '#f3f4f6',
+    borderBottom: '1px solid #d1d5db',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  });
+
+  // Create array with days and separators for weekly and biweekly views
+  const createDaysWithSeparators = () => {
+    if (days.length < 5) return days; // No separators for day view
+
+    const result: Array<CalendarDayDto | { type: 'separator'; weekNumber: number }> = [];
+
+    for (let i = 0; i < days.length; i++) {
+      result.push(days[i]);
+
+      // Check if we need a separator after this day
+      if (i < days.length - 1 && isWeekTransition(days[i], days[i + 1])) {
+        const currentDate = new Date(days[i].date);
+        const weekNumber = getWeekNumber(currentDate);
+        result.push({ type: 'separator', weekNumber });
+      }
+    }
+
+    return result;
+  };
+
+  const daysWithSeparators = createDaysWithSeparators();
+
   return (
     <div style={getMainContainerStyle()}>
       {/* Header Row */}
@@ -2338,11 +2420,49 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-2c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>
           </svg>
         </div>
-        {days.map((day) => (
-          <div
-            key={day.date}
-            style={getDayHeaderStyle(day)}
-            data-day-header="true"
+        {daysWithSeparators.map((item, index) => {
+          if (typeof item === 'object' && 'type' in item && item.type === 'separator') {
+            // Render week separator header with text
+            return (
+              <div
+                key={`separator-${item.weekNumber}`}
+                style={{
+                  ...getWeekSeparatorHeaderStyle(),
+                  position: 'relative'
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '0',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    writingMode: 'vertical-rl',
+                    textOrientation: 'mixed',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    color: '#374151',
+                    whiteSpace: 'nowrap',
+                    height: `calc(${employees.length * 80}px + 100px)`, // Dynamic height based on employee count
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10
+                  }}
+                >
+                  END OF WEEK {item.weekNumber}
+                </div>
+              </div>
+            );
+          }
+
+          // Render regular day header
+          const day = item as CalendarDayDto;
+          return (
+            <div
+              key={day.date}
+              style={getDayHeaderStyle(day)}
+              data-day-header="true"
             onClick={(e) => {
               if (!isReadOnly) {
                 console.log('Day header clicked:', day.date, 'Ctrl:', e.ctrlKey);
@@ -2353,8 +2473,9 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               if (!isReadOnly) {
                 const isTodayDate = isToday(new Date(day.date));
                 const isSelected = isDaySelected(new Date(day.date));
+                const isMonday = new Date(day.date).getDay() === 1;
                 if (!isSelected) {
-                  e.currentTarget.style.backgroundColor = isTodayDate ? '#bfdbfe' : '#e2e8f0';
+                  e.currentTarget.style.backgroundColor = isTodayDate ? '#bfdbfe' : (isMonday ? '#9ca3af' : '#e2e8f0');
                 }
               }
             }}
@@ -2362,8 +2483,9 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               if (!isReadOnly) {
                 const isTodayDate = isToday(new Date(day.date));
                 const isSelected = isDaySelected(new Date(day.date));
+                const isMonday = new Date(day.date).getDay() === 1;
                 if (!isSelected) {
-                  e.currentTarget.style.backgroundColor = isTodayDate ? '#dbeafe' : '#f1f5f9';
+                  e.currentTarget.style.backgroundColor = isTodayDate ? '#dbeafe' : (isMonday ? '#d1d5db' : '#f1f5f9');
                 }
               }
             }}
@@ -2491,7 +2613,8 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           >
             {formatDayHeader(day)}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Content Rows */}
@@ -2516,8 +2639,23 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               </div>
 
               {/* Day Columns */}
-              {days.map((day) => (
-                <div key={day.date} style={getDayCellStyle()}>
+              {daysWithSeparators.map((item, index) => {
+                if (typeof item === 'object' && 'type' in item && item.type === 'separator') {
+                  // Render week separator body
+                  return (
+                    <div key={`separator-body-${item.weekNumber}`} style={getWeekSeparatorCellStyle()}>
+                      {/* AM Separator Slot - Clean */}
+                      <div style={getWeekSeparatorSlotStyle()}></div>
+                      {/* PM Separator Slot - Clean */}
+                      <div style={getWeekSeparatorSlotStyle()}></div>
+                    </div>
+                  );
+                }
+
+                // Render regular day column
+                const day = item as CalendarDayDto;
+                return (
+                  <div key={day.date} style={getDayCellStyle()}>
                   {/* AM Slot */}
                   <div style={getTimeSlotStyle(true)}>
                     {renderTasksInSlot(employee, day, true)}
@@ -2528,11 +2666,13 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     {renderTasksInSlot(employee, day, false)}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ))}
         </div>
       </div>
+
 
       {/* Team Details Modal */}
       {selectedTeam && (
