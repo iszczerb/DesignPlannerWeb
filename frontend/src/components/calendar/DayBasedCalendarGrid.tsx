@@ -43,6 +43,7 @@ interface DayBasedCalendarGridProps {
   onTaskClick?: (task: AssignmentTaskDto, event?: React.MouseEvent) => void;
   onSlotClick?: (date: Date, slot: Slot, employeeId: number) => void;
   onTaskDrop?: (dragItem: DragItem, targetDate: Date, targetSlot: Slot, targetEmployeeId: number) => void;
+  onDragStart?: (sourceSlotInfo: {employeeId: number, date: Date, slot: Slot, remainingTasks: AssignmentTaskDto[]}) => void;
   onTaskEdit?: (task: AssignmentTaskDto) => void;
   onTaskDelete?: (assignmentId: number) => void;
   onTaskView?: (task: AssignmentTaskDto) => void;
@@ -85,6 +86,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   onTaskClick,
   onSlotClick,
   onTaskDrop,
+  onDragStart,
   onTaskEdit,
   onTaskDelete,
   onTaskView,
@@ -147,6 +149,9 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     startX: number;
     currentHours: number;
     currentColumnStart: number;
+    employeeId: number;
+    date: Date;
+    slot: Slot;
   } | null>(null);
 
   // Helper function to find available columns for a task
@@ -257,17 +262,30 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       return;
     }
 
+    // 🚨 CRITICAL FIX: Get FRESH slot data instead of using stale React state!
+    // The slotData parameter can be stale during rapid operations, causing overlaps
+    console.log('🔍 GETTING FRESH SLOT DATA to prevent stale state overlaps...');
+
+    // Get the most up-to-date slot data from current calendar state
+    const currentDayAssignment = employee.dayAssignments.find(
+      assignment => new Date(assignment.date).toDateString() === dateObj.toDateString()
+    );
+    const freshSlotData = isAM ? currentDayAssignment?.morningSlot : currentDayAssignment?.afternoonSlot;
+    const freshExistingTasks = freshSlotData?.tasks || [];
+
     // Calculate which column (0-3) the drop occurred in
     const targetColumn = calculateDropColumn(e.clientX, e.currentTarget);
 
-    console.log('🎯 Column-based drop:', {
+    console.log('🎯 Column-based drop WITH FRESH DATA:', {
       targetColumn,
-      existingTasks: slotData?.tasks?.length || 0,
-      draggedTask: dragData.task.taskTitle
+      staleTaskCount: slotData?.tasks?.length || 0,
+      freshTaskCount: freshExistingTasks.length,
+      draggedTask: dragData.task.taskTitle,
+      freshTasks: freshExistingTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
     });
 
-    // Get existing tasks, defaulting to empty array
-    const existingTasks = slotData?.tasks || [];
+    // CRITICAL: Use FRESH existing tasks for collision detection
+    const existingTasks = freshExistingTasks;
 
     // Apply column-based rearrangement logic
     const rearrangementResult = calculateColumnBasedRearrangement(
@@ -324,11 +342,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
         }
       }
 
-      // Refresh to show the updated positions
+      // ⚡ SMART REFRESH: Only refresh after all operations complete
+      // Reduced delay and single refresh point to eliminate race conditions
       setTimeout(() => {
-        console.log('🔄 Refreshing after column-based rearrangement...');
+        console.log('⚡ Smart refresh after operations complete');
         onRefresh?.();
-      }, 200);
+      }, 100);
     }
   };
 
@@ -353,7 +372,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   };
 
   // Handle resize start
-  const handleResizeStart = (e: React.MouseEvent, task: AssignmentTaskDto, side: 'left' | 'right') => {
+  const handleResizeStart = (e: React.MouseEvent, task: AssignmentTaskDto, side: 'left' | 'right', employeeId: number, date: Date, slot: Slot) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -367,10 +386,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       originalColumnStart: currentColumnStart,
       startX: e.clientX,
       currentHours: currentHours,
-      currentColumnStart: currentColumnStart
+      currentColumnStart: currentColumnStart,
+      employeeId,
+      date,
+      slot
     });
 
-    console.log(`🔄 Starting ${side.toUpperCase()} resize for task "${task.taskTitle}" - Current: ${currentHours}h at column ${currentColumnStart}`);
   };
 
   // Handle resize during mouse move
@@ -415,7 +436,6 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       currentColumnStart: newColumnStart
     } : null);
 
-    console.log(`🔄 Resizing: ${newHours}h at column ${newColumnStart}`);
   };
 
   // Handle bulk task resizing during smart drops
@@ -458,59 +478,96 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
 
   // Handle resize end
   const handleResizeEnd = async () => {
-    console.log(`🔥 RESIZE END CALLED - resizingTask:`, resizingTask);
-
     if (!resizingTask) {
-      console.log(`❌ No resizingTask state - aborting resize end`);
       return;
     }
 
-    const { taskId, currentHours, currentColumnStart, originalHours, originalColumnStart } = resizingTask;
-    console.log(`📊 RESIZE DATA: taskId=${taskId}, currentHours=${currentHours}, originalHours=${originalHours}, currentColumnStart=${currentColumnStart}, originalColumnStart=${originalColumnStart}`);
+    const { taskId, currentHours, currentColumnStart, originalHours, originalColumnStart, employeeId, date, slot } = resizingTask;
 
     // Only update if something actually changed
     if (currentHours !== originalHours || currentColumnStart !== originalColumnStart) {
       try {
-        console.log(`✅ STARTING API CALL: Persisting resize for task ${taskId}: ${currentHours}h at column ${currentColumnStart}`);
+        // Find the current employee and slot to get fresh data
+        const employee = employees.find(emp => emp.employeeId === employeeId);
+        const day = days.find(d => new Date(d.date).toDateString() === new Date(date).toDateString());
 
-        // Import scheduleService at the component level
-        const { default: scheduleService } = await import('../../services/scheduleService');
-        console.log(`📦 ScheduleService imported successfully`);
+        if (!employee || !day) {
+          console.error('Could not find employee or day for resize collision detection');
+          throw new Error('Invalid employee or day for resize');
+        }
 
-        // Prepare API call data
-        const updateData = {
-          assignmentId: taskId,
+        const dayAssignment = employee.dayAssignments.find(
+          assignment => new Date(assignment.date).toDateString() === new Date(date).toDateString()
+        );
+
+        if (!dayAssignment) {
+          console.error('Could not find day assignment for resize collision detection');
+          throw new Error('Invalid day assignment for resize');
+        }
+
+        const slotData = slot === Slot.Morning ? dayAssignment.morningSlot : dayAssignment.afternoonSlot;
+
+        if (!slotData) {
+          console.error('Could not find slot data for resize collision detection');
+          throw new Error('Invalid slot data for resize');
+        }
+
+        // The slot data structure uses 'tasks' not 'assignmentTasks'
+        const slotTasks = slotData.tasks || [];
+
+        // Get fresh existing tasks (excluding the one being resized)
+        const freshExistingTasks = slotTasks.filter(task => task.assignmentId !== taskId);
+
+        // Create a mock task with the new resize dimensions for collision detection
+        const originalTask = slotTasks.find(task => task.assignmentId === taskId);
+        if (!originalTask) {
+          console.error('Could not find original task in slot data for resize collision detection');
+          throw new Error('Original task not found for resize');
+        }
+
+        const resizedTaskForCollision = {
+          ...originalTask,
+          columnStart: currentColumnStart,
           hours: currentHours
         };
-        console.log(`📤 SENDING UPDATE DATA:`, updateData);
 
-        // Update the task via API (backend only supports hours, not columnStart)
-        const apiResponse = await scheduleService.updateAssignment(updateData);
-        console.log(`✅ API RESPONSE:`, apiResponse);
-        console.log(`🔄 Task ${taskId} resize persisted successfully - hours in response: ${apiResponse.hours}`);
-        console.log(`🔍 CRITICAL CHECK - originalHours in response: ${apiResponse.hours}, expectedHours: ${currentHours}`);
+        // Apply column-based rearrangement logic (same as drag-and-drop)
+        const rearrangementResult = calculateColumnBasedRearrangement(
+          freshExistingTasks,
+          resizedTaskForCollision,
+          currentColumnStart
+        );
+
+        if (!rearrangementResult.canDrop) {
+          // Reset the task to original state
+          setResizingTask(null);
+          return;
+        }
+
+        const { default: scheduleService } = await import('../../services/scheduleService');
+
+        // Update all tasks in the arrangement (including repositioned ones)
+        for (const task of rearrangementResult.newArrangement) {
+          const updateData = {
+            assignmentId: task.assignmentId,
+            columnStart: task.columnStart,
+            hours: task.hours
+          };
+
+          await scheduleService.updateAssignment(updateData);
+        }
 
         // Trigger a refresh of the calendar data
         if (onRefresh) {
-          console.log(`🔄 CALLING onRefresh() to reload calendar data`);
-          onRefresh();
-          console.log(`🔄 onRefresh() called successfully`);
-        } else {
-          console.warn('⚠️ No onRefresh callback provided - task will appear unchanged until page refresh');
+          await onRefresh();
         }
 
       } catch (error) {
-        console.error(`❌ RESIZE API FAILED for task ${taskId}:`, error);
-        console.error(`❌ Error details:`, error?.message, error?.response?.data);
-        // TODO: Show error toast to user
+        console.error(`Failed to resize task ${taskId}:`, error);
       }
-    } else {
-      console.log(`ℹ️ No changes to persist for task ${taskId} - currentHours=${currentHours}, originalHours=${originalHours}`);
     }
 
-    console.log(`🧹 CLEARING resizingTask state`);
     setResizingTask(null);
-    console.log(`🔥 RESIZE END COMPLETED`);
   };
 
   // Add global mouse event listeners for resize
@@ -1424,6 +1481,31 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   }
                 };
                 e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+
+                // 🎯 CAPTURE SOURCE SLOT DATA IMMEDIATELY ON DRAG START
+                if (onDragStart) {
+                  const currentSlot = isAM ? Slot.Morning : Slot.Afternoon;
+                  // Use tasksToShow which is already available in this scope
+                  // Get all tasks EXCEPT the one being dragged
+                  const remainingTasks = tasksToShow.filter(t => t.assignmentId !== task.assignmentId);
+
+                  console.log('🚀 DRAG START - Capturing source slot data:', {
+                    employeeId: employee.employeeId,
+                    date: dateObj.toDateString(),
+                    slot: currentSlot,
+                    draggedTask: task.assignmentId,
+                    totalTasks: tasksToShow.length,
+                    remainingTasks: remainingTasks.length,
+                    capturedTasks: remainingTasks.map(t => ({id: t.assignmentId, column: t.columnStart, hours: t.hours}))
+                  });
+
+                  onDragStart({
+                    employeeId: employee.employeeId,
+                    date: dateObj,
+                    slot: currentSlot,
+                    remainingTasks: remainingTasks
+                  });
+                }
               }
             }}
             onClick={(e) => onTaskClick?.(task, e)}
@@ -1564,12 +1646,6 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                 }
               };
               setTimeout(() => document.addEventListener('click', removeMenu), 0);
-            }}
-            onMouseEnter={() => {
-              setHoveredTask(task.assignmentId);
-            }}
-            onMouseLeave={() => {
-              setHoveredTask(null);
             }}
             style={{
               background: (() => {
@@ -1832,7 +1908,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     }}
                     onMouseEnter={() => setHoveredResizeHandle({ taskId: task.assignmentId, side: 'left' })}
                     onMouseLeave={() => setHoveredResizeHandle(null)}
-                    onMouseDown={(e) => handleResizeStart(e, task, 'left')}
+                    onMouseDown={(e) => handleResizeStart(e, task, 'left', employee.employeeId, dateObj, isAM ? Slot.Morning : Slot.Afternoon)}
                     title={`Resize task from left edge (Current: ${actualHours}h)`}
                   />
                 )}
@@ -1856,7 +1932,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     }}
                     onMouseEnter={() => setHoveredResizeHandle({ taskId: task.assignmentId, side: 'right' })}
                     onMouseLeave={() => setHoveredResizeHandle(null)}
-                    onMouseDown={(e) => handleResizeStart(e, task, 'right')}
+                    onMouseDown={(e) => handleResizeStart(e, task, 'right', employee.employeeId, dateObj, isAM ? Slot.Morning : Slot.Afternoon)}
                     title={`Resize task from right edge (Current: ${actualHours}h)`}
                   />
                 )}
