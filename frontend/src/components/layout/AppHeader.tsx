@@ -224,20 +224,20 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     const SCROLL_RESET_TIME = 200; // Reset accumulated scroll after this many ms of inactivity
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Allow navigation in Weekly, Biweekly, and Monthly views
+      // Allow navigation in Daily, Weekly, Biweekly, and Monthly views
       if (onDateChange && currentDate) {
         if (event.key === 'ArrowLeft') {
           event.preventDefault();
           if (currentViewType === 'Monthly') {
             navigatePreviousMonth();
-          } else if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
+          } else if (currentViewType === 'Daily' || currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
             navigatePreviousDay();
           }
         } else if (event.key === 'ArrowRight') {
           event.preventDefault();
           if (currentViewType === 'Monthly') {
             navigateNextMonth();
-          } else if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
+          } else if (currentViewType === 'Daily' || currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
             navigateNextDay();
           }
         }
@@ -336,15 +336,20 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   // Simple navigation helpers for keyboard input - actual WPF logic is in TeamSchedule
   const navigatePreviousDay = () => {
     if (!onDateChange || !currentDate) return;
-    
-    // Only works in Weekly and Biweekly views
-    if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
+
+    // Works in Daily, Weekly and Biweekly views
+    if (currentViewType === 'Daily' || currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
       const newDate = new Date(currentDate);
       newDate.setDate(newDate.getDate() - 1);
-      // Skip weekends - if we hit Saturday, go to Friday
-      while (newDate.getDay() === 0 || newDate.getDay() === 6) {
-        newDate.setDate(newDate.getDate() - 1);
+
+      // For Daily view, include weekends; for Weekly/Biweekly, skip weekends
+      if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
+        // Skip weekends - if we hit Saturday, go to Friday
+        while (newDate.getDay() === 0 || newDate.getDay() === 6) {
+          newDate.setDate(newDate.getDate() - 1);
+        }
       }
+
       onDateChange(newDate);
     }
   };
@@ -352,14 +357,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const navigateNextDay = () => {
     if (!onDateChange || !currentDate) return;
 
-    // Only works in Weekly and Biweekly views
-    if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
+    // Works in Daily, Weekly and Biweekly views
+    if (currentViewType === 'Daily' || currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
       const newDate = new Date(currentDate);
       newDate.setDate(newDate.getDate() + 1);
-      // Skip weekends - if we hit Saturday, go to Monday
-      while (newDate.getDay() === 0 || newDate.getDay() === 6) {
-        newDate.setDate(newDate.getDate() + 1);
+
+      // For Daily view, include weekends; for Weekly/Biweekly, skip weekends
+      if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
+        // Skip weekends - if we hit Saturday, go to Monday
+        while (newDate.getDay() === 0 || newDate.getDay() === 6) {
+          newDate.setDate(newDate.getDate() + 1);
+        }
       }
+
       onDateChange(newDate);
     }
   };

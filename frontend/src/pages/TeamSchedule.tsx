@@ -468,6 +468,71 @@ const TeamScheduleContent: React.FC<{
   // Selected days state for multi-day selection (like multi-select tasks)
   const [selectedDays, setSelectedDays] = useState<Date[]>([]);
 
+  // Todo list state for daily view sidebar
+  interface TodoItem {
+    id: number;
+    text: string;
+    completed: boolean;
+    createdAt: Date;
+  }
+
+  // Day-specific todo lists - each day has its own todo list
+  const [dailyTodosMap, setDailyTodosMap] = useState<Map<string, TodoItem[]>>(new Map());
+  const [newTodoText, setNewTodoText] = useState('');
+
+  // Helper function to get current day's date key
+  const getCurrentDateKey = useCallback(() => {
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, [currentDate]);
+
+  // Helper function to get current day's todos
+  const getCurrentDayTodos = useCallback(() => {
+    const dateKey = getCurrentDateKey();
+    return dailyTodosMap.get(dateKey) || [];
+  }, [dailyTodosMap, getCurrentDateKey]);
+
+  // Helper function to update current day's todos
+  const setCurrentDayTodos = useCallback((todos: TodoItem[]) => {
+    const dateKey = getCurrentDateKey();
+    setDailyTodosMap(prev => {
+      const newMap = new Map(prev);
+      newMap.set(dateKey, todos);
+      return newMap;
+    });
+  }, [getCurrentDateKey]);
+
+  // Todo management functions
+  const addTodo = useCallback(() => {
+    if (newTodoText.trim()) {
+      const newTodo: TodoItem = {
+        id: Date.now(),
+        text: newTodoText.trim(),
+        completed: false,
+        createdAt: new Date()
+      };
+      const currentTodos = getCurrentDayTodos();
+      setCurrentDayTodos([...currentTodos, newTodo]);
+      setNewTodoText('');
+    }
+  }, [newTodoText, getCurrentDayTodos, setCurrentDayTodos]);
+
+  const toggleTodo = useCallback((id: number) => {
+    const currentTodos = getCurrentDayTodos();
+    const updatedTodos = currentTodos.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+    setCurrentDayTodos(updatedTodos);
+  }, [getCurrentDayTodos, setCurrentDayTodos]);
+
+  const deleteTodo = useCallback((id: number) => {
+    const currentTodos = getCurrentDayTodos();
+    const updatedTodos = currentTodos.filter(todo => todo.id !== id);
+    setCurrentDayTodos(updatedTodos);
+  }, [getCurrentDayTodos, setCurrentDayTodos]);
+
   // Captured days for multi-day actions (to preserve selection when modal opens)
   const [capturedMultiDays, setCapturedMultiDays] = useState<Date[]>([]);
 
@@ -735,6 +800,18 @@ const TeamScheduleContent: React.FC<{
         }
       });
     }
+  }, []);
+
+  // Team view details handler
+  const handleTeamViewDetails = useCallback((teamName: string) => {
+    console.log('View team details:', teamName);
+    // TODO: Implement team details view
+  }, []);
+
+  // Employee view handler
+  const handleEmployeeView = useCallback((employeeId: number) => {
+    console.log('View employee:', employeeId);
+    // TODO: Implement employee view
   }, []);
 
   // Navigation and user menu handlers
@@ -1068,8 +1145,8 @@ const TeamScheduleContent: React.FC<{
     console.log('🏠 TEAM SCHEDULE - Logo clicked, navigating to current week');
     const today = new Date();
 
-    // Calculate business day window start for current week
-    const getBusinessDayWindowStart = (date: Date): Date => {
+    // Calculate business day for today
+    const getBusinessDay = (date: Date): Date => {
       const targetDate = new Date(date);
 
       // If today is weekend, move to next Monday
@@ -1082,16 +1159,23 @@ const TeamScheduleContent: React.FC<{
       return targetDate;
     };
 
-    // Navigate to current week (preserve current view type)
-    setCurrentDate(today);
+    // Get business day for today
+    const businessDay = getBusinessDay(today);
 
-    // Calculate window start for the current week
-    const windowStart = getBusinessDayWindowStart(today);
-    setWindowStartDate(windowStart);
+    // For Daily view, use business day for both currentDate and windowStartDate
+    // For other views, use today for currentDate but business day for windowStartDate
+    if (viewType === CalendarViewType.Day) {
+      setCurrentDate(businessDay);
+      setWindowStartDate(businessDay);
+    } else {
+      setCurrentDate(today);
+      setWindowStartDate(businessDay);
+    }
+
     setLastNavigatedDate(today);
 
-    console.log('🎯 Navigated to current week:', today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
-  }, []);
+    console.log('🎯 Navigated to current date:', today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 'Business day:', businessDay.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+  }, [viewType]);
 
   /**
    * Handle direct date navigation - go to specific date selected from date picker
@@ -1648,7 +1732,7 @@ const TeamScheduleContent: React.FC<{
     console.log('NavigateToDay: Current window start is', windowStartDate);
     console.log('NavigateToDay: Last navigated date was', lastNavigatedDate);
 
-    // Only work in Weekly and Biweekly views
+    // Only work in Weekly and Biweekly views (Daily view is handled in handleDateChange)
     if (viewType !== CalendarViewType.Week && viewType !== CalendarViewType.BiWeek) {
       console.log('NavigateToDay: Not in Weekly/Biweekly view, ignoring');
       return;
@@ -1668,7 +1752,7 @@ const TeamScheduleContent: React.FC<{
 
     // Calculate new window start using exact WPF logic
     let newWindowStart: Date;
-    
+
     if (targetDate < windowStartDate) {
       // console.log('NavigateToDay: ✓ TARGET IS BEFORE CURRENT START - shifting backward by one working day');
       newWindowStart = getPreviousBusinessDay(windowStartDate);
@@ -1760,6 +1844,29 @@ const TeamScheduleContent: React.FC<{
       console.log('🔍 Monthly navigation: Changing from', monthlyViewDate.toLocaleDateString(), 'to', date.toLocaleDateString());
       setMonthlyViewDate(date);
       // Note: Do NOT update currentDate or windowStartDate for monthly view to keep it independent
+    } else if (viewType === CalendarViewType.Day) {
+      // For Daily view, navigate directly by changing currentDate and windowStartDate
+      const targetDate = new Date(date);
+      const currentDateCopy = new Date(currentDate);
+
+      console.log('🔍 Daily navigation: Current date was:', currentDateCopy.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+      console.log('🔍 Daily navigation: New date is:', targetDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+
+      // For Daily view, ensure we stay on business days
+      let businessDayTarget = new Date(targetDate);
+      while (businessDayTarget.getDay() === 0 || businessDayTarget.getDay() === 6) {
+        // If moving forward, go to next business day; if moving backward, go to previous business day
+        if (targetDate > currentDateCopy) {
+          businessDayTarget.setDate(businessDayTarget.getDate() + 1);
+        } else {
+          businessDayTarget.setDate(businessDayTarget.getDate() - 1);
+        }
+      }
+
+      console.log('🔍 Daily navigation: Using business day:', businessDayTarget.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+
+      setWindowStartDate(businessDayTarget);
+      setCurrentDate(businessDayTarget);
     } else {
       // For Day view, use the existing navigateToDay logic
       navigateToDay(date);
@@ -3422,7 +3529,7 @@ ${dateInfo}`;
         onSettings={handleSettings}
         onLogout={handleLogout}
         // Date navigation props for keyboard navigation
-        currentDate={currentDate}
+        currentDate={viewType === CalendarViewType.Month ? monthlyViewDate : currentDate}
         onDateChange={handleDateChange}
         currentViewType={viewType === CalendarViewType.Week ? 'Weekly' : 
                          viewType === CalendarViewType.BiWeek ? 'Biweekly' : 
@@ -3497,7 +3604,360 @@ ${dateInfo}`;
                 />
               );
             })()
+          ) : viewType === CalendarViewType.Day ? (
+            /* Daily View with Todo Sidebar */
+            (() => {
+              // Get current day's todos for rendering
+              const currentDayTodos = getCurrentDayTodos();
+
+              return (
+                <div style={{
+                  display: 'flex',
+                  height: '100%',
+                  gap: '16px'
+                }}>
+              {/* Main Calendar Area */}
+              <div style={{
+                flex: 1,
+                overflow: 'hidden'
+              }}>
+                <DayBasedCalendarGrid
+                  key={`${windowStartDate.getTime()}-${calendarData.days[0]?.date || ''}`}
+                  employees={filteredEmployees}
+                  days={calendarData.days}
+                  onTaskClick={handleTaskClick}
+                  onSlotClick={handleSlotClick}
+                  onTaskDrop={handleTaskDrop}
+                  onTaskEdit={handleTaskEdit}
+                  onTaskDelete={handleTaskDelete}
+                  onTaskView={handleTaskView}
+                  onTaskCopy={handleTaskCopy}
+                  onTaskPaste={handleTaskPaste}
+                  onTaskPasteMultiple={handleTaskPasteMultiple}
+                  hasCopiedTask={!!copiedTask}
+                  isReadOnly={false}
+                  onSetBankHoliday={handleSetBankHoliday}
+                  onSetLeave={handleSetLeave}
+                  onClearBlocking={handleClearBlocking}
+                  onDayViewDetails={handleDayViewDetails}
+                  selectedTaskIds={selectedTasks.map(task => task.assignmentId)}
+                  selectedSlots={selectedSlots}
+                  onSlotFocus={handleSlotFocus}
+                  selectedDays={selectedDays.map(d => d.toDateString())}
+                  onDayClick={handleDayClick}
+                  onBulkEdit={() => setBulkEditModalOpen(true)}
+                  onRefresh={loadCalendarData}
+                  onQuickEditTaskType={(task) => {
+                    console.log('QuickEdit TaskType clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
+
+                    // Reload task types to get latest from database
+                    loadTaskTypes();
+
+                    // CAPTURE selection immediately (like handleTaskPasteMultiple does)
+                    let tasksToEdit: AssignmentTaskDto[] = [];
+                    if (selectedTasks.length > 0) {
+                      // Check if clicked task is in the selection
+                      const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                      if (isCurrentInSelection) {
+                        // Edit all selected tasks
+                        tasksToEdit = [...selectedTasks];
+                      } else {
+                        // Edit only clicked task
+                        tasksToEdit = [task];
+                      }
+                    } else {
+                      // No selection - edit only clicked task
+                      tasksToEdit = [task];
+                    }
+
+                    console.log('🎯 QUICK EDIT TaskType - Opening modal for tasks:', tasksToEdit.map(t => ({ id: t.assignmentId, title: t.taskTitle })));
+                    setTasksToEdit(tasksToEdit);
+                    setQuickEditTaskTypeModalOpen(true);
+                  }}
+                  onQuickEditStatus={(task) => {
+                    // Same logic for status edit
+                    let tasksToEdit: AssignmentTaskDto[] = [];
+                    if (selectedTasks.length > 0) {
+                      const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                      if (isCurrentInSelection) {
+                        tasksToEdit = [...selectedTasks];
+                      } else {
+                        tasksToEdit = [task];
+                      }
+                    } else {
+                      tasksToEdit = [task];
+                    }
+
+                    setTasksToEdit(tasksToEdit);
+                    setQuickEditStatusModalOpen(true);
+                  }}
+                  onQuickEditPriority={(task) => {
+                    // Same logic for priority edit
+                    let tasksToEdit: AssignmentTaskDto[] = [];
+                    if (selectedTasks.length > 0) {
+                      const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                      if (isCurrentInSelection) {
+                        tasksToEdit = [...selectedTasks];
+                      } else {
+                        tasksToEdit = [task];
+                      }
+                    } else {
+                      tasksToEdit = [task];
+                    }
+
+                    setTasksToEdit(tasksToEdit);
+                    setQuickEditPriorityModalOpen(true);
+                  }}
+                  onQuickEditDueDate={(task) => {
+                    // Same logic for due date edit
+                    let tasksToEdit: AssignmentTaskDto[] = [];
+                    if (selectedTasks.length > 0) {
+                      const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                      if (isCurrentInSelection) {
+                        tasksToEdit = [...selectedTasks];
+                      } else {
+                        tasksToEdit = [task];
+                      }
+                    } else {
+                      tasksToEdit = [task];
+                    }
+
+                    setTasksToEdit(tasksToEdit);
+                    setQuickEditDueDateModalOpen(true);
+                  }}
+                  onQuickEditNotes={(task) => {
+                    // Same logic for notes edit
+                    let tasksToEdit: AssignmentTaskDto[] = [];
+                    if (selectedTasks.length > 0) {
+                      const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                      if (isCurrentInSelection) {
+                        tasksToEdit = [...selectedTasks];
+                      } else {
+                        tasksToEdit = [task];
+                      }
+                    } else {
+                      tasksToEdit = [task];
+                    }
+
+                    setTasksToEdit(tasksToEdit);
+                    setQuickEditNotesModalOpen(true);
+                  }}
+                  onBulkDelete={(taskIds) => {
+                    // Same logic for bulk delete
+                    setSelectedTasks(prev => prev.filter(t => taskIds.includes(t.assignmentId)));
+                    setConfirmDeleteModalOpen(true);
+                  }}
+                  onTeamViewDetails={handleTeamViewDetails}
+                  onTeamFilter={handleTeamFilter}
+                  selectedTeamFilters={teamFilters}
+                  onEmployeeView={handleEmployeeView}
+                  onEmployeeEdit={handleEmployeeEdit}
+                  onEmployeeDelete={handleEmployeeDelete}
+                />
+              </div>
+
+              {/* Todo Sidebar */}
+              <div style={{
+                width: '300px',
+                backgroundColor: '#ffffff',
+                borderLeft: '1px solid #e5e7eb',
+                padding: '16px',
+                overflow: 'auto',
+                boxShadow: '-2px 0 4px rgba(0, 0, 0, 0.1)',
+              }}>
+                {/* Todo Header */}
+                <div style={{
+                  marginBottom: '20px',
+                  padding: '16px',
+                  backgroundColor: '#3b82f6',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                }}>
+                  <h2 style={{
+                    fontSize: '1.25rem',
+                    fontWeight: '700',
+                    color: '#ffffff',
+                    margin: '0',
+                  }}>
+                    Daily Tasks
+                  </h2>
+                  <p style={{
+                    fontSize: '0.875rem',
+                    color: '#e0e7ff',
+                    margin: '4px 0 0 0',
+                  }}>
+                    {new Intl.DateTimeFormat('en-US', {
+                      weekday: 'long',
+                      month: 'short',
+                      day: 'numeric',
+                      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                    }).format(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()))}
+                  </p>
+                </div>
+
+                {/* Add Todo Input */}
+                <div style={{
+                  marginBottom: '20px',
+                  display: 'flex',
+                  gap: '8px',
+                }}>
+                  <input
+                    type="text"
+                    value={newTodoText}
+                    onChange={(e) => setNewTodoText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addTodo();
+                      }
+                    }}
+                    placeholder="Add a new task..."
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '6px',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3b82f6';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e5e7eb';
+                    }}
+                  />
+                  <button
+                    onClick={addTodo}
+                    disabled={!newTodoText.trim()}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: newTodoText.trim() ? '#3b82f6' : '#d1d5db',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.875rem',
+                      cursor: newTodoText.trim() ? 'pointer' : 'not-allowed',
+                      transition: 'background-color 0.2s ease',
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {/* Todo List */}
+                <div style={{
+                  maxHeight: 'calc(100vh - 300px)',
+                  overflow: 'auto',
+                }}>
+                  {currentDayTodos.length === 0 ? (
+                    <div style={{
+                      textAlign: 'center',
+                      color: '#6b7280',
+                      padding: '20px',
+                      fontSize: '0.875rem',
+                    }}>
+                      No tasks yet. Add one above!
+                    </div>
+                  ) : (
+                    currentDayTodos.map((todo) => (
+                      <div
+                        key={todo.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                          padding: '12px',
+                          marginBottom: '8px',
+                          backgroundColor: todo.completed ? '#f9fafb' : '#ffffff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '6px',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = todo.completed ? '#f3f4f6' : '#f9fafb';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = todo.completed ? '#f9fafb' : '#ffffff';
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={todo.completed}
+                          onChange={() => toggleTodo(todo.id)}
+                          style={{
+                            width: '16px',
+                            height: '16px',
+                            marginTop: '2px',
+                            cursor: 'pointer',
+                          }}
+                        />
+
+                        {/* Todo Text */}
+                        <div style={{
+                          flex: 1,
+                          fontSize: '0.875rem',
+                          lineHeight: '1.4',
+                          color: todo.completed ? '#6b7280' : '#374151',
+                          textDecoration: todo.completed ? 'line-through' : 'none',
+                        }}>
+                          {todo.text}
+                        </div>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => deleteTodo(todo.id)}
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            color: '#6b7280',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fee2e2';
+                            e.currentTarget.style.color = '#dc2626';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = '#6b7280';
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Todo Statistics */}
+                {currentDayTodos.length > 0 && (
+                  <div style={{
+                    marginTop: '16px',
+                    padding: '12px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    color: '#6b7280',
+                    textAlign: 'center',
+                  }}>
+                    {currentDayTodos.filter(t => t.completed).length} of {currentDayTodos.length} completed
+                  </div>
+                )}
+              </div>
+                </div>
+              );
+            })()
           ) : (
+            /* Weekly/Biweekly View */
             <DayBasedCalendarGrid
               key={`${windowStartDate.getTime()}-${calendarData.days[0]?.date || ''}`}
               employees={filteredEmployees}

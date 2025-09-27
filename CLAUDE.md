@@ -19,6 +19,15 @@
 - User lost hours of iOS glassmorphism work due to accidental git restore
 - **THIS CAUSED USER TO LOSE SLEEP AT 3AM TRYING TO FIX THE DAMAGE**
 
+### ⚠️ TIMEZONE UTC ISSUE - CRITICAL DATE BUG ⚠️
+**CRITICAL: ALWAYS CHECK FOR UTC TIMEZONE ISSUES WITH DATE DISPLAY**
+- JavaScript Date objects can cause UTC vs local timezone mismatches
+- If daily view shows "Day 24" but todo header shows "Day 23" - IT'S TIMEZONE UTC!
+- ALWAYS use proper timezone handling for date display
+- Common fix: Use date formatting that respects local timezone
+- NEVER assume dates will display correctly without timezone consideration
+- **USER ALWAYS CATCHES THIS BUG - BE PROACTIVE!**
+
 ## 1. 403 FORBIDDEN ERROR - RECURRING AUTHORIZATION ISSUE
 
 ### THE PROBLEM:
