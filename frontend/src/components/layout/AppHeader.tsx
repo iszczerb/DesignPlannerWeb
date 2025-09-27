@@ -87,8 +87,8 @@ const TateLogo = styled('img')(({ theme }) => ({
 const NavigationContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   gap: theme.spacing(1),
-  marginRight: 'auto',
-  marginLeft: theme.spacing(2),
+  marginLeft: 'auto',
+  marginRight: theme.spacing(2),
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
@@ -167,15 +167,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const mobileMenuOpen = Boolean(mobileMenuAnchor);
   const viewMenuOpen = Boolean(viewMenuAnchor);
   const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
-    { id: 'skills', label: 'Skills', icon: SkillsIcon },
     { id: 'database', label: 'Database', icon: DatabaseIcon },
+    { id: 'skills', label: 'Skills', icon: SkillsIcon },
     { id: 'absence', label: 'Absence', icon: AbsenceIcon },
   ];
 
-  // Split navigation items: Dashboard always visible, others in burger menu on mobile
-  const alwaysVisibleItems = navigationItems.filter(item => item.id === 'dashboard');
-  const burgerMenuItems = navigationItems.filter(item => item.id !== 'dashboard');
+  const dashboardItem = { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon };
+
+  // Navigation items without dashboard (dashboard is positioned separately)
+  const mainNavigationItems = navigationItems;
+  const burgerMenuItems = [dashboardItem, ...navigationItems];
 
   const viewTypes: ('Daily' | 'Weekly' | 'Biweekly' | 'Monthly')[] = ['Daily', 'Weekly', 'Biweekly', 'Monthly'];
 
@@ -223,14 +224,22 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     const SCROLL_RESET_TIME = 200; // Reset accumulated scroll after this many ms of inactivity
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Only allow navigation in Weekly and Biweekly views (matching WPF logic)
-      if ((currentViewType === 'Weekly' || currentViewType === 'Biweekly') && onDateChange && currentDate) {
+      // Allow navigation in Weekly, Biweekly, and Monthly views
+      if (onDateChange && currentDate) {
         if (event.key === 'ArrowLeft') {
           event.preventDefault();
-          navigatePreviousDay();
+          if (currentViewType === 'Monthly') {
+            navigatePreviousMonth();
+          } else if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
+            navigatePreviousDay();
+          }
         } else if (event.key === 'ArrowRight') {
           event.preventDefault();
-          navigateNextDay();
+          if (currentViewType === 'Monthly') {
+            navigateNextMonth();
+          } else if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
+            navigateNextDay();
+          }
         }
       }
     };
@@ -342,7 +351,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
   const navigateNextDay = () => {
     if (!onDateChange || !currentDate) return;
-    
+
     // Only works in Weekly and Biweekly views
     if (currentViewType === 'Weekly' || currentViewType === 'Biweekly') {
       const newDate = new Date(currentDate);
@@ -351,6 +360,45 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       while (newDate.getDay() === 0 || newDate.getDay() === 6) {
         newDate.setDate(newDate.getDate() + 1);
       }
+      onDateChange(newDate);
+    }
+  };
+
+  // Month navigation functions for Monthly view
+  const navigatePreviousMonth = () => {
+    if (!onDateChange || !currentDate) return;
+
+    if (currentViewType === 'Monthly') {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(newDate.getMonth() - 1);
+
+      // Ensure we stay on a business day - if we land on weekend, move to next Monday
+      const dayOfWeek = newDate.getDay();
+      if (dayOfWeek === 0) { // Sunday
+        newDate.setDate(newDate.getDate() + 1);
+      } else if (dayOfWeek === 6) { // Saturday
+        newDate.setDate(newDate.getDate() + 2);
+      }
+
+      onDateChange(newDate);
+    }
+  };
+
+  const navigateNextMonth = () => {
+    if (!onDateChange || !currentDate) return;
+
+    if (currentViewType === 'Monthly') {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(newDate.getMonth() + 1);
+
+      // Ensure we stay on a business day - if we land on weekend, move to next Monday
+      const dayOfWeek = newDate.getDay();
+      if (dayOfWeek === 0) { // Sunday
+        newDate.setDate(newDate.getDate() + 1);
+      } else if (dayOfWeek === 6) { // Saturday
+        newDate.setDate(newDate.getDate() + 2);
+      }
+
       onDateChange(newDate);
     }
   };
@@ -367,7 +415,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <StyledAppBar position="static" elevation={0}>
       <Toolbar sx={{ minHeight: '64px', px: 3 }}>
-        {/* DesignPlanner Logo Section */}
+        {/* DesignPlanner Logo Section with Current Date */}
         <LogoContainer>
           <ClickableLogoContainer
             onClick={onLogoClick}
@@ -391,15 +439,66 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               }}
             />
           </ClickableLogoContainer>
+
+          {/* Current Date Display - shows next business day if today is weekend */}
+          <Typography
+            variant="body2"
+            sx={{
+              color: '#6b7280',
+              fontSize: '14px',
+              fontWeight: '500',
+              marginLeft: '12px',
+            }}
+          >
+            {(() => {
+              const today = new Date();
+              const todayDayOfWeek = today.getDay();
+
+              // If today is weekend, show next Monday
+              if (todayDayOfWeek === 0 || todayDayOfWeek === 6) {
+                const nextMonday = new Date(today);
+                const daysUntilMonday = todayDayOfWeek === 0 ? 1 : 2; // Sunday: +1, Saturday: +2
+                nextMonday.setDate(today.getDate() + daysUntilMonday);
+
+                return nextMonday.toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                });
+              }
+
+              // If today is a weekday, show today
+              return today.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              });
+            })()}
+          </Typography>
         </LogoContainer>
 
-        {/* Navigation Buttons - Dashboard always visible, others in burger menu on mobile */}
+        {/* Navigation Buttons - moved to right side */}
         <NavigationContainer>
-          {/* Dashboard button - always visible */}
-          {alwaysVisibleItems.map((item) => {
+          {/* Burger menu icon on mobile - positioned before navigation items */}
+          {isMobile && (
+            <IconButton
+              onClick={handleMobileMenuOpen}
+              sx={{
+                color: '#1e3a5f',
+                marginRight: 1,
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
+          {/* Navigation items - show all on desktop, hide on mobile */}
+          {!isMobile && mainNavigationItems.map((item) => {
             const IconComponent = item.icon;
             const isActive = currentPage === item.id;
-            
+
             return (
               <NavButton
                 key={item.id}
@@ -411,35 +510,23 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               </NavButton>
             );
           })}
-          
-          {/* Other navigation items - show on desktop, burger menu on mobile */}
-          {!isMobile ? (
-            burgerMenuItems.map((item) => {
-              const IconComponent = item.icon;
-              const isActive = currentPage === item.id;
-              
-              return (
-                <NavButton
-                  key={item.id}
-                  startIcon={<IconComponent />}
-                  className={isActive ? 'active' : ''}
-                  onClick={() => handleNavigation(item.id)}
-                >
-                  {item.label}
-                </NavButton>
-              );
-            })
-          ) : (
-            <IconButton
-              onClick={handleMobileMenuOpen}
-              sx={{
-                color: '#1e3a5f',
-                marginLeft: 1,
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
+
+          {/* Dashboard button - positioned just before View Selector */}
+          {!isMobile && (() => {
+            const IconComponent = dashboardItem.icon;
+            const isActive = currentPage === dashboardItem.id;
+
+            return (
+              <NavButton
+                key={dashboardItem.id}
+                startIcon={<IconComponent />}
+                className={isActive ? 'active' : ''}
+                onClick={() => handleNavigation(dashboardItem.id)}
+              >
+                {dashboardItem.label}
+              </NavButton>
+            );
+          })()}
         </NavigationContainer>
 
 

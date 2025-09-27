@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import AppHeader from '../components/layout/AppHeader';
 import DayBasedCalendarGrid from '../components/calendar/DayBasedCalendarGrid';
+// TODO: DELETE MonthlyView later - it's old incomplete code that only shows headers
+// We need to use MonthlyCalendarGrid with PROPER MONTHLY DATA instead
+import MonthlyCalendarGrid from '../components/calendar/MonthlyCalendarGrid';
 import TaskCreationModal from '../components/calendar/TaskCreationModal';
 import TaskDetailsModal from '../components/calendar/TaskDetailsModal';
 import DayDetailsModal from '../components/calendar/DayDetailsModal';
@@ -387,6 +390,19 @@ const TeamScheduleContent: React.FC<{
       today.setDate(today.getDate() + 2);
     }
     // Set to start of day to avoid time drift
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
+  // Separate date state for monthly view - independent from weekly/biweekly views
+  const [monthlyViewDate, setMonthlyViewDate] = useState(() => {
+    const today = new Date();
+    const day = today.getDay();
+    // If weekend, move to Monday
+    if (day === 0) { // Sunday
+      today.setDate(today.getDate() + 1);
+    } else if (day === 6) { // Saturday
+      today.setDate(today.getDate() + 2);
+    }
     today.setHours(0, 0, 0, 0);
     return today;
   });
@@ -887,9 +903,17 @@ const TeamScheduleContent: React.FC<{
       setError(null);
 
       // Fix UTC timezone issue - use local date instead of UTC
-      const year = windowStartDate.getFullYear();
-      const month = String(windowStartDate.getMonth() + 1).padStart(2, '0');
-      const day = String(windowStartDate.getDate()).padStart(2, '0');
+      // For monthly view, use monthlyViewDate; for weekly/biweekly, use windowStartDate
+      let actualStartDate = windowStartDate;
+      if (viewType === CalendarViewType.Month) {
+        actualStartDate = new Date(monthlyViewDate.getFullYear(), monthlyViewDate.getMonth(), 1);
+        console.log('📅 MONTHLY VIEW: Using monthlyViewDate for start date:', actualStartDate.toLocaleDateString());
+        console.log('📅 MONTHLY VIEW: monthlyViewDate:', monthlyViewDate.toLocaleDateString());
+      }
+
+      const year = actualStartDate.getFullYear();
+      const month = String(actualStartDate.getMonth() + 1).padStart(2, '0');
+      const day = String(actualStartDate.getDate()).padStart(2, '0');
       const startDateString = `${year}-${month}-${day}`;
 
       const request: ScheduleRequestDto = {
@@ -975,7 +999,7 @@ const TeamScheduleContent: React.FC<{
     } finally {
       setIsLoading(false);
     }
-  }, [windowStartDate, viewType, teamViewMode]); // Changed dependency from currentDate to windowStartDate
+  }, [windowStartDate, viewType, teamViewMode, monthlyViewDate]); // Added monthlyViewDate for independent monthly navigation
 
   /**
    * Handle team view mode changes
@@ -1731,11 +1755,16 @@ const TeamScheduleContent: React.FC<{
       setWindowStartDate(newWindowStart);
       setCurrentDate(date);
 
+    } else if (viewType === CalendarViewType.Month) {
+      // For Monthly view, use independent monthlyViewDate state
+      console.log('🔍 Monthly navigation: Changing from', monthlyViewDate.toLocaleDateString(), 'to', date.toLocaleDateString());
+      setMonthlyViewDate(date);
+      // Note: Do NOT update currentDate or windowStartDate for monthly view to keep it independent
     } else {
       // For Day view, use the existing navigateToDay logic
       navigateToDay(date);
     }
-  }, [navigateToDay, viewType, windowStartDate, currentDate, getNextBusinessDay, getPreviousBusinessDay]);
+  }, [navigateToDay, viewType, windowStartDate, currentDate, monthlyViewDate, getNextBusinessDay, getPreviousBusinessDay]);
 
   /**
    * Handle task assignment creation
@@ -3436,180 +3465,214 @@ ${dateInfo}`;
             Loading...
           </div>
         ) : calendarData ? (
-          <DayBasedCalendarGrid
-            key={`${windowStartDate.getTime()}-${calendarData.days[0]?.date || ''}`}
-            employees={filteredEmployees}
-            days={calendarData.days}
-            onTaskClick={handleTaskClick}
-            onSlotClick={handleSlotClick}
-            onTaskDrop={handleTaskDrop}
-            onTaskEdit={handleTaskEdit}
-            onTaskDelete={handleTaskDelete}
-            onTaskView={handleTaskView}
-            onTaskCopy={handleTaskCopy}
-            onTaskPaste={handleTaskPaste}
-            onTaskPasteMultiple={handleTaskPasteMultiple}
-            hasCopiedTask={!!copiedTask}
-            isReadOnly={false}
-            onSetBankHoliday={handleSetBankHoliday}
-            onSetLeave={handleSetLeave}
-            onClearBlocking={handleClearBlocking}
-            onDayViewDetails={handleDayViewDetails}
-            selectedTaskIds={selectedTasks.map(task => task.assignmentId)}
-            selectedSlots={selectedSlots}
-            onSlotFocus={handleSlotFocus}
-            selectedDays={selectedDays.map(d => d.toDateString())}
-            onDayClick={handleDayClick}
-            onBulkEdit={() => setBulkEditModalOpen(true)}
-            onRefresh={loadCalendarData}
-            onQuickEditTaskType={(task) => {
-              console.log('QuickEdit TaskType clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
-
-              // Reload task types to get latest from database
-              loadTaskTypes();
-
-              // CAPTURE selection immediately (like handleTaskPasteMultiple does)
-              let tasksToEdit: AssignmentTaskDto[] = [];
-              if (selectedTasks.length > 0) {
-                // Check if clicked task is in the selection
-                const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
-                if (isCurrentInSelection) {
-                  // Edit all selected tasks
-                  tasksToEdit = [...selectedTasks];
-                } else {
-                  // Edit only clicked task
-                  tasksToEdit = [task];
-                }
-              } else {
-                // No selection - edit only clicked task
-                tasksToEdit = [task];
-              }
-
-              console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
-              setCapturedQuickEditTasks(tasksToEdit);
-              setCurrentQuickEditTask(task);
-              setQuickEditTaskTypeOpen(true);
-            }}
-            onQuickEditStatus={(task) => {
-              console.log('QuickEdit Status clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
-
-              // CAPTURE selection immediately
-              let tasksToEdit: AssignmentTaskDto[] = [];
-              if (selectedTasks.length > 0) {
-                const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
-                if (isCurrentInSelection) {
-                  tasksToEdit = [...selectedTasks];
-                } else {
-                  tasksToEdit = [task];
-                }
-              } else {
-                tasksToEdit = [task];
-              }
-
-              console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
-              setCapturedQuickEditTasks(tasksToEdit);
-              setCurrentQuickEditTask(task);
-              setQuickEditStatusOpen(true);
-            }}
-            onQuickEditPriority={(task) => {
-              console.log('QuickEdit Priority clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
-
-              // CAPTURE selection immediately
-              let tasksToEdit: AssignmentTaskDto[] = [];
-              if (selectedTasks.length > 0) {
-                const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
-                if (isCurrentInSelection) {
-                  tasksToEdit = [...selectedTasks];
-                } else {
-                  tasksToEdit = [task];
-                }
-              } else {
-                tasksToEdit = [task];
-              }
-
-              console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
-              setCapturedQuickEditTasks(tasksToEdit);
-              setCurrentQuickEditTask(task);
-              setQuickEditPriorityOpen(true);
-            }}
-            onQuickEditDueDate={(task) => {
-              console.log('QuickEdit DueDate clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
-
-              // CAPTURE selection immediately
-              let tasksToEdit: AssignmentTaskDto[] = [];
-              if (selectedTasks.length > 0) {
-                const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
-                if (isCurrentInSelection) {
-                  tasksToEdit = [...selectedTasks];
-                } else {
-                  tasksToEdit = [task];
-                }
-              } else {
-                tasksToEdit = [task];
-              }
-
-              console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
-              setCapturedQuickEditTasks(tasksToEdit);
-              setCurrentQuickEditTask(task);
-              setQuickEditDueDateOpen(true);
-            }}
-            onQuickEditNotes={(task) => {
-              console.log('QuickEdit Notes clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
-
-              // CAPTURE selection immediately
-              let tasksToEdit: AssignmentTaskDto[] = [];
-              if (selectedTasks.length > 0) {
-                const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
-                if (isCurrentInSelection) {
-                  tasksToEdit = [...selectedTasks];
-                } else {
-                  tasksToEdit = [task];
-                }
-              } else {
-                tasksToEdit = [task];
-              }
-
-              console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
-              setCapturedQuickEditTasks(tasksToEdit);
-              setCurrentQuickEditTask(task);
-              setQuickEditNotesOpen(true);
-            }}
-            onBulkDelete={(taskIds: number[]) => {
-              setConfirmationDialog({
-                isOpen: true,
-                title: 'Delete Tasks',
-                message: `Are you sure you want to delete ${taskIds.length} selected task${taskIds.length > 1 ? 's' : ''}? This action cannot be undone.`,
-                confirmText: 'Delete',
-                cancelText: 'Cancel',
-                type: 'danger',
-                onConfirm: () => {
-                  taskIds.forEach(taskId => {
-                    const employees = calendarData?.employees || [];
-                    const taskToDelete = employees.flatMap(emp =>
-                      emp.dayAssignments.flatMap(day => [
-                        ...(day.morningSlot?.tasks || []),
-                        ...(day.afternoonSlot?.tasks || [])
-                      ])
-                    ).find(t => t.assignmentId === taskId);
-                    if (taskToDelete) {
-                      handleTaskDelete(taskToDelete.assignmentId);
-                    }
-                  });
-                }
+          viewType === CalendarViewType.Month ? (
+            (() => {
+              console.log('🔄 MONTHLY VIEW - Rendering MonthlyCalendarGrid with data:', {
+                viewType,
+                calendarData,
+                daysCount: calendarData.days?.length,
+                employeesCount: calendarData.employees?.length,
+                hasEmployees: !!calendarData.employees,
+                hasDays: !!calendarData.days
               });
+              return (
+                <MonthlyCalendarGrid
+                  calendarData={calendarData}
+                  isLoading={isLoading}
+                  onTaskClick={handleTaskClick}
+                  onRefresh={loadCalendarData}
+                  isReadOnly={false}
+                  selectedEmployeeId={undefined}
+                  onDateChange={handleDateChange}
+                  employeeFilter={{
+                    employees: calendarData.employees.map(emp => ({
+                      id: emp.employeeId,
+                      name: emp.employeeName
+                    })),
+                    onEmployeeChange: (empId?: number) => {
+                      console.log('🔄 Monthly view employee filter changed:', empId);
+                      // Handle employee filtering for monthly view
+                    }
+                  }}
+                />
+              );
+            })()
+          ) : (
+            <DayBasedCalendarGrid
+              key={`${windowStartDate.getTime()}-${calendarData.days[0]?.date || ''}`}
+              employees={filteredEmployees}
+              days={calendarData.days}
+              onTaskClick={handleTaskClick}
+              onSlotClick={handleSlotClick}
+              onTaskDrop={handleTaskDrop}
+              onTaskEdit={handleTaskEdit}
+              onTaskDelete={handleTaskDelete}
+              onTaskView={handleTaskView}
+              onTaskCopy={handleTaskCopy}
+              onTaskPaste={handleTaskPaste}
+              onTaskPasteMultiple={handleTaskPasteMultiple}
+              hasCopiedTask={!!copiedTask}
+              isReadOnly={false}
+              onSetBankHoliday={handleSetBankHoliday}
+              onSetLeave={handleSetLeave}
+              onClearBlocking={handleClearBlocking}
+              onDayViewDetails={handleDayViewDetails}
+              selectedTaskIds={selectedTasks.map(task => task.assignmentId)}
+              selectedSlots={selectedSlots}
+              onSlotFocus={handleSlotFocus}
+              selectedDays={selectedDays.map(d => d.toDateString())}
+              onDayClick={handleDayClick}
+              onBulkEdit={() => setBulkEditModalOpen(true)}
+              onRefresh={loadCalendarData}
+              onQuickEditTaskType={(task) => {
+                console.log('QuickEdit TaskType clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
+
+                // Reload task types to get latest from database
+                loadTaskTypes();
+
+                // CAPTURE selection immediately (like handleTaskPasteMultiple does)
+                let tasksToEdit: AssignmentTaskDto[] = [];
+                if (selectedTasks.length > 0) {
+                  // Check if clicked task is in the selection
+                  const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                  if (isCurrentInSelection) {
+                    // Edit all selected tasks
+                    tasksToEdit = [...selectedTasks];
+                  } else {
+                    // Edit only clicked task
+                    tasksToEdit = [task];
+                  }
+                } else {
+                  // No selection - edit only clicked task
+                  tasksToEdit = [task];
+                }
+
+                console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
+                setCapturedQuickEditTasks(tasksToEdit);
+                setCurrentQuickEditTask(task);
+                setQuickEditTaskTypeOpen(true);
+              }}
+              onQuickEditStatus={(task) => {
+                console.log('QuickEdit Status clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
+
+                // CAPTURE selection immediately
+                let tasksToEdit: AssignmentTaskDto[] = [];
+                if (selectedTasks.length > 0) {
+                  const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                  if (isCurrentInSelection) {
+                    tasksToEdit = [...selectedTasks];
+                  } else {
+                    tasksToEdit = [task];
+                  }
+                } else {
+                  tasksToEdit = [task];
+                }
+
+                console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
+                setCapturedQuickEditTasks(tasksToEdit);
+                setCurrentQuickEditTask(task);
+                setQuickEditStatusOpen(true);
+              }}
+              onQuickEditPriority={(task) => {
+                console.log('QuickEdit Priority clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
+
+                // CAPTURE selection immediately
+                let tasksToEdit: AssignmentTaskDto[] = [];
+                if (selectedTasks.length > 0) {
+                  const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                  if (isCurrentInSelection) {
+                    tasksToEdit = [...selectedTasks];
+                  } else {
+                    tasksToEdit = [task];
+                  }
+                } else {
+                  tasksToEdit = [task];
+                }
+
+                console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
+                setCapturedQuickEditTasks(tasksToEdit);
+                setCurrentQuickEditTask(task);
+                setQuickEditPriorityOpen(true);
+              }}
+              onQuickEditDueDate={(task) => {
+                console.log('QuickEdit DueDate clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
+
+                // CAPTURE selection immediately
+                let tasksToEdit: AssignmentTaskDto[] = [];
+                if (selectedTasks.length > 0) {
+                  const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                  if (isCurrentInSelection) {
+                    tasksToEdit = [...selectedTasks];
+                  } else {
+                    tasksToEdit = [task];
+                  }
+                } else {
+                  tasksToEdit = [task];
+                }
+
+                console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
+                setCapturedQuickEditTasks(tasksToEdit);
+                setCurrentQuickEditTask(task);
+                setQuickEditDueDateOpen(true);
             }}
-            onTeamFilter={handleTeamFilter}
-            selectedTeamFilters={teamFilters}
-            onRefresh={handleRefresh}
-            onDragStart={handleDragStart}
+              onQuickEditNotes={(task) => {
+                console.log('QuickEdit Notes clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
+
+                // CAPTURE selection immediately
+                let tasksToEdit: AssignmentTaskDto[] = [];
+                if (selectedTasks.length > 0) {
+                  const isCurrentInSelection = selectedTasks.some(t => t.assignmentId === task.assignmentId);
+                  if (isCurrentInSelection) {
+                    tasksToEdit = [...selectedTasks];
+                  } else {
+                    tasksToEdit = [task];
+                  }
+                } else {
+                  tasksToEdit = [task];
+                }
+
+                console.log('🎯 Captured tasks for edit:', tasksToEdit.map(t => t.assignmentId));
+                setCapturedQuickEditTasks(tasksToEdit);
+                setCurrentQuickEditTask(task);
+                setQuickEditNotesOpen(true);
+              }}
+              onBulkDelete={(taskIds: number[]) => {
+                setConfirmationDialog({
+                  isOpen: true,
+                  title: 'Delete Tasks',
+                  message: `Are you sure you want to delete ${taskIds.length} selected task${taskIds.length > 1 ? 's' : ''}? This action cannot be undone.`,
+                  confirmText: 'Delete',
+                  cancelText: 'Cancel',
+                  type: 'danger',
+                  onConfirm: () => {
+                    taskIds.forEach(taskId => {
+                      const employees = calendarData?.employees || [];
+                      const taskToDelete = employees.flatMap(emp =>
+                        emp.dayAssignments.flatMap(day => [
+                          ...(day.morningSlot?.tasks || []),
+                          ...(day.afternoonSlot?.tasks || [])
+                        ])
+                      ).find(t => t.assignmentId === taskId);
+                      if (taskToDelete) {
+                        handleTaskDelete(taskToDelete.assignmentId);
+                      }
+                    });
+                  },
+                });
+              }}
+              onTeamFilter={handleTeamFilter}
+              selectedTeamFilters={teamFilters}
+              onRefresh={handleRefresh}
+              onDragStart={handleDragStart}
           />
+        )
         ) : (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
             height: '100%',
-            color: '#6b7280' 
+            color: '#6b7280'
           }}>
             No schedule data available
           </div>

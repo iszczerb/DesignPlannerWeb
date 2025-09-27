@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CalendarHeader from './CalendarHeader';
 import CalendarGrid from './CalendarGrid';
+import MonthlyCalendarGrid from './MonthlyCalendarGrid';
 import { 
   CalendarViewType, 
   CalendarViewDto, 
@@ -44,7 +45,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
     try {
       // Get the month start date for the current date
       const monthStartDate = scheduleService.getViewStartDate(currentDate, CalendarViewType.Month);
-      
+
+
       const request: ScheduleRequestDto = {
         startDate: scheduleService.formatDateForApi(monthStartDate),
         viewType: CalendarViewType.Month,
@@ -67,9 +69,11 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
     loadCalendarData();
   }, [currentDate, selectedEmployeeId]);
 
+
   const handleDateChange = (newDate: Date) => {
     setCurrentDate(newDate);
   };
+
 
   const handleViewTypeChange = (viewType: CalendarViewType) => {
     // For monthly view, we don't change the view type, but we could trigger navigation
@@ -81,6 +85,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   };
 
   const handleRefresh = () => {
+    // Clear any cached data and force fresh load
+    setCalendarData(null);
     loadCalendarData();
   };
 
@@ -165,12 +171,15 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   }
 
   return (
-    <div style={{
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#f8fafc',
-    }}>
+    <div
+      className="monthly-view-container"
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: '#f8fafc',
+      }}
+    >
       <CalendarHeader
         currentDate={currentDate}
         viewType={CalendarViewType.Month}
@@ -192,14 +201,18 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
         overflow: 'hidden',
       }}>
         {calendarData ? (
-          <CalendarGrid
+          <MonthlyCalendarGrid
             calendarData={calendarData}
-            viewType={CalendarViewType.Month}
             isLoading={isLoading}
             onTaskClick={handleTaskClick}
-            onSlotClick={handleSlotClick}
             onRefresh={handleRefresh}
-            onTaskDrop={handleTaskDrop}
+            isReadOnly={isReadOnly}
+            selectedEmployeeId={selectedEmployeeId}
+            onDateChange={handleDateChange}
+            employeeFilter={employeeFilter ? {
+              employees: employeeFilter.employees,
+              onEmployeeChange: handleEmployeeChange
+            } : undefined}
           />
         ) : (
           <div style={{
