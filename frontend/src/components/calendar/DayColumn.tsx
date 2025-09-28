@@ -169,7 +169,12 @@ const DayColumn: React.FC<DayColumnProps> = ({
       {/* Day Header */}
       <div style={getDayHeaderStyle()}>
         <div style={getDayNameStyle()}>
-          {day.dayName} {day.displayDate}{day.isToday ? ' (Today)' : ''}
+          {day.dayName} {day.displayDate}
+          {day.isToday && (
+            <span style={{ fontSize: 'var(--dp-text-body-small)', fontWeight: 'var(--dp-font-weight-regular)' }}>
+              {' '}(Today)
+            </span>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 // Import Design Token System
@@ -231,6 +231,28 @@ const theme = createTheme({
 
 const App: React.FC = () => {
   console.log('🎯 App.tsx: App component rendering...');
+
+  // Initialize theme on app load
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // Set CSS custom properties based on saved theme
+    if (savedTheme === 'light') {
+      document.documentElement.style.setProperty('--dp-neutral-0', '#ffffff');
+      document.documentElement.style.setProperty('--dp-neutral-50', '#f8fafc');
+      document.documentElement.style.setProperty('--dp-neutral-100', '#f1f5f9');
+      document.documentElement.style.setProperty('--dp-neutral-200', '#e2e8f0');
+      document.documentElement.style.setProperty('--dp-neutral-800', '#1e293b');
+    } else {
+      document.documentElement.style.setProperty('--dp-neutral-0', '#0f172a');
+      document.documentElement.style.setProperty('--dp-neutral-50', '#1e293b');
+      document.documentElement.style.setProperty('--dp-neutral-100', '#334155');
+      document.documentElement.style.setProperty('--dp-neutral-200', '#475569');
+      document.documentElement.style.setProperty('--dp-neutral-800', '#f8fafc');
+    }
+  }, []);
+
   return (
     <Provider store={store}>
       <ThemeProvider theme={theme}>

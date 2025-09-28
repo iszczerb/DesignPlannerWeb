@@ -143,52 +143,65 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   };
 
   const buttonStyle: React.CSSProperties = {
-    padding: '8px 16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    backgroundColor: '#ffffff',
-    color: '#374151',
-    fontSize: '0.875rem',
-    fontWeight: '500',
+    padding: 'var(--dp-space-2p5) var(--dp-space-4)',
+    border: '1px solid var(--dp-neutral-200)',
+    borderRadius: 'var(--dp-radius-lg)',
+    backgroundColor: 'var(--dp-neutral-0)',
+    color: 'var(--dp-neutral-700)',
+    fontSize: 'var(--dp-text-body-medium)',
+    fontWeight: 'var(--dp-font-weight-semibold)',
+    fontFamily: 'var(--dp-font-family-primary)',
     cursor: 'pointer',
-    transition: 'all 0.2s ease-in-out',
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: 'var(--dp-space-1)',
+    letterSpacing: '-0.01em',
+    minHeight: '40px',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    backdropFilter: 'blur(8px)',
   };
 
   const activeButtonStyle: React.CSSProperties = {
     ...buttonStyle,
-    backgroundColor: '#3b82f6',
-    color: '#ffffff',
-    borderColor: '#3b82f6',
+    backgroundColor: 'var(--dp-primary-500)',
+    color: 'var(--dp-neutral-0)',
+    borderColor: 'var(--dp-primary-500)',
+    boxShadow: '0 2px 8px rgba(14, 165, 233, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05)',
+    transform: 'translateY(-1px)',
   };
 
   const iconButtonStyle: React.CSSProperties = {
-    padding: '8px',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    backgroundColor: '#ffffff',
-    color: '#374151',
-    fontSize: '1rem',
+    padding: 'var(--dp-space-2)',
+    border: '1px solid var(--dp-neutral-200)',
+    borderRadius: 'var(--dp-radius-lg)',
+    backgroundColor: 'var(--dp-neutral-0)',
+    color: 'var(--dp-neutral-700)',
+    fontSize: 'var(--dp-text-title-small)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    fontWeight: 'var(--dp-font-weight-semibold)',
     cursor: 'pointer',
-    transition: 'all 0.2s ease-in-out',
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: '40px',
-    height: '40px',
+    minWidth: '44px',
+    height: '44px',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    backdropFilter: 'blur(8px)',
   };
 
   const selectStyle: React.CSSProperties = {
-    padding: '8px 12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    backgroundColor: '#ffffff',
-    color: '#374151',
-    fontSize: '0.875rem',
+    padding: 'var(--dp-space-2) var(--dp-space-3)',
+    border: '1px solid var(--dp-neutral-300)',
+    borderRadius: 'var(--dp-radius-sm)',
+    backgroundColor: 'var(--dp-neutral-0)',
+    color: 'var(--dp-neutral-700)',
+    fontSize: 'var(--dp-text-body-medium)',
+    fontFamily: 'var(--dp-font-family-primary)',
     cursor: 'pointer',
     minWidth: '120px',
+    transition: 'var(--dp-transition-fast)',
   };
 
   return (
@@ -196,34 +209,40 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '16px 24px',
-      backgroundColor: '#ffffff',
-      borderBottom: '1px solid #e5e7eb',
+      padding: 'var(--dp-space-4) var(--dp-space-6)',
+      backgroundColor: 'var(--dp-neutral-0)',
+      borderBottom: '1px solid var(--dp-neutral-200)',
+      boxShadow: 'var(--dp-shadow-sm)',
       flexWrap: 'wrap',
-      gap: '12px',
+      gap: 'var(--dp-space-3)',
     }}>
       {/* Title and date range */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '4px',
+        gap: 'var(--dp-space-1)',
         minWidth: '200px',
       }}>
         <h1 style={{
-          fontSize: '1.5rem',
-          fontWeight: '700',
-          color: '#111827',
+          fontSize: 'var(--dp-text-headline-medium)',
+          fontWeight: 'var(--dp-font-weight-bold)',
+          fontFamily: 'var(--dp-font-family-primary)',
+          color: 'var(--dp-neutral-900)',
           margin: 0,
+          letterSpacing: '-0.025em',
+          lineHeight: 'var(--dp-line-height-tight)',
         }}>
           {title}
         </h1>
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          fontSize: '0.875rem',
-          color: '#6b7280',
-          fontWeight: '500',
+          gap: 'var(--dp-space-2)',
+          fontSize: 'var(--dp-text-body-large)',
+          color: 'var(--dp-neutral-600)',
+          fontWeight: 'var(--dp-font-weight-semibold)',
+          fontFamily: 'var(--dp-font-family-primary)',
+          letterSpacing: '-0.01em',
         }}>
           <span>{getDateRangeText()}</span>
           {showTeamControls && (
@@ -240,7 +259,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
+        gap: 'var(--dp-space-2)',
         flexWrap: 'wrap',
       }}>
         {/* Team controls - Different for Admin vs Manager */}
@@ -289,10 +308,10 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         {/* View type buttons */}
         <div style={{
           display: 'flex',
-          gap: '4px',
-          backgroundColor: '#f3f4f6',
-          borderRadius: '8px',
-          padding: '4px',
+          gap: 'var(--dp-space-1)',
+          backgroundColor: 'var(--dp-neutral-100)',
+          borderRadius: 'var(--dp-radius-md)',
+          padding: 'var(--dp-space-1)',
         }}>
           {Object.entries(VIEW_TYPE_LABELS).map(([key, label]) => {
             const viewTypeKey = parseInt(key) as CalendarViewType;
@@ -305,12 +324,16 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                 onClick={() => onViewTypeChange(viewTypeKey)}
                 onMouseEnter={(e) => {
                   if (!isActive) {
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                    e.currentTarget.style.backgroundColor = 'var(--dp-neutral-50)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
                   }
                 }}
               >
@@ -324,19 +347,23 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
+          gap: 'var(--dp-space-1)',
         }}>
           <button
             style={iconButtonStyle}
             onClick={navigateToPrevious}
             title="Previous"
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f9fafb';
-              e.currentTarget.style.borderColor = '#9ca3af';
+              e.currentTarget.style.backgroundColor = 'var(--dp-neutral-50)';
+              e.currentTarget.style.borderColor = 'var(--dp-neutral-400)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#ffffff';
-              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+              e.currentTarget.style.borderColor = 'var(--dp-neutral-200)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
             }}
           >
             &#8249;
@@ -349,12 +376,16 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             }}
             onClick={navigateToToday}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f9fafb';
-              e.currentTarget.style.borderColor = '#9ca3af';
+              e.currentTarget.style.backgroundColor = 'var(--dp-neutral-50)';
+              e.currentTarget.style.borderColor = 'var(--dp-neutral-400)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#ffffff';
-              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+              e.currentTarget.style.borderColor = 'var(--dp-neutral-200)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
             }}
           >
             Today
@@ -365,12 +396,16 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             onClick={navigateToNext}
             title="Next"
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f9fafb';
-              e.currentTarget.style.borderColor = '#9ca3af';
+              e.currentTarget.style.backgroundColor = 'var(--dp-neutral-50)';
+              e.currentTarget.style.borderColor = 'var(--dp-neutral-400)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#ffffff';
-              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+              e.currentTarget.style.borderColor = 'var(--dp-neutral-200)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
             }}
           >
             &#8250;
@@ -382,21 +417,21 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           <button
             style={{
               ...iconButtonStyle,
-              backgroundColor: isLoading ? '#f3f4f6' : '#ffffff',
+              backgroundColor: isLoading ? '#f3f4f6' : 'var(--dp-neutral-0)',
             }}
             onClick={onRefresh}
             disabled={isLoading}
             title="Refresh"
             onMouseEnter={(e) => {
               if (!isLoading) {
-                e.currentTarget.style.backgroundColor = '#f9fafb';
-                e.currentTarget.style.borderColor = '#9ca3af';
+                e.currentTarget.style.backgroundColor = 'var(--dp-neutral-50)';
+                e.currentTarget.style.borderColor = 'var(--dp-neutral-500)';
               }
             }}
             onMouseLeave={(e) => {
               if (!isLoading) {
-                e.currentTarget.style.backgroundColor = '#ffffff';
-                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+                e.currentTarget.style.borderColor = 'var(--dp-neutral-300)';
               }
             }}
           >

@@ -123,21 +123,21 @@ const DayView: React.FC<DayViewProps> = ({
       <div style={{
         padding: '24px',
         textAlign: 'center',
-        backgroundColor: '#fef2f2',
-        border: '1px solid #fecaca',
+        backgroundColor: 'var(--dp-error-50)',
+        border: '1px solid var(--dp-error-200)',
         borderRadius: '8px',
         margin: '16px',
       }}>
         <div style={{
           fontSize: '1.125rem',
           fontWeight: '600',
-          color: '#dc2626',
+          color: 'var(--dp-error-600)',
           marginBottom: '8px',
         }}>
           Failed to Load Day View
         </div>
         <div style={{
-          color: '#7f1d1d',
+          color: 'var(--dp-error-700)',
           marginBottom: '16px',
         }}>
           {error}
@@ -146,8 +146,8 @@ const DayView: React.FC<DayViewProps> = ({
           onClick={handleRefresh}
           style={{
             padding: '8px 16px',
-            backgroundColor: '#dc2626',
-            color: 'white',
+            backgroundColor: 'var(--dp-error-500)',
+            color: 'var(--dp-neutral-0)',
             border: 'none',
             borderRadius: '6px',
             cursor: 'pointer',
@@ -166,7 +166,7 @@ const DayView: React.FC<DayViewProps> = ({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      backgroundColor: '#f8fafc',
+      backgroundColor: 'var(--dp-neutral-25)',
     }}>
       <CalendarHeader
         currentDate={currentDate}
@@ -204,13 +204,13 @@ const DayView: React.FC<DayViewProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--dp-neutral-0)',
             borderRadius: '8px',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
           }}>
             <div style={{
               textAlign: 'center',
-              color: '#6b7280',
+              color: 'var(--dp-neutral-500)',
             }}>
               {isLoading ? (
                 <div style={{
@@ -222,8 +222,8 @@ const DayView: React.FC<DayViewProps> = ({
                   <div style={{
                     width: '32px',
                     height: '32px',
-                    border: '3px solid #f3f4f6',
-                    borderTop: '3px solid #3b82f6',
+                    border: '3px solid var(--dp-neutral-200)',
+                    borderTop: '3px solid var(--dp-primary-500)',
                     borderRadius: '50%',
                     animation: 'spin 1s linear infinite',
                   }} />

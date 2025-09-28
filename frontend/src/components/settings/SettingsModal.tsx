@@ -21,6 +21,9 @@ import {
   Lock,
   Person,
   Settings as SettingsIcon,
+  Palette,
+  LightMode,
+  DarkMode,
 } from '@mui/icons-material';
 import { useAppSelector } from '../../store/hooks';
 
@@ -67,6 +70,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+  });
+
   const [passwordData, setPasswordData] = useState<ChangePasswordData>({
     currentPassword: '',
     newPassword: '',
@@ -80,6 +88,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Theme switching function
+  const handleThemeChange = (newTheme: 'light' | 'dark') => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+
+    // Apply theme to document
+    document.documentElement.setAttribute('data-theme', newTheme);
+
+    // Force update CSS custom properties
+    if (newTheme === 'light') {
+      document.documentElement.style.setProperty('--dp-neutral-0', '#ffffff');
+      document.documentElement.style.setProperty('--dp-neutral-50', '#f8fafc');
+      document.documentElement.style.setProperty('--dp-neutral-100', '#f1f5f9');
+      document.documentElement.style.setProperty('--dp-neutral-200', '#e2e8f0');
+      document.documentElement.style.setProperty('--dp-neutral-800', '#1e293b');
+    } else {
+      document.documentElement.style.setProperty('--dp-neutral-0', '#0f172a');
+      document.documentElement.style.setProperty('--dp-neutral-50', '#1e293b');
+      document.documentElement.style.setProperty('--dp-neutral-100', '#334155');
+      document.documentElement.style.setProperty('--dp-neutral-200', '#475569');
+      document.documentElement.style.setProperty('--dp-neutral-800', '#f8fafc');
+    }
+
+    setMessage({ type: 'success', text: `Theme changed to ${newTheme} mode` });
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -194,23 +228,66 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 2,
+          borderRadius: 'var(--dp-radius-lg)',
           minHeight: 500,
+          backgroundColor: 'var(--dp-neutral-0) !important',
+          boxShadow: 'var(--dp-shadow-lg)',
         }
       }}
     >
-      <DialogTitle sx={{ pb: 0 }}>
+      <DialogTitle sx={{
+        pb: 0,
+        backgroundColor: 'var(--dp-primary-600)',
+        color: 'var(--dp-neutral-0)',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SettingsIcon />
-          <Typography variant="h6">Settings</Typography>
+          <SettingsIcon sx={{ color: 'var(--dp-neutral-0)' }} />
+          <Typography variant="h6" sx={{
+            fontFamily: 'var(--dp-font-family-primary)',
+            fontWeight: 'var(--dp-font-weight-bold)',
+            fontSize: 'var(--dp-text-headline-medium)'
+          }}>Settings</Typography>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ px: 0, pb: 0 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} variant="fullWidth">
+      <DialogContent sx={{
+        px: 0,
+        pb: 0,
+        backgroundColor: 'var(--dp-neutral-25) !important'
+      }}>
+        <Box sx={{
+          borderBottom: '1px solid var(--dp-neutral-200)',
+          backgroundColor: 'var(--dp-neutral-0) !important'
+        }}>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            sx={{
+              '& .MuiTab-root': {
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontWeight: 'var(--dp-font-weight-medium)',
+                textTransform: 'none',
+                transition: 'var(--dp-transition-fast)',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-primary-50)',
+                },
+                '&.Mui-selected': {
+                  color: 'var(--dp-primary-600)',
+                  fontWeight: 'var(--dp-font-weight-semibold)',
+                }
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: 'var(--dp-primary-500)',
+                height: 3,
+                borderRadius: 'var(--dp-radius-sm)',
+              }
+            }}
+          >
             <Tab label="Profile" id="settings-tab-0" />
             <Tab label="Security" id="settings-tab-1" />
+            <Tab label="Appearance" id="settings-tab-2" />
           </Tabs>
         </Box>
 
@@ -269,7 +346,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           <TabPanel value={tabValue} index={1}>
             {/* Security Tab */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontWeight: 'var(--dp-font-weight-bold)',
+                color: 'var(--dp-neutral-800)'
+              }}>
                 Change Password
               </Typography>
 
@@ -384,11 +465,128 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               </Box>
             </Box>
           </TabPanel>
+
+          <TabPanel value={tabValue} index={2}>
+            {/* Appearance Tab */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Typography variant="h6" gutterBottom sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontWeight: 'var(--dp-font-weight-bold)',
+                color: 'var(--dp-neutral-800)'
+              }}>
+                <Palette sx={{ color: 'var(--dp-primary-500)' }} />
+                Theme Settings
+              </Typography>
+
+              {message && tabValue === 2 && (
+                <Alert severity={message.type} sx={{ mb: 2 }}>
+                  {message.text}
+                </Alert>
+              )}
+
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                p: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2
+              }}>
+                <Typography variant="subtitle1" sx={{
+                  fontWeight: 'var(--dp-font-weight-bold)',
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  color: 'var(--dp-neutral-800)'
+                }}>
+                  Select Theme
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button
+                    variant={theme === 'light' ? 'contained' : 'outlined'}
+                    startIcon={<LightMode />}
+                    onClick={() => handleThemeChange('light')}
+                    sx={{
+                      flex: 1,
+                      py: 2,
+                      textTransform: 'none',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    Light Mode
+                  </Button>
+
+                  <Button
+                    variant={theme === 'dark' ? 'contained' : 'outlined'}
+                    startIcon={<DarkMode />}
+                    onClick={() => handleThemeChange('dark')}
+                    sx={{
+                      flex: 1,
+                      py: 2,
+                      textTransform: 'none',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    Dark Mode
+                  </Button>
+                </Box>
+
+                <Typography variant="body2" sx={{
+                  color: 'var(--dp-neutral-600)',
+                  fontFamily: 'var(--dp-font-family-primary)'
+                }}>
+                  Current theme: <strong>{theme === 'light' ? 'Light Mode' : 'Dark Mode'}</strong>
+                </Typography>
+              </Box>
+
+              <Box sx={{
+                mt: 2,
+                p: 2,
+                bgcolor: 'var(--dp-info-50)',
+                borderRadius: 'var(--dp-radius-md)',
+                border: '1px solid var(--dp-info-200)'
+              }}>
+                <Typography variant="body2" sx={{
+                  color: 'var(--dp-info-700)',
+                  fontFamily: 'var(--dp-font-family-primary)'
+                }}>
+                  <strong>Theme Information:</strong>
+                  <br />• Light mode provides better visibility during daytime use
+                  <br />• Dark mode reduces eye strain in low-light environments
+                  <br />• Your theme preference is saved locally
+                  <br />• Changes take effect immediately
+                </Typography>
+              </Box>
+            </Box>
+          </TabPanel>
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={handleClose}>
+      <DialogActions sx={{
+        px: 3,
+        pb: 2,
+        backgroundColor: 'var(--dp-neutral-50) !important',
+        borderTop: '1px solid var(--dp-neutral-200)',
+      }}>
+        <Button
+          onClick={handleClose}
+          variant="contained"
+          sx={{
+            backgroundColor: 'var(--dp-primary-500)',
+            fontFamily: 'var(--dp-font-family-primary)',
+            fontWeight: 'var(--dp-font-weight-medium)',
+            transition: 'var(--dp-transition-fast)',
+            boxShadow: 'var(--dp-shadow-sm)',
+            '&:hover': {
+              backgroundColor: 'var(--dp-primary-600)',
+              boxShadow: 'var(--dp-shadow-md)',
+              transform: 'translateY(-1px)',
+            },
+          }}
+        >
           Close
         </Button>
       </DialogActions>

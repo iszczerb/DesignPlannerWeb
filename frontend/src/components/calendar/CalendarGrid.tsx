@@ -83,17 +83,19 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
   };
 
   const getContainerStyle = (): React.CSSProperties => ({
-    backgroundColor: '#ffffff',
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
+    backgroundColor: 'var(--dp-neutral-0)',
+    borderRadius: 'var(--dp-radius-md)',
+    boxShadow: 'var(--dp-shadow-sm)',
+    border: '1px solid var(--dp-neutral-200)',
     overflow: viewType === CalendarViewType.BiWeek ? 'auto' : 'hidden', // Enable horizontal scroll for biweekly
     position: 'relative',
+    fontFamily: 'var(--dp-font-family-primary)',
   });
 
   const getHeaderRowStyle = (): React.CSSProperties => ({
     display: 'flex',
-    backgroundColor: '#f8fafc',
-    borderBottom: '2px solid #e2e8f0',
+    backgroundColor: 'var(--dp-neutral-50)',
+    borderBottom: '2px solid var(--dp-neutral-200)',
     position: 'sticky',
     top: 0,
     zIndex: 3,
@@ -103,16 +105,17 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
     width: isFirst ? '200px' : '160px',
     minWidth: isFirst ? '200px' : '160px',
     maxWidth: isFirst ? '200px' : '160px',
-    padding: '12px 16px',
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: '#374151',
+    padding: 'var(--dp-space-3) var(--dp-space-4)',
+    fontSize: 'var(--dp-text-body-medium)',
+    fontWeight: 'var(--dp-font-weight-semibold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-700)',
     textAlign: 'center',
-    borderRight: isFirst ? '1px solid #e2e8f0' : 'none',
-    backgroundColor: isFirst ? '#f1f5f9' : '#f8fafc',
+    borderRight: isFirst ? '1px solid var(--dp-neutral-200)' : 'none',
+    backgroundColor: isFirst ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-50)',
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
+    gap: 'var(--dp-space-1)',
     flexShrink: 0,
     overflow: 'hidden',
   });
@@ -129,18 +132,20 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(248, 250, 252, 0.9)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+    backdropFilter: 'blur(4px)',
   });
 
   const getEmptyStateStyle = (): React.CSSProperties => ({
-    padding: '48px 24px',
+    padding: 'var(--dp-space-12) var(--dp-space-6)',
     textAlign: 'center',
-    color: '#6b7280',
-    fontSize: '1rem',
+    color: 'var(--dp-neutral-500)',
+    fontSize: 'var(--dp-text-body-large)',
+    fontFamily: 'var(--dp-font-family-primary)',
   });
 
   const renderDayHeader = (day: any, index: number) => {
@@ -149,21 +154,22 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
         key={day.date}
         style={{
           ...getHeaderCellStyle(),
-          backgroundColor: day.isToday ? '#dbeafe' : '#f8fafc',
-          color: day.isToday ? '#1d4ed8' : '#374151',
-          border: day.isToday ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-          borderBottom: '2px solid #e2e8f0',
-          marginRight: '8px', // Match the gap in EmployeeRow
+          backgroundColor: day.isToday ? 'var(--dp-primary-50)' : 'var(--dp-neutral-50)',
+          color: day.isToday ? 'var(--dp-primary-700)' : 'var(--dp-neutral-700)',
+          border: day.isToday ? '2px solid var(--dp-primary-500)' : '1px solid var(--dp-neutral-200)',
+          borderBottom: '2px solid var(--dp-neutral-200)',
+          marginRight: 'var(--dp-space-2)', // Match the gap in EmployeeRow
         }}
       >
         <div>{day.dayName}</div>
-        <div style={{ fontSize: '1.25rem', fontWeight: '700' }}>
+        <div style={{ fontSize: 'var(--dp-text-title-small)', fontWeight: 'var(--dp-font-weight-bold)', fontFamily: 'var(--dp-font-family-primary)' }}>
           {day.displayDate}
         </div>
         <div style={{
-          fontSize: '0.6875rem',
-          fontWeight: '400',
-          color: day.isToday ? '#3b82f6' : '#9ca3af',
+          fontSize: 'var(--dp-text-caption)',
+          fontWeight: 'var(--dp-font-weight-regular)',
+          fontFamily: 'var(--dp-font-family-primary)',
+          color: day.isToday ? 'var(--dp-primary-500)' : 'var(--dp-neutral-500)',
           marginTop: '2px',
         }}>
           AM / PM
@@ -178,13 +184,14 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
       <div style={getHeaderRowStyle()}>
         {/* Employee column header */}
         <div style={getHeaderCellStyle(true)}>
-          <div style={{ fontSize: '1rem', fontWeight: '700' }}>
+          <div style={{ fontSize: 'var(--dp-text-body-large)', fontWeight: 'var(--dp-font-weight-bold)', fontFamily: 'var(--dp-font-family-primary)' }}>
             Team Members
           </div>
           <div style={{
-            fontSize: '0.75rem',
-            color: '#6b7280',
-            fontWeight: '400',
+            fontSize: 'var(--dp-text-body-small)',
+            color: 'var(--dp-neutral-500)',
+            fontWeight: 'var(--dp-font-weight-regular)',
+            fontFamily: 'var(--dp-font-family-primary)',
           }}>
             {calendarData.employees.length} {calendarData.employees.length === 1 ? 'person' : 'people'}
           </div>
@@ -239,7 +246,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
     return (
       <div style={getContainerStyle()}>
         <div style={getEmptyStateStyle()}>
-          <div style={{ marginBottom: '12px', fontSize: '1.125rem', fontWeight: '600' }}>
+          <div style={{ marginBottom: 'var(--dp-space-3)', fontSize: 'var(--dp-text-headline-small)', fontWeight: 'var(--dp-font-weight-semibold)', fontFamily: 'var(--dp-font-family-primary)' }}>
             No team members found
           </div>
           <div>
@@ -249,15 +256,17 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
             <button
               onClick={onRefresh}
               style={{
-                marginTop: '16px',
-                padding: '8px 16px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
+                marginTop: 'var(--dp-space-4)',
+                padding: 'var(--dp-space-2) var(--dp-space-4)',
+                backgroundColor: 'var(--dp-primary-500)',
+                color: 'var(--dp-neutral-0)',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: 'var(--dp-radius-sm)',
                 cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '500',
+                fontSize: 'var(--dp-text-body-medium)',
+                fontWeight: 'var(--dp-font-weight-medium)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                transition: 'var(--dp-transition-fast)',
               }}
             >
               Refresh
@@ -277,20 +286,21 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '12px',
+            gap: 'var(--dp-space-3)',
           }}>
             <div style={{
               width: '32px',
               height: '32px',
-              border: '3px solid #f3f4f6',
-              borderTop: '3px solid #3b82f6',
+              border: '3px solid var(--dp-neutral-100)',
+              borderTop: '3px solid var(--dp-primary-500)',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
             }} />
             <div style={{
-              fontSize: '0.875rem',
-              color: '#6b7280',
-              fontWeight: '500',
+              fontSize: 'var(--dp-text-body-medium)',
+              color: 'var(--dp-neutral-500)',
+              fontWeight: 'var(--dp-font-weight-medium)',
+              fontFamily: 'var(--dp-font-family-primary)',
             }}>
               Loading schedule...
             </div>
@@ -346,7 +356,7 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
                 team={{
                   id: -1,
                   name: 'Unassigned',
-                  color: '#6b7280',
+                  color: 'var(--dp-neutral-500)',
                   isManaged: true
                 }}
                 employees={unassignedEmployees}
@@ -403,14 +413,15 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
 
         {/* Summary row */}
         <div style={{
-          padding: '16px 24px',
-          backgroundColor: '#f8fafc',
-          borderTop: '2px solid #e2e8f0',
+          padding: 'var(--dp-space-4) var(--dp-space-6)',
+          backgroundColor: 'var(--dp-neutral-50)',
+          borderTop: '2px solid var(--dp-neutral-200)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: '0.875rem',
-          color: '#6b7280',
+          fontSize: 'var(--dp-text-body-medium)',
+          fontFamily: 'var(--dp-font-family-primary)',
+          color: 'var(--dp-neutral-500)',
         }}>
           <div>
             Showing {employeesToShow.length} team member{employeesToShow.length !== 1 ? 's' : ''} 
@@ -419,25 +430,26 @@ const CalendarGrid: React.FC<ExtendedCalendarGridProps> = ({
           
           <div style={{
             display: 'flex',
-            gap: '16px',
-            fontSize: '0.75rem',
+            gap: 'var(--dp-space-4)',
+            fontSize: 'var(--dp-text-body-small)',
+            fontFamily: 'var(--dp-font-family-primary)',
           }}>
             <div>
-              <span style={{ fontWeight: '600' }}>
+              <span style={{ fontWeight: 'var(--dp-font-weight-semibold)' }}>
                 {calendarData.employees.reduce((sum, emp) => 
                   sum + emp.dayAssignments.reduce((daySum, day) => daySum + day.totalAssignments, 0), 0
                 )}
               </span> total tasks
             </div>
             <div>
-              <span style={{ fontWeight: '600', color: '#ef4444' }}>
+              <span style={{ fontWeight: 'var(--dp-font-weight-semibold)', color: 'var(--dp-error-500)' }}>
                 {calendarData.employees.reduce((sum, emp) => 
                   sum + emp.dayAssignments.filter(day => day.hasConflicts).length, 0
                 )}
               </span> conflicts
             </div>
             <div>
-              <span style={{ fontWeight: '600', color: '#10b981' }}>
+              <span style={{ fontWeight: 'var(--dp-font-weight-semibold)', color: 'var(--dp-success-500)' }}>
                 {calendarData.days.length * employeesToShow.length * 2}
               </span> available slots
             </div>

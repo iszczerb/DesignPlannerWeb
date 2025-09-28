@@ -22,54 +22,60 @@ const NavigationContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: theme.spacing(2),
-  padding: theme.spacing(1, 2),
-  backgroundColor: '#ffffff',
-  borderBottom: '1px solid #e5e7eb',
+  gap: 'var(--dp-space-4)',
+  padding: 'var(--dp-space-2) var(--dp-space-4)',
+  backgroundColor: 'var(--dp-neutral-0)',
+  borderBottom: '1px solid var(--dp-neutral-200)',
   minHeight: '60px',
+  fontFamily: 'var(--dp-font-family-primary)',
 }));
 
 const DateDisplay = styled(Typography)(({ theme }) => ({
-  fontSize: '1rem',
-  fontWeight: '600',
-  color: '#1f2937',
+  fontSize: 'var(--dp-text-body-large)',
+  fontWeight: 'var(--dp-font-weight-semibold)',
+  fontFamily: 'var(--dp-font-family-primary)',
+  color: 'var(--dp-neutral-800)',
   minWidth: '180px',
   textAlign: 'center',
 }));
 
 const ViewToggleGroup = styled(Box)(({ theme }) => ({
   display: 'flex',
-  gap: '2px',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '8px',
-  padding: '2px',
+  gap: 'var(--dp-space-1)',
+  backgroundColor: 'var(--dp-neutral-100)',
+  borderRadius: 'var(--dp-radius-md)',
+  padding: 'var(--dp-space-1)',
 }));
 
 const ViewButton = styled(Button)<{ isActive?: boolean }>(({ theme, isActive }) => ({
-  color: isActive ? '#ffffff' : '#6b7280',
-  backgroundColor: isActive ? '#3b82f6' : 'transparent',
-  fontWeight: '500',
-  fontSize: '0.875rem',
+  color: isActive ? 'var(--dp-neutral-0)' : 'var(--dp-neutral-500)',
+  backgroundColor: isActive ? 'var(--dp-primary-500)' : 'transparent',
+  fontWeight: 'var(--dp-font-weight-medium)',
+  fontSize: 'var(--dp-text-body-medium)',
+  fontFamily: 'var(--dp-font-family-primary)',
   textTransform: 'none',
-  borderRadius: '6px',
-  padding: '6px 12px',
+  borderRadius: 'var(--dp-radius-sm)',
+  padding: 'var(--dp-space-2) var(--dp-space-3)',
   minWidth: '70px',
+  transition: 'var(--dp-transition-fast)',
   '&:hover': {
-    backgroundColor: isActive ? '#2563eb' : '#e5e7eb',
-    color: isActive ? '#ffffff' : '#374151',
+    backgroundColor: isActive ? 'var(--dp-primary-600)' : 'var(--dp-neutral-200)',
+    color: isActive ? 'var(--dp-neutral-0)' : 'var(--dp-neutral-700)',
   },
 }));
 
 const ArrowButton = styled(IconButton)(({ theme }) => ({
-  color: '#6b7280',
-  backgroundColor: '#f9fafb',
-  border: '1px solid #d1d5db',
-  borderRadius: '6px',
+  color: 'var(--dp-neutral-500)',
+  backgroundColor: 'var(--dp-neutral-50)',
+  border: '1px solid var(--dp-neutral-300)',
+  borderRadius: 'var(--dp-radius-sm)',
   width: '36px',
   height: '36px',
+  transition: 'var(--dp-transition-fast)',
   '&:hover': {
-    backgroundColor: '#f3f4f6',
-    borderColor: '#9ca3af',
+    backgroundColor: 'var(--dp-neutral-100)',
+    borderColor: 'var(--dp-neutral-400)',
+    color: 'var(--dp-neutral-600)',
   },
 }));
 

@@ -2872,7 +2872,23 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               setTimeout(() => document.addEventListener('click', removeMenu), 0);
             }}
           >
-            {formatDayHeader(day)}
+            {(() => {
+              const date = new Date(day.date);
+              const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+              const dayNumber = date.getDate();
+
+              if (isToday(date)) {
+                return (
+                  <>
+                    {dayName} {dayNumber}
+                    <span style={{ fontSize: 'var(--dp-text-body-small)', fontWeight: 'var(--dp-font-weight-bold)', marginLeft: '4px' }}>
+                      (Today)
+                    </span>
+                  </>
+                );
+              }
+              return `${dayName} ${dayNumber}`;
+            })()}
           </div>
           );
         })}

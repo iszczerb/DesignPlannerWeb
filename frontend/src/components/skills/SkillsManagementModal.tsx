@@ -229,9 +229,11 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          border: isEditMode ? '1px dashed #ccc' : 'none',
+          border: isEditMode ? '1px dashed var(--dp-neutral-300)' : 'none',
+          borderRadius: 'var(--dp-radius-sm)',
+          transition: 'var(--dp-transition-fast)',
           '&:hover': isEditMode ? {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: 'var(--dp-neutral-100)',
           } : {},
         }}
         onClick={handleClick}
@@ -241,8 +243,9 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
             sx={{
               width: 16,
               height: 16,
-              backgroundColor: '#3b82f6',
-              border: '1px solid #1e40af',
+              backgroundColor: 'var(--dp-primary-500)',
+              border: '1px solid var(--dp-primary-700)',
+              borderRadius: 'var(--dp-radius-sm)',
             }}
           />
         )}
@@ -251,9 +254,9 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
             sx={{
               width: 16,
               height: 16,
-              backgroundColor: '#10b981',
+              backgroundColor: 'var(--dp-success-500)',
               borderRadius: '50%',
-              border: '1px solid #047857',
+              border: '1px solid var(--dp-success-700)',
             }}
           />
         )}
@@ -262,12 +265,15 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
             sx={{
               width: 16,
               height: 16,
-              border: '1px dashed #ccc',
+              border: '1px dashed var(--dp-neutral-300)',
+              borderRadius: 'var(--dp-radius-sm)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '8px',
-              color: '#999',
+              color: 'var(--dp-neutral-500)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontWeight: 'var(--dp-font-weight-medium)',
             }}
           >
             +
@@ -289,27 +295,35 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
           height: '90vh',
           maxHeight: '90vh',
           borderRadius: 2,
+          backgroundColor: 'var(--dp-neutral-0) !important',
         }
       }}
     >
-      <DialogContent sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <DialogContent sx={{
+        p: 0,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'var(--dp-neutral-0) !important',
+      }}>
         {/* Header */}
         <Box
           sx={{
             p: 3,
-            borderBottom: '1px solid #e5e7eb',
-            backgroundColor: '#1e3a8a',
-            color: 'white',
+            borderBottom: '1px solid var(--dp-neutral-200)',
+            backgroundColor: 'var(--dp-primary-600)',
+            color: 'var(--dp-neutral-0)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
           }}
         >
           <Box>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 0.5 }}>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 'var(--dp-font-weight-bold)', mb: 0.5, fontFamily: 'var(--dp-font-family-primary)' }}>
               Skills Management
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontFamily: 'var(--dp-font-family-primary)' }}>
               Track and manage team member skills and competencies
             </Typography>
           </Box>
@@ -320,9 +334,15 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
               startIcon={<EditIcon />}
               onClick={() => setIsEditMode(!isEditMode)}
               sx={{
-                backgroundColor: isEditMode ? '#ef4444' : '#3b82f6',
+                backgroundColor: isEditMode ? 'var(--dp-error-500)' : 'var(--dp-primary-500)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontWeight: 'var(--dp-font-weight-medium)',
+                transition: 'var(--dp-transition-fast)',
+                boxShadow: 'var(--dp-shadow-sm)',
                 '&:hover': {
-                  backgroundColor: isEditMode ? '#dc2626' : '#2563eb',
+                  backgroundColor: isEditMode ? 'var(--dp-error-600)' : 'var(--dp-primary-600)',
+                  boxShadow: 'var(--dp-shadow-md)',
+                  transform: 'translateY(-1px)',
                 },
               }}
             >
@@ -332,28 +352,66 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
         </Box>
 
         {/* Content */}
-        <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+        <Box sx={{
+          flex: 1,
+          overflow: 'auto',
+          p: 3,
+          backgroundColor: 'var(--dp-neutral-25) !important',
+        }}>
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-              <Typography>Loading skills data...</Typography>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '400px',
+              gap: 'var(--dp-space-4)'
+            }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  border: '3px solid var(--dp-neutral-200)',
+                  borderTop: '3px solid var(--dp-primary-500)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+              <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading skills data...</Typography>
             </Box>
           ) : (
             <>
               {/* Statistics Cards */}
-              <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid container spacing={3} sx={{
+                mb: 4,
+                '[data-theme="dark"] &': {
+                  backgroundColor: 'transparent !important',
+                }
+              }}>
                 <Grid size={3}>
-                  <Card sx={{ height: '100%', backgroundColor: '#f8fafc' }}>
+                  <Card sx={{
+                    height: '100%',
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    border: '1px solid var(--dp-neutral-200)',
+                    borderRadius: 'var(--dp-radius-lg)',
+                    boxShadow: 'var(--dp-shadow-sm)',
+                    transition: 'var(--dp-transition-fast)',
+                    '&:hover': {
+                      boxShadow: 'var(--dp-shadow-md)',
+                      transform: 'translateY(-2px)',
+                    }
+                  }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <TrendingUpIcon sx={{ color: '#3b82f6', mr: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
+                        <TrendingUpIcon sx={{ color: 'var(--dp-primary-500)', mr: 1 }} />
+                        <Typography variant="body2" sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>
                           Most Used Skill
                         </Typography>
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e40af' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'var(--dp-font-weight-bold)', color: 'var(--dp-primary-700)', fontFamily: 'var(--dp-font-family-primary)' }}>
                         {stats.mostUsed.skill.name}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#3b82f6' }}>
+                      <Typography variant="body2" sx={{ color: 'var(--dp-primary-500)', fontFamily: 'var(--dp-font-family-primary)' }}>
                         {stats.mostUsed.count} task types
                       </Typography>
                     </CardContent>
@@ -361,18 +419,29 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
                 </Grid>
 
                 <Grid size={3}>
-                  <Card sx={{ height: '100%', backgroundColor: '#fef2f2' }}>
+                  <Card sx={{
+                    height: '100%',
+                    backgroundColor: 'var(--dp-error-50)',
+                    border: '1px solid var(--dp-error-200)',
+                    borderRadius: 'var(--dp-radius-lg)',
+                    boxShadow: 'var(--dp-shadow-sm)',
+                    transition: 'var(--dp-transition-fast)',
+                    '&:hover': {
+                      boxShadow: 'var(--dp-shadow-md)',
+                      transform: 'translateY(-2px)',
+                    }
+                  }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <TrendingDownIcon sx={{ color: '#ef4444', mr: 1 }} />
+                        <TrendingDownIcon sx={{ color: 'var(--dp-error-500)', mr: 1 }} />
                         <Typography variant="body2" color="text.secondary">
                           Least Used Skill
                         </Typography>
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#dc2626' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'var(--dp-font-weight-bold)', color: 'var(--dp-error-700)', fontFamily: 'var(--dp-font-family-primary)' }}>
                         {stats.leastUsed.skill.name}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#ef4444' }}>
+                      <Typography variant="body2" sx={{ color: 'var(--dp-error-500)', fontFamily: 'var(--dp-font-family-primary)' }}>
                         {stats.leastUsed.count} task types
                       </Typography>
                     </CardContent>
@@ -380,18 +449,29 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
                 </Grid>
 
                 <Grid size={3}>
-                  <Card sx={{ height: '100%', backgroundColor: '#f0fdf4' }}>
+                  <Card sx={{
+                    height: '100%',
+                    backgroundColor: 'var(--dp-success-50)',
+                    border: '1px solid var(--dp-success-200)',
+                    borderRadius: 'var(--dp-radius-lg)',
+                    boxShadow: 'var(--dp-shadow-sm)',
+                    transition: 'var(--dp-transition-fast)',
+                    '&:hover': {
+                      boxShadow: 'var(--dp-shadow-md)',
+                      transform: 'translateY(-2px)',
+                    }
+                  }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <StarIcon sx={{ color: '#10b981', mr: 1 }} />
+                        <StarIcon sx={{ color: 'var(--dp-success-500)', mr: 1 }} />
                         <Typography variant="body2" color="text.secondary">
                           Highest Avg Skill
                         </Typography>
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#047857' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'var(--dp-font-weight-bold)', color: 'var(--dp-success-700)', fontFamily: 'var(--dp-font-family-primary)' }}>
                         {stats.highestAvg.skill.name}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#10b981' }}>
+                      <Typography variant="body2" sx={{ color: 'var(--dp-success-500)', fontFamily: 'var(--dp-font-family-primary)' }}>
                         {stats.highestAvg.average.toFixed(2)} avg score
                       </Typography>
                     </CardContent>
@@ -399,18 +479,29 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
                 </Grid>
 
                 <Grid size={3}>
-                  <Card sx={{ height: '100%', backgroundColor: '#fefce8' }}>
+                  <Card sx={{
+                    height: '100%',
+                    backgroundColor: 'var(--dp-warning-50)',
+                    border: '1px solid var(--dp-warning-200)',
+                    borderRadius: 'var(--dp-radius-lg)',
+                    boxShadow: 'var(--dp-shadow-sm)',
+                    transition: 'var(--dp-transition-fast)',
+                    '&:hover': {
+                      boxShadow: 'var(--dp-shadow-md)',
+                      transform: 'translateY(-2px)',
+                    }
+                  }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <SkillsIcon sx={{ color: '#f59e0b', mr: 1 }} />
+                        <SkillsIcon sx={{ color: 'var(--dp-warning-500)', mr: 1 }} />
                         <Typography variant="body2" color="text.secondary">
                           Lowest Avg Skill
                         </Typography>
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#d97706' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'var(--dp-font-weight-bold)', color: 'var(--dp-warning-700)', fontFamily: 'var(--dp-font-family-primary)' }}>
                         {stats.lowestAvg.skill.name}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#f59e0b' }}>
+                      <Typography variant="body2" sx={{ color: 'var(--dp-warning-500)', fontFamily: 'var(--dp-font-family-primary)' }}>
                         {stats.lowestAvg.average.toFixed(2)} avg score
                       </Typography>
                     </CardContent>
@@ -419,30 +510,72 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
               </Grid>
 
               {/* Team Skills Matrix */}
-              <Card>
+              <Card sx={{
+                border: '1px solid var(--dp-neutral-200)',
+                borderRadius: 'var(--dp-radius-lg)',
+                boxShadow: 'var(--dp-shadow-sm)',
+                backgroundColor: 'var(--dp-neutral-0)',
+              }}>
                 <CardContent>
-                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
+                  <Typography variant="h6" sx={{
+                    mb: 3,
+                    fontWeight: 'var(--dp-font-weight-bold)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    color: 'var(--dp-neutral-800)'
+                  }}>
                     Team Skills Matrix
                   </Typography>
 
-                  <TableContainer>
-                    <Table>
+                  <TableContainer sx={{
+                    '[data-theme="dark"] &': {
+                      backgroundColor: 'transparent',
+                    }
+                  }}>
+                    <Table sx={{
+                      '[data-theme="dark"] &': {
+                        backgroundColor: 'transparent',
+                      }
+                    }}>
                       <TableHead>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 700, backgroundColor: '#f8fafc' }}>Skill</TableCell>
+                          <TableCell sx={{
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            backgroundColor: 'var(--dp-neutral-50)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            color: 'var(--dp-neutral-700)',
+                            borderBottom: '1px solid var(--dp-neutral-200)'
+                          }}>Skill</TableCell>
                           {employees.map((employee) => (
-                            <TableCell key={employee.employeeId} align="center" sx={{ fontWeight: 700, backgroundColor: '#f8fafc' }}>
+                            <TableCell key={employee.employeeId} align="center" sx={{
+                              fontWeight: 'var(--dp-font-weight-bold)',
+                              backgroundColor: 'var(--dp-neutral-50)',
+                              fontFamily: 'var(--dp-font-family-primary)',
+                              borderBottom: '1px solid var(--dp-neutral-200)'
+                            }}>
                               <Box>
-                                <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e40af' }}>
+                                <Typography variant="body2" sx={{
+                                  fontWeight: 'var(--dp-font-weight-bold)',
+                                  color: 'var(--dp-primary-700)',
+                                  fontFamily: 'var(--dp-font-family-primary)'
+                                }}>
                                   {employee.employeeName}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                  color: 'var(--dp-neutral-600)',
+                                  fontFamily: 'var(--dp-font-family-primary)'
+                                }}>
                                   {employee.role}
                                 </Typography>
                               </Box>
                             </TableCell>
                           ))}
-                          <TableCell align="center" sx={{ fontWeight: 700, backgroundColor: '#f8fafc' }}>
+                          <TableCell align="center" sx={{
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            backgroundColor: 'var(--dp-neutral-50)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            color: 'var(--dp-neutral-700)',
+                            borderBottom: '1px solid var(--dp-neutral-200)'
+                          }}>
                             Avg
                           </TableCell>
                         </TableRow>
@@ -452,26 +585,48 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
                           const skillAvg = stats.skillAverages.find(sa => sa.skill.id === skill.id);
                           return (
                             <TableRow key={skill.id}>
-                              <TableCell sx={{ fontWeight: 600 }}>{skill.name}</TableCell>
+                              <TableCell sx={{
+                                fontWeight: 'var(--dp-font-weight-semibold)',
+                                fontFamily: 'var(--dp-font-family-primary)',
+                                color: 'var(--dp-neutral-700)',
+                                borderBottom: '1px solid var(--dp-neutral-100)'
+                              }}>{skill.name}</TableCell>
                               {employees.map((employee) => (
                                 <TableCell key={employee.employeeId} align="center">
                                   {renderSkillIndicator(employee.employeeId, skill.id)}
                                 </TableCell>
                               ))}
-                              <TableCell align="center" sx={{ fontWeight: 600 }}>
+                              <TableCell align="center" sx={{
+                                fontWeight: 'var(--dp-font-weight-semibold)',
+                                fontFamily: 'var(--dp-font-family-primary)',
+                                color: 'var(--dp-neutral-700)',
+                                borderBottom: '1px solid var(--dp-neutral-100)'
+                              }}>
                                 {skillAvg ? skillAvg.average.toFixed(2) : '0.00'}
                               </TableCell>
                             </TableRow>
                           );
                         })}
-                        <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                          <TableCell sx={{ fontWeight: 700 }}>Employee Average</TableCell>
+                        <TableRow sx={{ backgroundColor: 'var(--dp-neutral-50)' }}>
+                          <TableCell sx={{
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            color: 'var(--dp-neutral-800)'
+                          }}>Employee Average</TableCell>
                           {employees.map((employee) => (
-                            <TableCell key={employee.employeeId} align="center" sx={{ fontWeight: 700 }}>
+                            <TableCell key={employee.employeeId} align="center" sx={{
+                              fontWeight: 'var(--dp-font-weight-bold)',
+                              fontFamily: 'var(--dp-font-family-primary)',
+                              color: 'var(--dp-neutral-800)'
+                            }}>
                               {getEmployeeAverage(employee.employeeId).toFixed(2)}
                             </TableCell>
                           ))}
-                          <TableCell align="center" sx={{ fontWeight: 700 }}>
+                          <TableCell align="center" sx={{
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            color: 'var(--dp-neutral-800)'
+                          }}>
                             {(employees.reduce((sum, emp) => sum + getEmployeeAverage(emp.employeeId), 0) / employees.length).toFixed(2)}
                           </TableCell>
                         </TableRow>
@@ -488,14 +643,17 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
         <Box
           sx={{
             p: 3,
-            borderTop: '1px solid #e5e7eb',
-            backgroundColor: '#f8fafc',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            backgroundColor: 'var(--dp-neutral-50) !important',
+            borderTop: '1px solid var(--dp-neutral-200)',
           }}
         >
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: 'var(--dp-neutral-600)',
+            fontFamily: 'var(--dp-font-family-primary)'
+          }}>
             Last Updated: {new Date().toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'short',
@@ -509,9 +667,15 @@ const SkillsManagementModal: React.FC<SkillsManagementModalProps> = ({
             variant="contained"
             onClick={onClose}
             sx={{
-              backgroundColor: '#3b82f6',
+              backgroundColor: 'var(--dp-primary-500)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontWeight: 'var(--dp-font-weight-medium)',
+              transition: 'var(--dp-transition-fast)',
+              boxShadow: 'var(--dp-shadow-sm)',
               '&:hover': {
-                backgroundColor: '#2563eb',
+                backgroundColor: 'var(--dp-primary-600)',
+                boxShadow: 'var(--dp-shadow-md)',
+                transform: 'translateY(-1px)',
               },
             }}
           >

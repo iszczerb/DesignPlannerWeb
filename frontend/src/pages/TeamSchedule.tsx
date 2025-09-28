@@ -994,10 +994,12 @@ const TeamScheduleContent: React.FC<{
   /**
    * Load calendar data based on current view mode and parameters
    */
-  const loadCalendarData = useCallback(async (teamId?: number, mode?: TeamViewMode) => {
+  const loadCalendarData = useCallback(async (teamId?: number, mode?: TeamViewMode, showLoading: boolean = true) => {
     // console.log('🚨🚨🚨🚨🚨 loadCalendarData CALLED! 🚨🚨🚨🚨🚨');
     try {
-      setIsLoading(true);
+      if (showLoading) {
+        setIsLoading(true);
+      }
       setError(null);
 
       // Fix UTC timezone issue - use local date instead of UTC
@@ -1095,7 +1097,9 @@ const TeamScheduleContent: React.FC<{
       setError('Failed to load schedule data');
       setCalendarData(undefined);
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   }, [windowStartDate, viewType, teamViewMode, monthlyViewDate]); // Added monthlyViewDate for independent monthly navigation
 
@@ -1105,8 +1109,9 @@ const TeamScheduleContent: React.FC<{
   const handleTeamViewChange = useCallback((mode: TeamViewMode) => {
     setTeamViewMode(mode);
     loadCalendarData(
-      mode === TeamViewMode.MyTeam ? managedTeamId : undefined, 
-      mode
+      mode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+      mode,
+      false
     );
   }, [loadCalendarData, managedTeamId]);
 
@@ -1121,7 +1126,11 @@ const TeamScheduleContent: React.FC<{
       await employeeService.deleteEmployee(employeeId);
 
       // Reload calendar data to reflect changes
-      await loadCalendarData();
+      await loadCalendarData(
+        teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+        teamViewMode,
+        false
+      );
 
       showNotification({ type: 'success', title: 'Success', message: 'Team member deleted successfully!' });
     } catch (error) {
@@ -1137,7 +1146,7 @@ const TeamScheduleContent: React.FC<{
     // CRITICAL FIX: Admin users should never pass teamId
     const effectiveTeamId = userContext.role === 'Admin' ? undefined : teamId;
     const effectiveMode = mode || (userContext.role === 'Admin' ? TeamViewMode.AllTeams : teamViewMode);
-    loadCalendarData(effectiveTeamId, effectiveMode);
+    loadCalendarData(effectiveTeamId, effectiveMode, false);
   }, [loadCalendarData, userContext.role, teamViewMode]);
 
   /**
@@ -1147,7 +1156,8 @@ const TeamScheduleContent: React.FC<{
     // Refresh calendar data when database changes occur (e.g., client colors updated)
     loadCalendarData(
       teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-      teamViewMode
+      teamViewMode,
+      false
     );
   }, [loadCalendarData, teamViewMode, managedTeamId]);
 
@@ -1503,7 +1513,8 @@ const TeamScheduleContent: React.FC<{
       console.log('🔄 Final calendar refresh after left-packing...');
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-        teamViewMode
+        teamViewMode,
+        false
       );
       console.log('✅ Final UI update after left-packing completed');
 
@@ -1702,7 +1713,8 @@ const TeamScheduleContent: React.FC<{
       // NOW refresh calendar data to show all updates
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-        teamViewMode
+        teamViewMode,
+        false
       );
 
       console.log('🔍 AFTER loadCalendarData - windowStartDate is:', windowStartDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
@@ -1906,7 +1918,8 @@ const TeamScheduleContent: React.FC<{
       // Refresh the calendar data using the same logic as loadCalendarData
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-        teamViewMode
+        teamViewMode,
+        false
       );
 
     } catch (error) {
@@ -2003,7 +2016,8 @@ const TeamScheduleContent: React.FC<{
       console.log('🔄 Refreshing calendar data after delete and left-pack...');
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-        teamViewMode
+        teamViewMode,
+        false
       );
     } catch (error) {
       console.error('Error deleting assignment:', error);
@@ -2151,7 +2165,8 @@ const TeamScheduleContent: React.FC<{
       // Refresh calendar data
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-        teamViewMode
+        teamViewMode,
+        false
       );
 
       console.log('✅ Paste operation completed successfully');
@@ -2235,7 +2250,11 @@ const TeamScheduleContent: React.FC<{
       await scheduleService.bulkUpdateAssignments(bulkUpdate);
 
       // Refresh the calendar data
-      await loadCalendarData();
+      await loadCalendarData(
+        teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+        teamViewMode,
+        false
+      );
 
       // Clear selections
       setSelectedTasks([]);
@@ -2849,7 +2868,11 @@ const TeamScheduleContent: React.FC<{
           }
 
           // Refresh calendar data to show new bank holidays
-          await loadCalendarData();
+          await loadCalendarData(
+            teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+            teamViewMode,
+            false
+          );
 
           // Clear selections after successful operation
           setSelectedDays([]);
@@ -3268,7 +3291,11 @@ ${dateInfo}`;
       if (!prevData) {
         console.log('Calendar data not loaded yet, will trigger reload instead');
         // If calendar data isn't loaded yet, trigger a reload
-        loadCalendarData();
+        loadCalendarData(
+          teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+          teamViewMode,
+          false
+        );
         return prevData;
       }
       
@@ -3325,9 +3352,21 @@ ${dateInfo}`;
     loadTeams();
     loadCalendarData(
       teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-      teamViewMode
+      teamViewMode,
+      false
     );
   }, [loadTeams, loadCalendarData, teamViewMode, managedTeamId]);
+
+  /**
+   * Handle automatic refresh (no loading overlay)
+   */
+  const handleAutoRefresh = useCallback(() => {
+    loadCalendarData(
+      teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+      teamViewMode,
+      false
+    );
+  }, [loadCalendarData, teamViewMode, managedTeamId]);
 
   // Initialize window start date when component mounts
   useEffect(() => {
@@ -3416,7 +3455,8 @@ ${dateInfo}`;
       console.log('🔍 Condition met - teams.length:', teams.length, 'teamViewMode:', teamViewMode, 'userContext.role:', userContext?.role);
       loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
-        teamViewMode
+        teamViewMode,
+        false // Don't show loading for automatic data refresh
       );
     } else {
       console.log('🔍 Calendar data loading skipped - teams.length:', teams.length, 'teamViewMode:', teamViewMode, 'userContext.role:', userContext?.role);
@@ -3624,6 +3664,8 @@ ${dateInfo}`;
   }, []);
 
   return (
+    // IMPORTANT: Main container for the entire page
+    // The actual calendar grid is rendered by DayBasedCalendarGrid or MonthlyCalendarGrid components
     <div
       style={{
         height: '100vh',
@@ -3677,14 +3719,42 @@ ${dateInfo}`;
       {/* Day-Based Calendar Grid */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {isLoading ? (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
             height: '100%',
-            color: '#6b7280' 
+            gap: 'var(--dp-space-4)',
+            color: 'var(--dp-neutral-600)',
+            backgroundColor: 'var(--dp-neutral-0)',
+            borderRadius: 'var(--dp-radius-xl)',
+            margin: 'var(--dp-space-4)',
+            padding: 'var(--dp-space-8)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
           }}>
-            Loading...
+            <div style={{
+              width: '48px',
+              height: '48px',
+              border: '4px solid var(--dp-neutral-200)',
+              borderTop: '4px solid var(--dp-primary-500)',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            <div style={{
+              fontSize: 'var(--dp-text-body-large)',
+              fontWeight: 'var(--dp-font-weight-medium)',
+              fontFamily: 'var(--dp-font-family-primary)'
+            }}>
+              Loading Calendar...
+            </div>
+            <div style={{
+              fontSize: 'var(--dp-text-body-small)',
+              color: 'var(--dp-neutral-500)',
+              textAlign: 'center'
+            }}>
+              Please wait while we fetch your schedule data
+            </div>
           </div>
         ) : calendarData ? (
           viewType === CalendarViewType.Month ? (
@@ -3702,7 +3772,7 @@ ${dateInfo}`;
                   calendarData={calendarData}
                   isLoading={isLoading}
                   onTaskClick={handleTaskClick}
-                  onRefresh={loadCalendarData}
+                  onRefresh={handleAutoRefresh}
                   isReadOnly={false}
                   selectedEmployeeId={undefined}
                   onDateChange={handleDateChange}
@@ -3761,7 +3831,7 @@ ${dateInfo}`;
                   selectedDays={selectedDays.map(d => d.toDateString())}
                   onDayClick={handleDayClick}
                   onBulkEdit={() => setBulkEditModalOpen(true)}
-                  onRefresh={loadCalendarData}
+                  onRefresh={handleAutoRefresh}
                   onQuickEditTaskType={(task) => {
                     console.log('QuickEdit TaskType clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
 
@@ -3874,8 +3944,8 @@ ${dateInfo}`;
               {/* Todo Sidebar */}
               <div style={{
                 width: '300px',
-                backgroundColor: '#ffffff',
-                borderLeft: '1px solid #e5e7eb',
+                backgroundColor: 'var(--dp-neutral-0)',
+                borderLeft: '1px solid var(--dp-neutral-200)',
                 padding: '16px',
                 overflow: 'auto',
                 boxShadow: '-2px 0 4px rgba(0, 0, 0, 0.1)',
@@ -3884,21 +3954,21 @@ ${dateInfo}`;
                 <div style={{
                   marginBottom: '20px',
                   padding: '16px',
-                  backgroundColor: '#3b82f6',
+                  backgroundColor: 'var(--dp-primary-500)',
                   borderRadius: '8px',
                   textAlign: 'center',
                 }}>
                   <h2 style={{
                     fontSize: '1.25rem',
                     fontWeight: '700',
-                    color: '#ffffff',
+                    color: 'var(--dp-neutral-0)',
                     margin: '0',
                   }}>
                     Daily Tasks
                   </h2>
                   <p style={{
                     fontSize: '0.875rem',
-                    color: '#e0e7ff',
+                    color: 'var(--dp-primary-100)',
                     margin: '4px 0 0 0',
                   }}>
                     {new Intl.DateTimeFormat('en-US', {
@@ -3929,17 +3999,20 @@ ${dateInfo}`;
                     style={{
                       flex: 1,
                       padding: '8px 12px',
-                      border: '1px solid #e5e7eb',
+                      border: '1px solid var(--dp-neutral-200)',
                       borderRadius: '6px',
                       fontSize: '0.875rem',
                       outline: 'none',
                       transition: 'border-color 0.2s ease',
+                      backgroundColor: 'var(--dp-neutral-0)',
+                      color: 'var(--dp-neutral-900)',
+                      fontFamily: 'var(--dp-font-family-primary)',
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.borderColor = 'var(--dp-primary-500)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.borderColor = 'var(--dp-neutral-200)';
                     }}
                   />
                   <button
@@ -3947,8 +4020,8 @@ ${dateInfo}`;
                     disabled={!newTodoText.trim()}
                     style={{
                       padding: '8px 16px',
-                      backgroundColor: newTodoText.trim() ? '#3b82f6' : '#d1d5db',
-                      color: '#ffffff',
+                      backgroundColor: newTodoText.trim() ? 'var(--dp-primary-500)' : 'var(--dp-neutral-300)',
+                      color: 'var(--dp-neutral-0)',
                       border: 'none',
                       borderRadius: '6px',
                       fontSize: '0.875rem',
@@ -3968,7 +4041,7 @@ ${dateInfo}`;
                   {currentDayTodos.length === 0 ? (
                     <div style={{
                       textAlign: 'center',
-                      color: '#6b7280',
+                      color: 'var(--dp-neutral-500)',
                       padding: '20px',
                       fontSize: '0.875rem',
                     }}>
@@ -3984,16 +4057,16 @@ ${dateInfo}`;
                           gap: '12px',
                           padding: '12px',
                           marginBottom: '8px',
-                          backgroundColor: todo.completed ? '#f9fafb' : '#ffffff',
-                          border: '1px solid #e5e7eb',
+                          backgroundColor: todo.completed ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-0)',
+                          border: '1px solid var(--dp-neutral-200)',
                           borderRadius: '6px',
                           transition: 'all 0.2s ease',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = todo.completed ? '#f3f4f6' : '#f9fafb';
+                          e.currentTarget.style.backgroundColor = todo.completed ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-50)';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = todo.completed ? '#f9fafb' : '#ffffff';
+                          e.currentTarget.style.backgroundColor = todo.completed ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-0)';
                         }}
                       >
                         {/* Checkbox */}
@@ -4014,7 +4087,7 @@ ${dateInfo}`;
                           flex: 1,
                           fontSize: '0.875rem',
                           lineHeight: '1.4',
-                          color: todo.completed ? '#6b7280' : '#374151',
+                          color: todo.completed ? 'var(--dp-neutral-500)' : 'var(--dp-neutral-700)',
                           textDecoration: todo.completed ? 'line-through' : 'none',
                         }}>
                           {todo.text}
@@ -4031,19 +4104,19 @@ ${dateInfo}`;
                             borderRadius: '4px',
                             cursor: 'pointer',
                             fontSize: '0.75rem',
-                            color: '#6b7280',
+                            color: 'var(--dp-neutral-500)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             transition: 'all 0.2s ease',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#fee2e2';
-                            e.currentTarget.style.color = '#dc2626';
+                            e.currentTarget.style.backgroundColor = 'var(--dp-error-50)';
+                            e.currentTarget.style.color = 'var(--dp-error-600)';
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.color = '#6b7280';
+                            e.currentTarget.style.color = 'var(--dp-neutral-500)';
                           }}
                         >
                           ×
@@ -4058,10 +4131,10 @@ ${dateInfo}`;
                   <div style={{
                     marginTop: '16px',
                     padding: '12px',
-                    backgroundColor: '#f9fafb',
+                    backgroundColor: 'var(--dp-neutral-50)',
                     borderRadius: '6px',
                     fontSize: '0.75rem',
-                    color: '#6b7280',
+                    color: 'var(--dp-neutral-500)',
                     textAlign: 'center',
                   }}>
                     {currentDayTodos.filter(t => t.completed).length} of {currentDayTodos.length} completed
@@ -4098,7 +4171,7 @@ ${dateInfo}`;
               selectedDays={selectedDays.map(d => d.toDateString())}
               onDayClick={handleDayClick}
               onBulkEdit={() => setBulkEditModalOpen(true)}
-              onRefresh={loadCalendarData}
+              onRefresh={handleAutoRefresh}
               onQuickEditTaskType={(task) => {
                 console.log('QuickEdit TaskType clicked:', task.assignmentId, 'Selected tasks:', selectedTasks.map(t => t.assignmentId));
 
@@ -4453,7 +4526,11 @@ ${dateInfo}`;
         onClose={() => setShowAbsenceModal(false)}
         onRequestProcessed={() => {
           // Refresh data after absence changes
-          loadCalendarData();
+          loadCalendarData(
+            teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+            teamViewMode,
+            false
+          );
         }}
       />
 

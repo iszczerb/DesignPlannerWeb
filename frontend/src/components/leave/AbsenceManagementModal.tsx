@@ -76,7 +76,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
       aria-labelledby={`absence-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ py: 2 }}>{children}</Box>}
+      {value === index && <Box sx={{ py: 2, '[data-theme="dark"] &': { backgroundColor: 'transparent' } }}>{children}</Box>}
     </div>
   );
 };
@@ -251,7 +251,11 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
 
                 {overview?.allocations?.map((allocation) => (
                   <Box key={allocation.id} sx={{ mt: 2 }}>
-                    <Grid container spacing={2}>
+                    <Grid container spacing={2} sx={{
+            '[data-theme="dark"] &': {
+              backgroundColor: 'transparent',
+            }
+          }}>
                       <Grid item xs={12} sm={4}>
                         <Box sx={{ textAlign: 'center' }}>
                           <Typography variant="h4" color="primary">
@@ -278,7 +282,11 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
                           />
                         </Box>
 
-                        <Grid container spacing={2}>
+                        <Grid container spacing={2} sx={{
+            '[data-theme="dark"] &': {
+              backgroundColor: 'transparent',
+            }
+          }}>
                           <Grid item xs={6}>
                             <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'warning.light', borderRadius: 1 }}>
                               <Typography variant="body2" color="warning.contrastText">
@@ -388,7 +396,11 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
               No team allocations found. Allocations will be created automatically when employees are assigned leave.
             </Alert>
           ) : (
-            <Grid container spacing={2}>
+            <Grid container spacing={2} sx={{
+            '[data-theme="dark"] &': {
+              backgroundColor: 'transparent',
+            }
+          }}>
               {teamAllocations?.map((allocation) => (
                 <Grid item xs={12} md={6} key={allocation.id}>
                   <Card>
@@ -432,7 +444,13 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
                         </Box>
                       ) : (
                         <Box>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                          <Typography variant="body2" gutterBottom sx={{
+                            color: 'var(--dp-neutral-600)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            '[data-theme="dark"] &': {
+                              color: 'var(--dp-neutral-300)',
+                            }
+                          }}>
                             Annual Leave: {formatDaysDisplay(allocation.usedAnnualLeaveDays)} / {allocation.annualLeaveDays} days
                           </Typography>
                           <LinearProgress
@@ -514,7 +532,11 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
             Team Absence Statistics - {currentYear}
           </Typography>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{
+            '[data-theme="dark"] &': {
+              backgroundColor: 'transparent',
+            }
+          }}>
             {Object.entries(absenceStats || {}).map(([type, count]) => (
               <Grid item xs={12} sm={6} md={3} key={type}>
                 <Card>
@@ -570,25 +592,52 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
     const percentage = typeData.total > 0 ? (typeData.used / typeData.total) * 100 : 0;
 
     return (
-      <Card key={`${allocation.id}-${absenceType}`} sx={{ height: '100%' }}>
+      <Card key={`${allocation.id}-${absenceType}`} sx={{
+        height: '100%',
+        border: '1px solid var(--dp-neutral-200)',
+        borderRadius: 'var(--dp-radius-lg)',
+        boxShadow: 'var(--dp-shadow-sm)',
+        backgroundColor: 'var(--dp-neutral-0)',
+        transition: 'var(--dp-transition-fast)',
+        '&:hover': {
+          boxShadow: 'var(--dp-shadow-md)',
+          transform: 'translateY(-2px)',
+        }
+      }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, gap: 2 }}>
             <Box>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontWeight: 'var(--dp-font-weight-bold)',
+                color: 'var(--dp-neutral-800)'
+              }}>
                 {allocation.employeeName}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: 'var(--dp-neutral-600)',
+                fontFamily: 'var(--dp-font-family-primary)'
+              }}>
                 {allocation.employeePosition}
               </Typography>
             </Box>
-            <Typography variant="h4" color={typeData.color}>
+            <Typography variant="h4" sx={{
+              color: typeData.color === 'primary' ? 'var(--dp-primary-600)' :
+                     typeData.color === 'warning' ? 'var(--dp-warning-600)' :
+                     'var(--dp-info-600)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontWeight: 'var(--dp-font-weight-bold)'
+            }}>
               {absenceType === 'annual' ? formatDaysDisplay(typeData.remaining) : formatDaysDisplay(typeData.used)}
             </Typography>
           </Box>
 
           {absenceType === 'annual' && (
             <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" gutterBottom sx={{
+                color: 'var(--dp-neutral-600)',
+                fontFamily: 'var(--dp-font-family-primary)'
+              }}>
                 Used: {formatDaysDisplay(typeData.used)} Remaining: {formatDaysDisplay(typeData.remaining)} ({Math.round(percentage)}%)
               </Typography>
               <LinearProgress
@@ -626,7 +675,15 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
                   size="small"
                   startIcon={<EditIcon />}
                   onClick={() => handleEditAllocation(allocation)}
-                  sx={{ color: 'primary.main' }}
+                  sx={{
+                    color: 'var(--dp-primary-600)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontWeight: 'var(--dp-font-weight-medium)',
+                    transition: 'var(--dp-transition-fast)',
+                    '&:hover': {
+                      backgroundColor: 'var(--dp-primary-50)',
+                    }
+                  }}
                 >
                   Edit Allocations
                 </Button>
@@ -640,7 +697,11 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
 
   const renderAnnualLeaveTab = () => (
     <TabPanel value={activeTab} index={0}>
-      <Box>
+      <Box sx={{
+        '[data-theme="dark"] &': {
+          backgroundColor: 'transparent !important',
+        }
+      }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h6">
             Team Leave Allocations
@@ -657,15 +718,43 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
         </Box>
 
         {loadingAllocations ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            py: 4,
+            gap: 'var(--dp-space-4)'
+          }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                border: '3px solid var(--dp-neutral-200)',
+                borderTop: '3px solid var(--dp-primary-500)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+              }}
+            />
+            <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading annual leave data...</Typography>
           </Box>
         ) : !teamAllocations || teamAllocations.length === 0 ? (
-          <Alert severity="info">
+          <Alert
+            severity="info"
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              borderRadius: 'var(--dp-radius-md)',
+              boxShadow: 'var(--dp-shadow-sm)',
+            }}
+          >
             No team allocations found. Allocations will be created automatically when employees are assigned leave.
           </Alert>
         ) : (
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{
+            '[data-theme="dark"] &': {
+              backgroundColor: 'transparent',
+            }
+          }}>
             {teamAllocations.map((allocation) => (
               <Grid item xs={12} sm={6} md={4} key={allocation.id}>
                 {renderTeamMemberCard(allocation, 'annual')}
@@ -679,21 +768,58 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
 
   const renderSickDaysTab = () => (
     <TabPanel value={activeTab} index={1}>
-      <Box>
-        <Typography variant="h6" sx={{ mb: 3 }}>
+      <Box sx={{
+        '[data-theme="dark"] &': {
+          backgroundColor: 'transparent !important',
+        }
+      }}>
+        <Typography variant="h6" sx={{
+          mb: 3,
+          '[data-theme="dark"] &': {
+            color: 'var(--dp-neutral-100)',
+          }
+        }}>
           Sick Days
         </Typography>
 
         {loadingAllocations ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            py: 4,
+            gap: 'var(--dp-space-4)'
+          }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                border: '3px solid var(--dp-neutral-200)',
+                borderTop: '3px solid var(--dp-primary-500)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+              }}
+            />
+            <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading sick days data...</Typography>
           </Box>
         ) : !teamAllocations || teamAllocations.length === 0 ? (
-          <Alert severity="info">
+          <Alert
+            severity="info"
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              borderRadius: 'var(--dp-radius-md)',
+              boxShadow: 'var(--dp-shadow-sm)',
+            }}
+          >
             No team allocations found. Allocations will be created automatically when employees are assigned leave.
           </Alert>
         ) : (
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{
+            '[data-theme="dark"] &': {
+              backgroundColor: 'transparent',
+            }
+          }}>
             {teamAllocations.map((allocation) => (
               <Grid item xs={12} sm={6} md={4} key={allocation.id}>
                 {renderTeamMemberCard(allocation, 'sick')}
@@ -707,21 +833,58 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
 
   const renderOtherLeaveTab = () => (
     <TabPanel value={activeTab} index={2}>
-      <Box>
-        <Typography variant="h6" sx={{ mb: 3 }}>
+      <Box sx={{
+        '[data-theme="dark"] &': {
+          backgroundColor: 'transparent !important',
+        }
+      }}>
+        <Typography variant="h6" sx={{
+          mb: 3,
+          '[data-theme="dark"] &': {
+            color: 'var(--dp-neutral-100)',
+          }
+        }}>
           Other Leave
         </Typography>
 
         {loadingAllocations ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            py: 4,
+            gap: 'var(--dp-space-4)'
+          }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                border: '3px solid var(--dp-neutral-200)',
+                borderTop: '3px solid var(--dp-primary-500)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+              }}
+            />
+            <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading other leave data...</Typography>
           </Box>
         ) : !teamAllocations || teamAllocations.length === 0 ? (
-          <Alert severity="info">
+          <Alert
+            severity="info"
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              borderRadius: 'var(--dp-radius-md)',
+              boxShadow: 'var(--dp-shadow-sm)',
+            }}
+          >
             No team allocations found. Allocations will be created automatically when employees are assigned leave.
           </Alert>
         ) : (
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{
+            '[data-theme="dark"] &': {
+              backgroundColor: 'transparent',
+            }
+          }}>
             {teamAllocations.map((allocation) => (
               <Grid item xs={12} sm={6} md={4} key={allocation.id}>
                 {renderTeamMemberCard(allocation, 'otherLeave')}
@@ -734,13 +897,60 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
   );
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>
-        Absence Overview
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      disablePortal
+      PaperProps={{
+        sx: {
+          borderRadius: 'var(--dp-radius-lg)',
+          boxShadow: 'var(--dp-shadow-lg)',
+          backgroundColor: 'var(--dp-neutral-0) !important',
+        }
+      }}
+    >
+      <DialogTitle sx={{
+        backgroundColor: 'var(--dp-primary-600)',
+        color: 'var(--dp-neutral-0)',
+        fontFamily: 'var(--dp-font-family-primary)',
+        fontWeight: 'var(--dp-font-weight-bold)',
+        fontSize: 'var(--dp-text-headline-medium)',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+      }}>
+        Absence Management
       </DialogTitle>
 
-      <DialogContent>
-        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
+      <DialogContent sx={{
+        p: 3,
+        backgroundColor: 'var(--dp-neutral-25) !important',
+      }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          sx={{
+            mb: 2,
+            '& .MuiTab-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontWeight: 'var(--dp-font-weight-medium)',
+              textTransform: 'none',
+              transition: 'var(--dp-transition-fast)',
+              '&:hover': {
+                backgroundColor: 'var(--dp-primary-50)',
+              },
+              '&.Mui-selected': {
+                color: 'var(--dp-primary-600)',
+                fontWeight: 'var(--dp-font-weight-semibold)',
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'var(--dp-primary-500)',
+              height: 3,
+              borderRadius: 'var(--dp-radius-sm)',
+            }
+          }}
+        >
           <Tab
             label="Annual Leave"
             icon={<span>✈️</span>}
@@ -750,13 +960,29 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
         </Tabs>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 2,
+              fontFamily: 'var(--dp-font-family-primary)',
+              borderRadius: 'var(--dp-radius-md)',
+              boxShadow: 'var(--dp-shadow-sm)',
+            }}
+          >
             {error}
           </Alert>
         )}
 
         {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
+          <Alert
+            severity="success"
+            sx={{
+              mb: 2,
+              fontFamily: 'var(--dp-font-family-primary)',
+              borderRadius: 'var(--dp-radius-md)',
+              boxShadow: 'var(--dp-shadow-sm)',
+            }}
+          >
             {success}
           </Alert>
         )}
@@ -766,8 +992,28 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
         {renderOtherLeaveTab()}
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+      <DialogActions sx={{
+        p: 3,
+        backgroundColor: 'var(--dp-neutral-50) !important',
+        borderTop: '1px solid var(--dp-neutral-200)',
+      }}>
+        <Button
+          onClick={onClose}
+          disabled={loading}
+          variant="contained"
+          sx={{
+            backgroundColor: 'var(--dp-primary-500)',
+            fontFamily: 'var(--dp-font-family-primary)',
+            fontWeight: 'var(--dp-font-weight-medium)',
+            transition: 'var(--dp-transition-fast)',
+            boxShadow: 'var(--dp-shadow-sm)',
+            '&:hover': {
+              backgroundColor: 'var(--dp-primary-600)',
+              boxShadow: 'var(--dp-shadow-md)',
+              transform: 'translateY(-1px)',
+            },
+          }}
+        >
           Close
         </Button>
       </DialogActions>

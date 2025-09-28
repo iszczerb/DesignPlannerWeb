@@ -17,7 +17,7 @@
 .database-modal-container {
   background: var(--dp-neutral-0);
   border-radius: var(--dp-radius-xl);
-  box-shadow: var(--dp-shadow-2xl);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
   width: 95vw;
   height: 90vh;
   max-width: 1400px;
@@ -26,7 +26,8 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  border: 1px solid var(--dp-neutral-200);
+  border: 1px solid var(--dp-neutral-100);
+  transform: translateY(-8px);
 }
 
 /* Header */
@@ -36,8 +37,11 @@
   justify-content: space-between;
   padding: var(--dp-space-6) var(--dp-space-8);
   border-bottom: 1px solid var(--dp-neutral-200);
-  background: linear-gradient(135deg, var(--dp-primary-500) 0%, var(--dp-primary-600) 100%);
+  background: linear-gradient(135deg, var(--dp-primary-600) 0%, var(--dp-primary-700) 100%);
   color: var(--dp-neutral-0);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .database-modal-title h2 {
@@ -164,7 +168,8 @@
 .database-modal-content {
   flex: 1;
   overflow: hidden;
-  background: white;
+  background: var(--dp-neutral-0);
+  color: var(--dp-neutral-800);
 }
 
 .database-tab-panel {
@@ -380,7 +385,7 @@
 }
 
 /* Dark mode support */
-@media (prefers-color-scheme: dark) {
+[data-theme="dark"] {
   .database-modal-container {
     background: #1f2937;
     color: white;
@@ -453,5 +458,113 @@
 
   .database-btn-secondary:hover {
     background: #4b5563;
+  }
+}
+
+/* Light mode overrides - ensure light mode works properly */
+[data-theme="light"] {
+  .database-modal-container {
+    background: var(--dp-neutral-0) !important;
+    color: var(--dp-neutral-800) !important;
+  }
+
+  .database-modal-content {
+    background: var(--dp-neutral-0) !important;
+    color: var(--dp-neutral-800) !important;
+  }
+
+  .database-tab-panel {
+    background: var(--dp-neutral-0) !important;
+    color: var(--dp-neutral-800) !important;
+  }
+
+  .database-modal-header {
+    border-bottom-color: var(--dp-neutral-200) !important;
+  }
+
+  .database-modal-tabs {
+    background: var(--dp-neutral-50) !important;
+    border-bottom-color: var(--dp-neutral-200) !important;
+  }
+
+  .database-tab {
+    color: var(--dp-neutral-500) !important;
+  }
+
+  .database-tab:hover {
+    background: var(--dp-primary-50) !important;
+    color: var(--dp-primary-600) !important;
+  }
+
+  .database-tab.active {
+    background: var(--dp-neutral-0) !important;
+    color: var(--dp-primary-600) !important;
+    border-color: var(--dp-neutral-200) !important;
+    border-bottom-color: var(--dp-neutral-0) !important;
+  }
+
+  .database-tab-count {
+    background: var(--dp-neutral-200) !important;
+    color: var(--dp-neutral-700) !important;
+  }
+
+  .database-tab.active .database-tab-count {
+    background: var(--dp-primary-500) !important;
+    color: var(--dp-neutral-0) !important;
+  }
+
+  .database-modal-footer {
+    background: var(--dp-neutral-50) !important;
+    border-top-color: var(--dp-neutral-200) !important;
+  }
+
+  .database-info-text {
+    color: var(--dp-neutral-600) !important;
+  }
+
+  .database-info-text kbd {
+    background: var(--dp-neutral-200) !important;
+    color: var(--dp-neutral-700) !important;
+  }
+
+  .database-btn-secondary {
+    background: var(--dp-neutral-100) !important;
+    color: var(--dp-neutral-700) !important;
+    border-color: var(--dp-neutral-200) !important;
+  }
+
+  .database-btn-secondary:hover {
+    background: var(--dp-neutral-200) !important;
+    border-color: var(--dp-neutral-300) !important;
+  }
+
+  /* Force table headers to be light in light mode */
+  .data-table-header-cell {
+    background: var(--dp-neutral-50) !important;
+    color: var(--dp-neutral-800) !important;
+    border-bottom-color: var(--dp-neutral-200) !important;
+  }
+
+  .data-table thead {
+    background: var(--dp-neutral-50) !important;
+  }
+
+  /* Force all table content to be light */
+  .data-table,
+  .data-table tr,
+  .data-table td,
+  .data-table th {
+    background: var(--dp-neutral-0) !important;
+    color: var(--dp-neutral-800) !important;
+  }
+
+  /* Table body rows */
+  .data-table tbody tr {
+    background: var(--dp-neutral-0) !important;
+    border-bottom-color: var(--dp-neutral-200) !important;
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--dp-neutral-50) !important;
   }
 }

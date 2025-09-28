@@ -456,7 +456,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
       ...project,
       fill: colorMode === 'client' ? project.clientColor :
             colorMode === 'category' ? project.categoryColor :
-            '#3B82F6'
+            'var(--dp-primary-500)'
     }));
   };
 
@@ -888,7 +888,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
       fullScreen
       PaperProps={{
         sx: {
-          backgroundColor: '#f5f7fa',
+          backgroundColor: 'var(--dp-neutral-25) !important',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'visible'
@@ -901,9 +901,9 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         flexDirection: 'column',
         px: 4,
         py: 1,
-        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 58, 138, 0.9))',
+        background: 'linear-gradient(135deg, var(--dp-primary-800), var(--dp-primary-700))',
         backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        borderBottom: '1px solid rgba(var(--dp-neutral-0-rgb), 0.1)',
         minHeight: '90px',
         position: 'relative',
         overflow: 'hidden',
@@ -950,10 +950,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             size="small"
             sx={{
               '& .MuiToggleButton-root': {
-                background: 'rgba(255, 255, 255, 0.08)',
+                background: 'var(--dp-neutral-800)',
                 backdropFilter: 'blur(20px)',
-                color: 'rgba(255, 255, 255, 0.9)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: 'var(--dp-neutral-0)',
+                border: '1px solid var(--dp-neutral-600)',
                 fontSize: '12px',
                 px: 1.5,
                 py: 0.5,
@@ -961,17 +961,17 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
-                  background: 'rgba(255, 255, 255, 0.12)',
+                  background: 'var(--dp-neutral-700)',
                   transform: 'translateY(-1px)',
                   boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
                 },
                 '&.Mui-selected': {
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  color: 'rgba(15, 23, 42, 0.95)',
+                  background: 'var(--dp-neutral-0)',
+                  color: 'var(--dp-neutral-900)',
                   fontWeight: 700,
                   backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                  border: '1px solid var(--dp-neutral-300)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)'
                 }
               }
             }}
@@ -985,13 +985,13 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           {/* Date aligned centered */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <IconButton onClick={() => navigatePeriod('prev')} size="small" sx={{
-              color: 'rgba(255, 255, 255, 0.9)',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              color: 'var(--dp-neutral-100)',
+              backgroundColor: 'var(--dp-neutral-800)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid var(--dp-neutral-600)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backgroundColor: 'var(--dp-neutral-700)',
                 transform: 'translateY(-1px)',
                 boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
               }
@@ -1007,7 +1007,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 fontSize: '14px',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
-                color: 'rgba(255, 255, 255, 0.95)',
+                color: 'var(--dp-neutral-0)',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                 textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
               }}
@@ -1015,13 +1015,13 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               {formatPeriodDisplay()}
             </Typography>
             <IconButton onClick={() => navigatePeriod('next')} size="small" sx={{
-              color: 'rgba(255, 255, 255, 0.9)',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              color: 'var(--dp-neutral-100)',
+              backgroundColor: 'var(--dp-neutral-800)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid var(--dp-neutral-600)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backgroundColor: 'var(--dp-neutral-700)',
                 transform: 'translateY(-1px)',
                 boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
               }
@@ -1049,15 +1049,15 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <Card sx={{
               minWidth: '120px',
               height: '60px',
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: 'var(--dp-neutral-800)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid var(--dp-neutral-600)',
               borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 var(--dp-neutral-200)'
               }
             }}>
               <CardContent sx={{
@@ -1074,17 +1074,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                   fontWeight: 700,
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                   letterSpacing: '0.5px',
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7))',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  color: 'var(--dp-neutral-100)'
                 }}>
                   PROJECTS
                 </Typography>
                 <Typography variant="h6" sx={{
                   fontSize: '18px',
                   fontWeight: 800,
-                  color: 'rgba(255, 255, 255, 0.95)',
+                  color: 'var(--dp-neutral-0)',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                   textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                 }}>
@@ -1096,15 +1093,15 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <Card sx={{
               minWidth: '120px',
               height: '60px',
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: 'var(--dp-neutral-800)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid var(--dp-neutral-600)',
               borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 var(--dp-neutral-200)'
               }
             }}>
               <CardContent sx={{
@@ -1119,7 +1116,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 <Typography variant="caption" sx={{
                   fontSize: '10px',
                   fontWeight: 700,
-                  color: 'rgba(255, 255, 255, 0.7)',
+                  color: 'var(--dp-neutral-100)',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                   letterSpacing: '0.5px'
                 }}>
@@ -1128,7 +1125,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 <Typography variant="h6" sx={{
                   fontSize: '18px',
                   fontWeight: 800,
-                  color: 'rgba(255, 255, 255, 0.95)',
+                  color: 'var(--dp-neutral-0)',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                   textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                 }}>
@@ -1146,15 +1143,15 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <Card sx={{
               minWidth: '120px',
               height: '60px',
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: 'var(--dp-neutral-800)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid var(--dp-neutral-600)',
               borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 var(--dp-neutral-200)'
               }
             }}>
               <CardContent sx={{
@@ -1169,7 +1166,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 <Typography variant="caption" sx={{
                   fontSize: '10px',
                   fontWeight: 700,
-                  color: 'rgba(255, 255, 255, 0.7)',
+                  color: 'var(--dp-neutral-100)',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                   letterSpacing: '0.5px'
                 }}>
@@ -1178,7 +1175,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 <Typography variant="h6" sx={{
                   fontSize: '18px',
                   fontWeight: 800,
-                  color: 'rgba(255, 255, 255, 0.95)',
+                  color: 'var(--dp-neutral-0)',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                   textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                 }}>
@@ -1190,15 +1187,15 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <Card sx={{
               minWidth: '120px',
               height: '60px',
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: 'var(--dp-neutral-800)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid var(--dp-neutral-600)',
               borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 var(--dp-neutral-200)'
               }
             }}>
               <CardContent sx={{
@@ -1213,7 +1210,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 <Typography variant="caption" sx={{
                   fontSize: '10px',
                   fontWeight: 700,
-                  color: 'rgba(255, 255, 255, 0.7)',
+                  color: 'var(--dp-neutral-100)',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                   letterSpacing: '0.5px'
                 }}>
@@ -1222,7 +1219,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 <Typography variant="h6" sx={{
                   fontSize: '18px',
                   fontWeight: 800,
-                  color: 'rgba(255, 255, 255, 0.95)',
+                  color: 'var(--dp-neutral-0)',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                   textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                 }}>
@@ -1247,14 +1244,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <IconButton onClick={onClose} sx={{
               width: '28px',
               height: '28px',
-              color: 'rgba(255, 255, 255, 0.9)',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              color: 'rgba(var(--dp-neutral-0-rgb), 0.9)',
+              backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.08)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid rgba(var(--dp-neutral-0-rgb), 0.15)',
               borderRadius: '8px',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.15)',
                 transform: 'translateY(-1px)',
                 boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
               },
@@ -1283,10 +1280,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             display: 'flex',
             flexDirection: 'column',
             borderRadius: '20px',
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1))',
+            background: 'linear-gradient(135deg, rgba(var(--dp-neutral-0-rgb), 0.25), rgba(var(--dp-neutral-0-rgb), 0.1))',
             backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            border: '1px solid rgba(var(--dp-neutral-0-rgb), 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(var(--dp-neutral-0-rgb), 0.2)',
             position: 'relative',
             overflow: 'hidden',
             '&::before': {
@@ -1302,17 +1299,17 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             }
           }}>
             <CardContent sx={{
-              backgroundColor: '#00265C',
+              backgroundColor: 'var(--dp-primary-700) !important',
               py: 0.5,
               px: 2,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'white' }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'var(--dp-neutral-0)' }}>
                 PROJECTS
               </Typography>
-              <Button size="small" onClick={() => setSelectedProjects([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'white' }}>
+              <Button size="small" onClick={() => setSelectedProjects([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'var(--dp-neutral-0)' }}>
                 clear
               </Button>
             </CardContent>
@@ -1321,7 +1318,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               overflow: 'auto',
               px: 1,
               py: 0.25,
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05))',
+              background: 'linear-gradient(135deg, rgba(var(--dp-neutral-0-rgb), 0.15), rgba(var(--dp-neutral-0-rgb), 0.05))',
               backdropFilter: 'blur(15px)',
               borderRadius: '0 0 20px 20px',
               border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -1354,10 +1351,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         mb: 0.5,
                         backgroundColor: isSelected
                           ? 'rgba(59, 130, 246, 0.2)'
-                          : 'white',
+                          : 'var(--dp-neutral-0)',
                         border: isSelected
                           ? '2px solid #3B82F6'
-                          : '1px solid #e0e0e0',
+                          : '1px solid var(--dp-neutral-200)',
                         borderRadius: 2,
                         cursor: 'pointer',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -1379,7 +1376,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             sx={{
                               fontSize: '14px',
                               fontWeight: 600,
-                              color: isFiltered ? '#999' : '#333'
+                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-neutral-700)'
                             }}
                           >
                             {project.projectCode}
@@ -1389,7 +1386,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             sx={{
                               fontSize: '14px',
                               fontWeight: 'bold',
-                              color: isFiltered ? '#999' : '#00265C',
+                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-primary-700)',
                             }}
                           >
                             {formatHours(project.hours)}
@@ -1419,10 +1416,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           }}>
 
             {/* Project Hours Chart - Top Left (spans row 1) */}
-            <Card sx={{ gridRow: '1', gridColumn: '1', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '8px' }}>
+            <Card sx={{ gridRow: '1', gridColumn: '1', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '8px', backgroundColor: 'var(--dp-neutral-0) !important' }}>
               <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0 }}>
-                  <Typography variant="subtitle2" fontWeight="600" sx={{ fontSize: '14px', color: '#00265C' }}>
+                  <Typography variant="subtitle2" fontWeight="600" sx={{ fontSize: '14px', color: 'var(--dp-primary-700)' }}>
                     PROJECT HOURS
                   </Typography>
                   <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -1441,6 +1438,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 <Box sx={{ flex: 1, minHeight: 0, height: 120 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
+                      style={{ backgroundColor: 'transparent' }}
                       data={(() => {
                         const projectData = getProjectChartData() || [];
                         const total = projectData.reduce((sum, p) => sum + p.hours, 0);
@@ -1449,7 +1447,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           value: p.hours,
                           percentage: total > 0 ? Math.round((p.hours / total) * 100) : 0,
                           fill: colorMode === 'client' ? p.clientColor :
-                                colorMode === 'category' ? p.categoryColor : '#3B82F6',
+                                colorMode === 'category' ? p.categoryColor : 'var(--dp-primary-500)',
                           projectName: p.projectName,
                           clientName: p.clientName,
                           categoryName: p.categoryName
@@ -1461,12 +1459,12 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         dataKey="name"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 10, fill: '#605e5c', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 10, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
                       />
                       <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 11, fill: '#605e5c', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 11, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
                         tickFormatter={(value) => `${value}h`}
                         grid={false}
                       />
@@ -1477,13 +1475,13 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         ]}
                         labelFormatter={(label: string) => `Project: ${label}`}
                         contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                          border: '1px solid #ccc',
+                          backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.75)',
+                          border: '1px solid var(--dp-neutral-300)',
                           borderRadius: '4px',
                           fontSize: '12px'
                         }}
                         itemStyle={{
-                          color: '#3B82F6'
+                          color: 'var(--dp-primary-500)'
                         }}
                         cursor={{fill: 'transparent'}}
                       />
@@ -1501,7 +1499,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         {(() => {
                           const projectData = getProjectChartData() || [];
                           return projectData.map((p, index) => {
-                            const fillColor = colorMode === 'client' ? p.clientColor : colorMode === 'category' ? p.categoryColor : '#3B82F6';
+                            const fillColor = colorMode === 'client' ? p.clientColor : colorMode === 'category' ? p.categoryColor : 'var(--dp-primary-500)';
                             return (
                               <Cell
                                 key={`cell-${index}`}
@@ -1528,7 +1526,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           style={{
                             fontSize: '11px',
                             fontWeight: '600',
-                            fill: '#323130',
+                            fill: 'var(--dp-neutral-700)',
                             fontFamily: 'Roboto, sans-serif'
                           }}
                         />
@@ -1540,14 +1538,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             </Card>
 
             {/* Category Distribution - Top Right (smaller square) */}
-            <Card sx={{ gridRow: '1', gridColumn: '2', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '8px' }}>
+            <Card sx={{ gridRow: '1', gridColumn: '2', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '8px', backgroundColor: 'var(--dp-neutral-0) !important' }}>
               <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: '#00265C' }}>
+                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: 'var(--dp-primary-700)' }}>
                   CATEGORY DISTRIBUTION
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                    <PieChart style={{ backgroundColor: 'transparent' }}>
                       <Pie
                         data={(() => {
                           const categoryData = getFilteredCategoryData() || [];
@@ -1581,7 +1579,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             <text
                               x={x}
                               y={y}
-                              fill="white"
+                              fill="var(--dp-neutral-0)"
                               textAnchor="middle"
                               dominantBaseline="central"
                               fontSize="14px"
@@ -1622,8 +1620,8 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         ]}
                         labelFormatter={(label: string) => `Category: ${label}`}
                         contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                          border: '1px solid #ccc',
+                          backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.75)',
+                          border: '1px solid var(--dp-neutral-300)',
                           borderRadius: '4px',
                           fontSize: '12px'
                         }}
@@ -1639,7 +1637,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           lineHeight: '24px'
                         }}
                         formatter={(value, entry) => (
-                          <span style={{ color: '#000000', fontSize: '12px' }}>{value}</span>
+                          <span style={{ color: 'var(--dp-neutral-900)', fontSize: '12px' }}>{value}</span>
                         )}
                       />
                     </PieChart>
@@ -1653,10 +1651,11 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               gridRow: '2',
               gridColumn: '1',
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              borderRadius: '8px'
+              borderRadius: '8px',
+              backgroundColor: 'var(--dp-neutral-0) !important'
             }}>
               <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: '#00265C' }}>
+                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: 'var(--dp-primary-700)' }}>
                   TASK TYPES
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
@@ -1685,7 +1684,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                       <YAxis
                         type="category"
                         dataKey="name"
-                        tick={{ fontSize: 11, fill: '#605e5c', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 11, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
                         axisLine={false}
                         tickLine={false}
                         width={100}
@@ -1697,8 +1696,8 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         ]}
                         labelFormatter={(label: string) => `Task Type: ${label}`}
                         contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                          border: '1px solid #ccc',
+                          backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.75)',
+                          border: '1px solid var(--dp-neutral-300)',
                           borderRadius: '4px',
                           fontSize: '12px'
                         }}
@@ -1741,7 +1740,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           style={{
                             fontSize: '11px',
                             fontWeight: '600',
-                            fill: '#323130',
+                            fill: 'var(--dp-neutral-700)',
                             fontFamily: 'Roboto, sans-serif'
                           }}
                         />
@@ -1757,15 +1756,16 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               gridRow: '2',
               gridColumn: '2',
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              borderRadius: '8px'
+              borderRadius: '8px',
+              backgroundColor: 'var(--dp-neutral-0) !important'
             }}>
               <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: '#00265C' }}>
+                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: 'var(--dp-primary-700)' }}>
                   CLIENT DISTRIBUTION
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                    <PieChart style={{ backgroundColor: 'transparent' }}>
                       <Pie
                         data={(() => {
                           const clientData = getFilteredClientData() || [];
@@ -1799,7 +1799,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             <text
                               x={x}
                               y={y}
-                              fill="white"
+                              fill="var(--dp-neutral-0)"
                               textAnchor="middle"
                               dominantBaseline="central"
                               fontSize="14px"
@@ -1840,8 +1840,8 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         ]}
                         labelFormatter={(label: string) => `Client: ${label}`}
                         contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                          border: '1px solid #ccc',
+                          backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.75)',
+                          border: '1px solid var(--dp-neutral-300)',
                           borderRadius: '4px',
                           fontSize: '12px'
                         }}
@@ -1857,7 +1857,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           lineHeight: '24px'
                         }}
                         formatter={(value, entry) => (
-                          <span style={{ color: '#000000', fontSize: '12px' }}>{value}</span>
+                          <span style={{ color: 'var(--dp-neutral-900)', fontSize: '12px' }}>{value}</span>
                         )}
                       />
                     </PieChart>
@@ -1877,10 +1877,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             display: 'flex',
             flexDirection: 'column',
             borderRadius: '20px',
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1))',
+            background: 'linear-gradient(135deg, rgba(var(--dp-neutral-0-rgb), 0.25), rgba(var(--dp-neutral-0-rgb), 0.1))',
             backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            border: '1px solid rgba(var(--dp-neutral-0-rgb), 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(var(--dp-neutral-0-rgb), 0.2)',
             position: 'relative',
             overflow: 'hidden',
             '&::before': {
@@ -1896,14 +1896,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             }
           }}>
             <CardContent sx={{
-              backgroundColor: '#00265C',
+              backgroundColor: 'var(--dp-primary-700) !important',
               py: 0.5,
               px: 2,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'white' }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'var(--dp-neutral-0)' }}>
                 TEAM
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1913,7 +1913,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                   sx={{
                     fontSize: '12px',
                     minWidth: '50px',
-                    color: 'white',
+                    color: 'var(--dp-neutral-0)',
                     backgroundColor: teamFilters.length > 0 ? 'rgba(255,255,255,0.2)' : 'transparent',
                     '&:hover': {
                       backgroundColor: 'rgba(255,255,255,0.3)'
@@ -1922,7 +1922,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 >
                   {teamFilters.length > 0 ? `filter (${teamFilters.length})` : 'filter'}
                 </Button>
-                <Button size="small" onClick={() => setSelectedTeamMembers([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'white' }}>
+                <Button size="small" onClick={() => setSelectedTeamMembers([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'var(--dp-neutral-0)' }}>
                   clear
                 </Button>
               </Box>
@@ -1941,10 +1941,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         mb: 0.5,
                         backgroundColor: isSelected
                           ? 'rgba(59, 130, 246, 0.2)'
-                          : 'white',
+                          : 'var(--dp-neutral-0)',
                         border: isSelected
                           ? '2px solid #3B82F6'
-                          : '1px solid #e0e0e0',
+                          : '1px solid var(--dp-neutral-200)',
                         borderRadius: 2,
                         cursor: 'pointer',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -1966,7 +1966,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             sx={{
                               fontSize: '14px',
                               fontWeight: 600,
-                              color: isFiltered ? '#999' : '#333'
+                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-neutral-700)'
                             }}
                           >
                             {employee.employeeName}
@@ -1976,7 +1976,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             sx={{
                               fontSize: '14px',
                               fontWeight: 'bold',
-                              color: isFiltered ? '#999' : '#00265C',
+                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-primary-700)',
                             }}
                           >
                             {formatHours(employee.totalHours)}
@@ -1996,10 +1996,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             display: 'flex',
             flexDirection: 'column',
             borderRadius: '20px',
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1))',
+            background: 'linear-gradient(135deg, rgba(var(--dp-neutral-0-rgb), 0.25), rgba(var(--dp-neutral-0-rgb), 0.1))',
             backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            border: '1px solid rgba(var(--dp-neutral-0-rgb), 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(var(--dp-neutral-0-rgb), 0.2)',
             position: 'relative',
             overflow: 'hidden',
             '&::before': {
@@ -2015,17 +2015,17 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             }
           }}>
             <CardContent sx={{
-              backgroundColor: '#00265C',
+              backgroundColor: 'var(--dp-primary-700) !important',
               py: 0.5,
               px: 2,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'white' }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'var(--dp-neutral-0)' }}>
                 CLIENTS
               </Typography>
-              <Button size="small" onClick={() => setSelectedClients([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'white' }}>
+              <Button size="small" onClick={() => setSelectedClients([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'var(--dp-neutral-0)' }}>
                 clear
               </Button>
             </CardContent>
@@ -2043,10 +2043,10 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         mb: 0.5,
                         backgroundColor: isSelected
                           ? 'rgba(59, 130, 246, 0.2)'
-                          : 'white',
+                          : 'var(--dp-neutral-0)',
                         border: isSelected
                           ? '2px solid #3B82F6'
-                          : '1px solid #e0e0e0',
+                          : '1px solid var(--dp-neutral-200)',
                         borderRadius: 2,
                         cursor: 'pointer',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -2068,7 +2068,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             sx={{
                               fontSize: '14px',
                               fontWeight: 600,
-                              color: isFiltered ? '#999' : '#333'
+                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-neutral-700)'
                             }}
                           >
                             {client.clientName}
@@ -2078,7 +2078,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             sx={{
                               fontSize: '14px',
                               fontWeight: 'bold',
-                              color: isFiltered ? '#999' : '#00265C',
+                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-primary-700)',
                             }}
                           >
                             {formatHours(client.hours)}
@@ -2119,8 +2119,8 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 const rect = teamFilterAnchorEl.getBoundingClientRect();
                 return Math.max(8, rect.left - 150); // Position to left of button, but not off screen
               })(),
-              backgroundColor: 'white',
-              border: '1px solid #e0e0e0',
+              backgroundColor: 'var(--dp-neutral-0)',
+              border: '1px solid var(--dp-neutral-200)',
               borderRadius: '8px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               minWidth: '280px',
@@ -2132,7 +2132,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           >
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#00265C' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--dp-primary-700)' }}>
                   Filter Teams
                 </Typography>
                 <IconButton onClick={handleTeamFilterClose} size="small">
@@ -2147,8 +2147,8 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                   onClick={clearTeamFilters}
                   disabled={teamFilters.length === 0}
                   sx={{
-                    color: '#00265C',
-                    borderColor: '#00265C',
+                    color: 'var(--dp-primary-700)',
+                    borderColor: 'var(--dp-primary-700)',
                     '&:hover': {
                       backgroundColor: 'rgba(0, 38, 92, 0.1)'
                     }
@@ -2158,7 +2158,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                 </Button>
               </Box>
 
-              <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, color: 'var(--dp-neutral-500)' }}>
                 Select teams to filter data:
               </Typography>
 
@@ -2190,9 +2190,9 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                       }}
                       size="small"
                       sx={{
-                        color: '#00265C',
+                        color: 'var(--dp-primary-700)',
                         '&.Mui-checked': {
-                          color: '#00265C'
+                          color: 'var(--dp-primary-700)'
                         },
                         mr: 1
                       }}
@@ -2215,9 +2215,9 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         justifyContent: 'center',
         px: 3,
         py: 1.5,
-        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 58, 138, 0.9))',
+        background: 'linear-gradient(135deg, var(--dp-primary-800), var(--dp-primary-700))',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        borderTop: '1px solid var(--dp-neutral-600)',
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
@@ -2240,27 +2240,27 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               onClick={() => toggleCategoryFilter(category.id)}
               sx={{
                 background: selectedCategories.includes(category.id) ?
-                  'rgba(255, 255, 255, 0.95)' :
-                  'rgba(255, 255, 255, 0.08)',
+                  'var(--dp-neutral-0)' :
+                  'var(--dp-neutral-800)',
                 backdropFilter: 'blur(20px)',
                 color: selectedCategories.includes(category.id) ?
-                  'rgba(15, 23, 42, 0.95)' :
-                  'rgba(255, 255, 255, 0.95)',
+                  'var(--dp-neutral-900)' :
+                  'var(--dp-neutral-0)',
                 border: selectedCategories.includes(category.id) ?
-                  '1px solid rgba(255, 255, 255, 0.3)' :
-                  '1px solid rgba(255, 255, 255, 0.15)',
+                  '1px solid var(--dp-neutral-300)' :
+                  '1px solid var(--dp-neutral-600)',
                 borderRadius: '20px',
                 fontWeight: 600,
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
                 fontSize: '12px',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 boxShadow: selectedCategories.includes(category.id) ?
-                  '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)' :
+                  '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)' :
                   '0 4px 12px rgba(0, 0, 0, 0.08)',
                 '&:hover': {
                   background: selectedCategories.includes(category.id) ?
-                    'rgba(255, 255, 255, 0.95)' :
-                    'rgba(255, 255, 255, 0.12)',
+                    'var(--dp-neutral-0)' :
+                    'var(--dp-neutral-700)',
                   transform: 'translateY(-1px)',
                   boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
                 },

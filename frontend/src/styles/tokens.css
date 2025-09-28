@@ -260,8 +260,7 @@
    AUTO DARK MODE - RESPECTS SYSTEM PREFERENCE
    ========================================================================= */
 
-@media (prefers-color-scheme: dark) {
-  :root {
+[data-theme="dark"] {
     /* Same dark mode overrides when system preference is dark */
     /* This ensures dark mode works even without data-theme attribute */
 
@@ -318,7 +317,7 @@
     --dp-shadow-xl:  0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
     --dp-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   }
-}
+} */
 
 /* =========================================================================
    FORCE LIGHT MODE - OVERRIDE SYSTEM PREFERENCE

@@ -154,14 +154,27 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
         <button
           onClick={handleRefresh}
           style={{
-            padding: '8px 16px',
-            backgroundColor: '#dc2626',
-            color: 'white',
+            padding: 'var(--dp-space-2) var(--dp-space-4)',
+            backgroundColor: 'var(--dp-error-500)',
+            color: 'var(--dp-neutral-0)',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: 'var(--dp-radius-md)',
             cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500',
+            fontSize: 'var(--dp-text-body-medium)',
+            fontWeight: 'var(--dp-font-weight-medium)',
+            fontFamily: 'var(--dp-font-family-primary)',
+            transition: 'var(--dp-transition-fast)',
+            boxShadow: 'var(--dp-shadow-sm)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--dp-error-600)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = 'var(--dp-shadow-md)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--dp-error-500)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'var(--dp-shadow-sm)';
           }}
         >
           Retry
@@ -177,7 +190,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#f8fafc',
+        backgroundColor: 'var(--dp-neutral-25)',
+        fontFamily: 'var(--dp-font-family-primary)',
       }}
     >
       <CalendarHeader

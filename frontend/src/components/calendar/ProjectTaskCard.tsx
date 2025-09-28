@@ -113,24 +113,24 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
     switch (size) {
       case 'small':
         return {
-          fontSize: '0.6875rem',
-          padding: '4px 6px',
-          minHeight: '28px',
-          borderRadius: '4px',
+          fontSize: 'var(--dp-text-body-small)',
+          padding: 'var(--dp-space-1p5) var(--dp-space-2)',
+          minHeight: '32px',
+          borderRadius: 'var(--dp-radius-md)',
         };
       case 'large':
         return {
-          fontSize: '0.875rem',
-          padding: '8px 12px',
-          minHeight: '56px', // Reduced from 64px to fit better in fixed height
-          borderRadius: '6px',
+          fontSize: 'var(--dp-text-body-large)',
+          padding: 'var(--dp-space-3) var(--dp-space-4)',
+          minHeight: '64px',
+          borderRadius: 'var(--dp-radius-lg)',
         };
       default: // medium
         return {
-          fontSize: '0.75rem',
-          padding: '6px 8px',
-          minHeight: '36px', // Reduced from 48px to fit better
-          borderRadius: '5px',
+          fontSize: 'var(--dp-text-body-medium)',
+          padding: 'var(--dp-space-2) var(--dp-space-3)',
+          minHeight: '44px',
+          borderRadius: 'var(--dp-radius-lg)',
         };
     }
   };
@@ -143,30 +143,31 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
   const cardStyles: React.CSSProperties = {
     ...sizeStyles,
     background: `linear-gradient(135deg, ${colorScheme.gradient.start}, ${colorScheme.gradient.end})`,
-    border: `1.5px solid ${colorScheme.border}`,
+    border: `1px solid ${colorScheme.border}`,
     borderLeft: `4px solid ${priorityColor}`,
-    borderRadius: '8px',
+    borderRadius: 'var(--dp-radius-lg)',
     color: colorScheme.text,
     cursor: isDraggable ? (isDragging ? 'grabbing' : 'grab') : (onClick ? 'pointer' : 'default'),
     position: 'relative',
     width: '100%',
     maxWidth,
     boxSizing: 'border-box',
-    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
     overflow: 'hidden',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--dp-font-family-primary)',
     opacity: isDragging ? 0.5 : 1,
     transform: isDragging ? 'rotate(5deg)' : 'none',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06)',
+    backdropFilter: 'blur(8px)',
   };
 
   const hoverStyles: React.CSSProperties = {
-    transform: 'translateY(-1px)',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
-    border: `1.5px solid ${colorScheme.border}`,
+    transform: 'translateY(-2px) scale(1.01)',
+    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.12), 0 3px 10px rgba(0, 0, 0, 0.08)',
+    border: `1px solid ${colorScheme.border}`,
     borderLeft: `4px solid ${priorityColor}`,
   };
 
@@ -196,24 +197,26 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: size === 'small' ? '2px' : (size === 'large' ? '6px' : '3px'),
+        marginBottom: size === 'small' ? 'var(--dp-space-1)' : (size === 'large' ? 'var(--dp-space-2)' : 'var(--dp-space-1p5)'),
       }}>
         <span style={{
-          fontWeight: '600',
+          fontWeight: '700',
           color: colorScheme.text,
-          fontSize: size === 'small' ? '0.6875rem' : (size === 'large' ? '0.875rem' : '0.75rem'),
+          fontSize: size === 'small' ? '0.6875rem' : (size === 'large' ? '0.9375rem' : '0.8125rem'),
           lineHeight: '1.2',
+          letterSpacing: '-0.01em',
           textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
           overflow: 'hidden',
           whiteSpace: 'nowrap',
           textOverflow: 'ellipsis',
           flex: 1,
           marginRight: '8px',
+          fontFamily: 'var(--dp-font-family-primary)',
         }}>
           {task.projectName}
         </span>
         
-        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 'var(--dp-space-1)', alignItems: 'center' }}>
           {/* Status indicator */}
           <div style={{
             width: size === 'small' ? '6px' : '8px',
@@ -248,28 +251,31 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
 
       {/* Client name */}
       <div style={{
-        fontWeight: '500',
-        color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.9)' : 'rgba(33,37,41,0.8)',
-        fontSize: size === 'small' ? '0.625rem' : (size === 'large' ? '0.75rem' : '0.6875rem'),
+        fontWeight: '600',
+        color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.92)' : 'rgba(33,37,41,0.85)',
+        fontSize: size === 'small' ? '0.6875rem' : (size === 'large' ? '0.8125rem' : '0.75rem'),
         lineHeight: '1.3',
+        letterSpacing: '-0.005em',
         marginBottom: size === 'small' ? '1px' : (size === 'large' ? '4px' : '2px'),
         overflow: 'hidden',
         whiteSpace: 'nowrap',
         textOverflow: 'ellipsis',
         textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+        fontFamily: 'var(--dp-font-family-primary)',
       }}>
         {task.clientName}
       </div>
 
       {/* Task Type and Hours */}
       <div style={{
-        fontSize: size === 'small' ? '0.5625rem' : (size === 'large' ? '0.6875rem' : '0.625rem'),
-        color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.8)' : 'rgba(108,117,125,0.9)',
+        fontSize: size === 'small' ? '0.625rem' : (size === 'large' ? '0.75rem' : '0.6875rem'),
+        color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.85)' : 'rgba(108,117,125,0.95)',
         marginTop: 'auto',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         gap: '3px',
+        fontFamily: 'var(--dp-font-family-primary)',
       }}>
         <span style={{
           overflow: 'hidden',
@@ -280,9 +286,10 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
           {task.taskTypeName}
         </span>
         <span style={{
-          fontWeight: '600',
-          color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.95)' : '#495057',
+          fontWeight: '700',
+          color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.98)' : '#495057',
           flexShrink: 0,
+          letterSpacing: '-0.01em',
           textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
         }}>
           {calculatedHours !== undefined ? formatHours(calculatedHours) : (task.hours ? formatHours(task.hours) : '')}
