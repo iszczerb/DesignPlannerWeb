@@ -334,7 +334,7 @@ namespace DesignPlanner.Data.Services
             var employeeSkills = await _context.EmployeeSkills
                 .Include(es => es.Employee)
                 .Include(es => es.Skill)
-                .Where(es => es.Employee.IsActive && es.Skill.IsActive)
+                .Where(es => es.Skill.IsActive)
                 .ToListAsync();
 
             return employeeSkills.Select(es => new EmployeeSkillResponseDto
