@@ -318,23 +318,27 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
 
   // Styles
   const containerStyle: React.CSSProperties = {
-    backgroundColor: '#ffffff',
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
+    backgroundColor: 'var(--dp-neutral-0)',
+    borderRadius: 'var(--dp-radius-lg)',
+    boxShadow: 'var(--dp-shadow-md)',
+    border: '1px solid var(--dp-neutral-200)',
     overflow: 'hidden',
     position: 'relative',
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
+    fontFamily: 'var(--dp-font-family-primary)',
+    transition: 'var(--dp-transition-fast)',
   };
 
   const headerStyle: React.CSSProperties = {
     display: 'flex',
-    backgroundColor: '#f8fafc',
-    borderBottom: '2px solid #e2e8f0',
+    backgroundColor: 'var(--dp-neutral-50)',
+    borderBottom: '2px solid var(--dp-neutral-200)',
     position: 'sticky',
     top: 0,
     zIndex: 5,
+    boxShadow: 'var(--dp-shadow-sm)',
   };
 
   const headerCellStyle = (dayName: string): React.CSSProperties => {
@@ -342,16 +346,18 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
     return {
       flex: 1,
       minWidth: 0,
-      padding: '12px 8px',
-      fontSize: '0.875rem',
-      fontWeight: '700',
-      color: '#374151',
+      padding: 'var(--dp-space-3) var(--dp-space-2)',
+      fontSize: 'var(--dp-text-body-medium)',
+      fontWeight: 'var(--dp-font-weight-bold)',
+      fontFamily: 'var(--dp-font-family-primary)',
+      color: 'var(--dp-neutral-700)',
       textAlign: 'center',
-      borderRight: '1px solid #e5e7eb',
-      backgroundColor: isMonday ? '#d1d5db' : '#f1f5f9', // Monday darker
+      borderRight: '1px solid var(--dp-neutral-200)',
+      backgroundColor: isMonday ? 'var(--dp-neutral-300)' : 'var(--dp-neutral-100)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      transition: 'var(--dp-transition-fast)',
     };
   };
 
@@ -366,46 +372,62 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
     display: 'flex',
     flex: 1,
     minHeight: '120px',
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid var(--dp-neutral-200)',
   };
 
   const dayCellStyle = (dayData: CalendarDayData): React.CSSProperties => ({
     flex: 1,
     minWidth: 0,
-    borderRight: '1px solid #e5e7eb',
+    borderRight: '1px solid var(--dp-neutral-200)',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    backgroundColor: dayData.isToday ? '#f0f9ff' : '#ffffff',
-    border: dayData.isToday ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+    backgroundColor: dayData.isToday ? 'var(--dp-primary-50)' : 'var(--dp-neutral-0)',
+    border: dayData.isToday ? '2px solid var(--dp-primary-500)' : '1px solid var(--dp-neutral-200)',
+    transition: 'var(--dp-transition-fast)',
+    fontFamily: 'var(--dp-font-family-primary)',
   });
 
   const dateHeaderStyle = (isToday: boolean): React.CSSProperties => ({
-    padding: '6px 8px',
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: isToday ? '#ffffff' : '#374151',
-    borderBottom: '1px solid #e5e7eb',
-    backgroundColor: isToday ? '#3b82f6' : '#f9fafb',
+    padding: 'var(--dp-space-1p5) var(--dp-space-2)',
+    fontSize: 'var(--dp-text-body-medium)',
+    fontWeight: 'var(--dp-font-weight-semibold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: isToday ? 'var(--dp-neutral-0)' : 'var(--dp-neutral-700)',
+    borderBottom: '1px solid var(--dp-neutral-200)',
+    backgroundColor: isToday ? 'var(--dp-primary-500)' : 'var(--dp-neutral-50)',
     textAlign: 'center',
     flexShrink: 0,
     position: 'relative',
     transition: 'all 0.2s ease',
   });
 
-  const slotStyle = (slotType: 'AM' | 'PM'): React.CSSProperties => ({
-    flex: 1,
-    padding: '6px',
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: '60px',
-    maxHeight: '120px',
-    position: 'relative',
-    backgroundColor: slotType === 'AM' ? '#ffffff' : '#e6f3ff',
-    borderBottom: slotType === 'AM' ? '1px solid #e5e7eb' : 'none',
-  });
+  const slotStyle = (slotType: 'AM' | 'PM'): React.CSSProperties => {
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    let backgroundColor: string;
+    if (isDarkTheme) {
+      // Dark theme: AM should be slightly lighter than PM
+      backgroundColor = slotType === 'AM' ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-0)';
+    } else {
+      // Light theme: AM darker grey, PM even darker grey
+      backgroundColor = slotType === 'AM' ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-200)';
+    }
+
+    return {
+      flex: 1,
+      padding: '6px',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '60px',
+      maxHeight: '120px',
+      position: 'relative',
+      backgroundColor,
+      borderBottom: slotType === 'AM' ? '1px solid var(--dp-neutral-200)' : 'none',
+    };
+  };
 
   const slotBackgroundTextStyle = (slotType: 'AM' | 'PM'): React.CSSProperties => ({
     position: 'absolute',
@@ -514,17 +536,19 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
     <div style={{
       display: 'flex',
       height: '100%',
-      backgroundColor: '#f8fafc',
+      backgroundColor: 'var(--dp-neutral-25)',
+      fontFamily: 'var(--dp-font-family-primary)',
     }}>
       {/* Sidebar with filters and stats */}
       {employeeFilter && (
         <div style={{
           width: '280px',
-          backgroundColor: '#ffffff',
-          borderRight: '1px solid #e5e7eb',
-          padding: '16px',
+          backgroundColor: 'var(--dp-neutral-0)',
+          borderRight: '1px solid var(--dp-neutral-200)',
+          padding: 'var(--dp-space-4)',
           overflow: 'auto',
-          boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)',
+          boxShadow: 'var(--dp-shadow-md)',
+          transition: 'var(--dp-transition-fast)',
         }}>
           {/* Month Header - Clickable */}
           <div
@@ -536,32 +560,38 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
             <div
               onClick={() => setShowMonthPicker(!showMonthPicker)}
               style={{
-                padding: '16px',
-                backgroundColor: '#3b82f6',
-                borderRadius: '8px',
+                padding: 'var(--dp-space-4)',
+                backgroundColor: 'var(--dp-primary-500)',
+                borderRadius: 'var(--dp-radius-lg)',
                 textAlign: 'center',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
+                transition: 'var(--dp-transition-fast)',
+                boxShadow: 'var(--dp-shadow-sm)',
                 ':hover': {
-                  backgroundColor: '#2563eb',
+                  backgroundColor: 'var(--dp-primary-600)',
                 }
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#2563eb';
+                e.currentTarget.style.backgroundColor = 'var(--dp-primary-600)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = 'var(--dp-shadow-md)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#3b82f6';
+                e.currentTarget.style.backgroundColor = 'var(--dp-primary-500)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--dp-shadow-sm)';
               }}
             >
               <h2 style={{
-                fontSize: '1.25rem',
-                fontWeight: '700',
-                color: '#ffffff',
+                fontSize: 'var(--dp-text-headline-small)',
+                fontWeight: 'var(--dp-font-weight-bold)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                color: 'var(--dp-neutral-0)',
                 margin: '0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
+                gap: 'var(--dp-space-2)',
               }}>
                 {calendarData?.startDate ? new Date(calendarData.startDate).toLocaleDateString('en-US', {
                   month: 'long',
@@ -715,40 +745,43 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
 
           {/* Month Stats */}
           <div style={{
-            marginBottom: '24px',
-            padding: '16px',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px',
-            border: '1px solid #e5e7eb',
+            marginBottom: 'var(--dp-space-6)',
+            padding: 'var(--dp-space-4)',
+            backgroundColor: 'var(--dp-neutral-0)',
+            borderRadius: 'var(--dp-radius-lg)',
+            border: '1px solid var(--dp-neutral-200)',
+            boxShadow: 'var(--dp-shadow-sm)',
+            transition: 'var(--dp-transition-fast)',
           }}>
             <h3 style={{
-              fontSize: '1rem',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '12px',
-              margin: '0 0 12px 0',
+              fontSize: 'var(--dp-text-body-large)',
+              fontWeight: 'var(--dp-font-weight-semibold)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+              marginBottom: 'var(--dp-space-3)',
+              margin: '0 0 var(--dp-space-3) 0',
             }}>Month Overview</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>Total Tasks:</span>
-                <span style={{ fontWeight: '600', color: '#374151' }}>{monthStats.totalTasks}</span>
+                <span style={{ color: 'var(--dp-neutral-600)', fontSize: 'var(--dp-text-body-medium)', fontFamily: 'var(--dp-font-family-primary)' }}>Total Tasks:</span>
+                <span style={{ fontWeight: 'var(--dp-font-weight-semibold)', color: 'var(--dp-neutral-800)', fontFamily: 'var(--dp-font-family-primary)' }}>{monthStats.totalTasks}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>Total Hours:</span>
-                <span style={{ fontWeight: '600', color: '#374151' }}>{monthStats.totalHours}h</span>
+                <span style={{ color: 'var(--dp-neutral-600)', fontSize: 'var(--dp-text-body-medium)', fontFamily: 'var(--dp-font-family-primary)' }}>Total Hours:</span>
+                <span style={{ fontWeight: 'var(--dp-font-weight-semibold)', color: 'var(--dp-neutral-800)', fontFamily: 'var(--dp-font-family-primary)' }}>{monthStats.totalHours}h</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>Total Projects:</span>
-                <span style={{ fontWeight: '600', color: '#374151' }}>{monthStats.totalProjects}</span>
+                <span style={{ color: 'var(--dp-neutral-600)', fontSize: 'var(--dp-text-body-medium)', fontFamily: 'var(--dp-font-family-primary)' }}>Total Projects:</span>
+                <span style={{ fontWeight: 'var(--dp-font-weight-semibold)', color: 'var(--dp-neutral-800)', fontFamily: 'var(--dp-font-family-primary)' }}>{monthStats.totalProjects}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>Working Days:</span>
-                <span style={{ fontWeight: '600', color: '#374151' }}>{monthStats.workingDays}</span>
+                <span style={{ color: 'var(--dp-neutral-600)', fontSize: 'var(--dp-text-body-medium)', fontFamily: 'var(--dp-font-family-primary)' }}>Working Days:</span>
+                <span style={{ fontWeight: 'var(--dp-font-weight-semibold)', color: 'var(--dp-neutral-800)', fontFamily: 'var(--dp-font-family-primary)' }}>{monthStats.workingDays}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>Avg Tasks/Day:</span>
-                <span style={{ fontWeight: '600', color: '#374151' }}>{monthStats.averageTasksPerDay}</span>
+                <span style={{ color: 'var(--dp-neutral-600)', fontSize: 'var(--dp-text-body-medium)', fontFamily: 'var(--dp-font-family-primary)' }}>Avg Tasks/Day:</span>
+                <span style={{ fontWeight: 'var(--dp-font-weight-semibold)', color: 'var(--dp-neutral-800)', fontFamily: 'var(--dp-font-family-primary)' }}>{monthStats.averageTasksPerDay}</span>
               </div>
             </div>
           </div>
@@ -756,11 +789,12 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
           {/* Employee Filter */}
           <div>
             <h3 style={{
-              fontSize: '1rem',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '12px',
-              margin: '0 0 12px 0',
+              fontSize: 'var(--dp-text-body-large)',
+              fontWeight: 'var(--dp-font-weight-semibold)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+              marginBottom: 'var(--dp-space-3)',
+              margin: '0 0 var(--dp-space-3) 0',
             }}>Team Members</h3>
 
             <div style={{ marginBottom: '12px' }}>
@@ -772,15 +806,18 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                 }}
                 style={{
                   width: '100%',
-                  padding: '8px 12px',
-                  backgroundColor: selectedEmployeeIds.length === 0 ? '#3b82f6' : '#f9fafb',
-                  color: selectedEmployeeIds.length === 0 ? '#ffffff' : '#374151',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '6px',
+                  padding: 'var(--dp-space-2) var(--dp-space-3)',
+                  backgroundColor: selectedEmployeeIds.length === 0 ? 'var(--dp-primary-500)' : 'var(--dp-neutral-50)',
+                  color: selectedEmployeeIds.length === 0 ? 'var(--dp-neutral-0)' : 'var(--dp-neutral-700)',
+                  border: '1px solid var(--dp-neutral-200)',
+                  borderRadius: 'var(--dp-radius-md)',
                   cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
+                  fontSize: 'var(--dp-text-body-medium)',
+                  fontWeight: 'var(--dp-font-weight-medium)',
+                  fontFamily: 'var(--dp-font-family-primary)',
                   textAlign: 'left',
+                  transition: 'var(--dp-transition-fast)',
+                  boxShadow: selectedEmployeeIds.length === 0 ? 'var(--dp-shadow-sm)' : 'none',
                 }}
               >
                 All Members ({employeeFilter.employees.length})
@@ -804,23 +841,27 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '8px 12px',
-                      backgroundColor: isSelected ? '#e0f2fe' : '#ffffff',
-                      border: isSelected ? '1px solid #0284c7' : '1px solid #e5e7eb',
-                      borderRadius: '6px',
+                      padding: 'var(--dp-space-2) var(--dp-space-3)',
+                      backgroundColor: isSelected ? 'var(--dp-primary-50)' : 'var(--dp-neutral-0)',
+                      border: isSelected ? '1px solid var(--dp-primary-500)' : '1px solid var(--dp-neutral-200)',
+                      borderRadius: 'var(--dp-radius-md)',
                       cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      transition: 'all 0.2s',
+                      fontSize: 'var(--dp-text-body-medium)',
+                      fontWeight: 'var(--dp-font-weight-medium)',
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      transition: 'var(--dp-transition-fast)',
+                      boxShadow: isSelected ? 'var(--dp-shadow-sm)' : 'none',
                     }}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        e.currentTarget.style.backgroundColor = 'var(--dp-neutral-50)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = '#ffffff';
+                        e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+                        e.currentTarget.style.transform = 'translateY(0)';
                       }
                     }}
                   >
@@ -830,8 +871,8 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                         width: '16px',
                         height: '16px',
                         borderRadius: '3px',
-                        border: '2px solid ' + (isSelected ? '#0284c7' : '#d1d5db'),
-                        backgroundColor: isSelected ? '#0284c7' : '#ffffff',
+                        border: '2px solid ' + (isSelected ? 'var(--dp-primary-500)' : 'var(--dp-neutral-300)'),
+                        backgroundColor: isSelected ? 'var(--dp-primary-500)' : 'var(--dp-neutral-0)',
                         marginRight: '8px',
                         display: 'flex',
                         alignItems: 'center',
@@ -844,13 +885,13 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                           style={{
                             width: '8px',
                             height: '8px',
-                            backgroundColor: '#ffffff',
+                            backgroundColor: 'var(--dp-neutral-0)',
                             borderRadius: '1px',
                           }}
                         />
                       )}
                     </div>
-                    <span style={{ color: isSelected ? '#0284c7' : '#374151' }}>
+                    <span style={{ color: isSelected ? 'var(--dp-primary-500)' : 'var(--dp-neutral-700)' }}>
                       {employee.name}
                     </span>
                   </div>
@@ -892,8 +933,8 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                   <div key={`${weekIndex}-${dayIndex}`} style={{
                     flex: 1,
                     minWidth: 0,
-                    borderRight: '1px solid #e5e7eb',
-                    backgroundColor: '#f9fafb',
+                    borderRight: '1px solid var(--dp-neutral-200)',
+                    backgroundColor: 'var(--dp-neutral-50)',
                   }} />
                 );
               }

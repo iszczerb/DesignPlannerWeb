@@ -1,7 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EmployeeCalendarDto, TEAM_TYPE_LABELS } from '../../types/schedule';
 import TeamMemberDetailsModal from './TeamMemberDetailsModal';
 import { calculateActualHours } from '../../utils/taskLayoutHelpers';
+
+// Add keyframes for shimmer animation
+const shimmerKeyframes = `
+  @keyframes shimmer {
+    0% { background-position: -100px 0; }
+    100% { background-position: 100px 0; }
+  }
+`;
 
 interface SimplifiedEmployeeRowProps {
   employee: EmployeeCalendarDto;
@@ -23,6 +31,17 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
 
   // Team member details modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // Inject keyframes styles
+  useEffect(() => {
+    const styleId = 'shimmer-keyframes';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = shimmerKeyframes;
+      document.head.appendChild(style);
+    }
+  }, []);
   // Calculate percentage-based capacity utilization
   const getCapacityUtilization = () => {
     let usedCapacity = 0;
@@ -96,48 +115,60 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
     width: '120px',
     minWidth: '120px',
     maxWidth: '120px',
-    padding: '8px 6px',
-    backgroundColor: '#ffffff',
-    borderRight: '1px solid #e2e8f0',
+    padding: '4px var(--dp-space-2) 10px var(--dp-space-2)',
+    backgroundColor: 'var(--dp-neutral-0)',
+    borderRight: '2px solid var(--dp-neutral-200)',
+    borderBottom: '1px solid var(--dp-neutral-200)',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     height: '130px',
     textAlign: 'center',
+    fontFamily: 'var(--dp-font-family-primary)',
+    position: 'relative',
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    borderRadius: '0',
+    overflow: 'hidden',
   });
 
   const getFirstNameStyle = (): React.CSSProperties => ({
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: '#1f2937',
-    lineHeight: '1.1',
+    fontSize: 'var(--dp-text-body-medium)',
+    fontWeight: 'var(--dp-font-weight-bold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-900)',
+    lineHeight: 'var(--dp-line-height-tight)',
+    letterSpacing: '-0.01em',
     margin: 0,
   });
 
   const getLastNameStyle = (): React.CSSProperties => ({
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: '#1f2937',
-    lineHeight: '1.1',
+    fontSize: 'var(--dp-text-body-medium)',
+    fontWeight: 'var(--dp-font-weight-bold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-900)',
+    lineHeight: 'var(--dp-line-height-tight)',
+    letterSpacing: '-0.01em',
     margin: 0,
   });
 
   const getRoleStyle = (): React.CSSProperties => ({
-    fontSize: '0.75rem',
-    fontWeight: '400',
-    color: '#6b7280',
-    lineHeight: '1.1',
+    fontSize: 'var(--dp-text-body-small)',
+    fontWeight: 'var(--dp-font-weight-regular)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-500)',
+    lineHeight: 'var(--dp-line-height-snug)',
     margin: 0,
   });
 
   const getTeamStyle = (): React.CSSProperties => ({
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    color: '#3b82f6',
-    lineHeight: '1.1',
+    fontSize: 'var(--dp-text-body-small)',
+    fontWeight: 'var(--dp-font-weight-semibold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-primary-500)',
+    lineHeight: 'var(--dp-line-height-snug)',
     margin: 0,
-    marginTop: '4px',
+    marginTop: 'var(--dp-space-1)',
   });
 
   const getProgressContainerStyle = (): React.CSSProperties => ({
@@ -148,10 +179,12 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
 
   const getProgressBarStyle = (): React.CSSProperties => ({
     flex: 1,
-    height: '6px',
-    backgroundColor: '#e5e7eb',
-    borderRadius: '3px',
+    height: '8px',
+    backgroundColor: 'var(--dp-neutral-200)',
+    borderRadius: 'var(--dp-radius-sm)',
     overflow: 'hidden',
+    position: 'relative',
+    boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
   });
 
   const getProgressFillStyle = (): React.CSSProperties => ({
@@ -159,7 +192,11 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
     height: '100%',
     backgroundColor: getProgressColor(progressPercentage),
     borderRadius: '3px',
-    transition: 'width 0.3s ease-in-out',
+    transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    backgroundImage: `linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent)`,
+    backgroundSize: '8px 8px',
+    animation: progressPercentage > 0 ? 'shimmer 2s linear infinite' : 'none',
   });
 
   const getProgressTextStyle = (): React.CSSProperties => ({
@@ -202,18 +239,30 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '2px',
+          gap: '1px',
           cursor: 'pointer',
-          padding: '4px',
-          borderRadius: '6px',
-          transition: 'background-color 0.2s ease'
+          padding: '3px',
+          borderRadius: 'var(--dp-radius-md)',
+          transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: 'translateY(0)',
+          boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)',
         }}
         onClick={() => setShowDetailsModal(true)}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+          e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.08)';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.15)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 0 0 0 rgba(59, 130, 246, 0)';
+        }}
+        onMouseDown={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(0.98)';
+        }}
+        onMouseUp={(e) => {
+          e.currentTarget.style.transform = 'translateY(-1px) scale(1)';
         }}
         onContextMenu={handleEmployeeContextMenu}
         title="Click to view details, right-click for options"
@@ -240,7 +289,7 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
       </div>
       
       {/* Progress Info - Grouped at Bottom */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', marginTop: 'auto' }}>
         {/* Progress Bar */}
         <div style={getProgressContainerStyle()}>
           <div style={getProgressBarStyle()}>

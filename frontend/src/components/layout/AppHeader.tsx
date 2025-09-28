@@ -40,10 +40,12 @@ import {
 
 // Styled components for iOS-like appearance
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: '#ffffff',
-  color: '#1e3a5f',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  borderBottom: '1px solid #e9ecef',
+  backgroundColor: 'var(--dp-neutral-0)',
+  color: 'var(--dp-neutral-800)',
+  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+  borderBottom: '1px solid var(--dp-neutral-100)',
+  fontFamily: 'var(--dp-font-family-primary)',
+  backdropFilter: 'blur(12px)',
 }));
 
 const LogoContainer = styled(Box)(({ theme }) => ({
@@ -63,15 +65,19 @@ const DesignPlannerLogo = styled('img')(({ theme }) => ({
   height: 48,
   width: 48,
   display: 'block',
+  // Only white in dark theme
+  '[data-theme="dark"] &': {
+    filter: 'brightness(0) invert(1)',
+  },
 }));
 
 const ClickableLogoContainer = styled(Box)(({ theme }) => ({
   cursor: 'pointer',
-  borderRadius: '8px',
-  padding: '4px',
-  transition: 'background-color 0.2s ease',
+  borderRadius: 'var(--dp-radius-md)',
+  padding: 'var(--dp-space-1)',
+  transition: 'var(--dp-transition-fast)',
   '&:hover': {
-    backgroundColor: alpha('#3498db', 0.1),
+    backgroundColor: 'var(--dp-primary-50)',
   },
   '&:active': {
     transform: 'scale(0.98)',
@@ -82,6 +88,10 @@ const TateLogo = styled('img')(({ theme }) => ({
   height: 36,
   width: 'auto',
   display: 'block',
+  // Only white in dark theme
+  '[data-theme="dark"] &': {
+    filter: 'brightness(0) invert(1)',
+  },
 }));
 
 const NavigationContainer = styled(Box)(({ theme }) => ({
@@ -92,22 +102,42 @@ const NavigationContainer = styled(Box)(({ theme }) => ({
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
-  color: '#1e3a5f',
-  fontWeight: 500,
-  fontSize: '14px',
+  color: 'var(--dp-neutral-700)',
+  fontWeight: 'var(--dp-font-weight-medium)',
+  fontSize: 'var(--dp-text-body-medium)',
+  fontFamily: 'var(--dp-font-family-primary)',
   textTransform: 'none',
-  borderRadius: '8px',
-  padding: '6px 16px',
+  borderRadius: 'var(--dp-radius-lg)',
+  padding: 'var(--dp-space-2) var(--dp-space-5)',
+  position: 'relative',
+  transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+  minHeight: '44px',
+  backdropFilter: 'blur(8px)',
+  border: '1px solid transparent',
+
   '&:hover': {
-    backgroundColor: alpha('#3498db', 0.1),
-    color: '#3498db',
+    backgroundColor: 'var(--dp-primary-50)',
+    color: 'var(--dp-primary-600)',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(14, 165, 233, 0.15)',
+    border: '1px solid var(--dp-primary-200)',
   },
+
   '&.active': {
-    backgroundColor: '#3498db',
-    color: '#ffffff',
+    backgroundColor: 'var(--dp-primary-500)',
+    color: 'var(--dp-neutral-0)',
+    boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)',
+    fontWeight: 'var(--dp-font-weight-semibold)',
+
     '&:hover': {
-      backgroundColor: '#2980b9',
+      backgroundColor: 'var(--dp-primary-600)',
+      transform: 'translateY(-1px)',
+      boxShadow: '0 6px 16px rgba(14, 165, 233, 0.4)',
     },
+  },
+
+  '&:active': {
+    transform: 'translateY(0px)',
   },
 }));
 
@@ -454,8 +484,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           <Typography
             variant="body2"
             sx={{
-              color: '#6b7280',
-              fontSize: '14px',
+              color: 'var(--dp-neutral-500)',
+              fontSize: '18px',
               fontWeight: '500',
               marginLeft: '12px',
             }}
@@ -496,7 +526,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             <IconButton
               onClick={handleMobileMenuOpen}
               sx={{
-                color: '#1e3a5f',
+                color: 'var(--dp-neutral-800)',
                 marginRight: 1,
               }}
             >
@@ -546,18 +576,21 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           endIcon={<ArrowDownIcon />}
           onClick={handleViewMenuOpen}
           sx={{
-            color: '#1e3a5f',
-            fontWeight: '500',
-            fontSize: '14px',
+            color: 'var(--dp-neutral-800)',
+            fontWeight: 'var(--dp-font-weight-medium)',
+            fontSize: 'var(--dp-text-body-medium)',
+            fontFamily: 'var(--dp-font-family-primary)',
             textTransform: 'none',
-            borderRadius: '8px',
-            padding: '6px 16px',
+            borderRadius: 'var(--dp-radius-md)',
+            padding: 'var(--dp-space-2) var(--dp-space-4)',
             marginRight: 2,
-            border: '1px solid #e2e8f0',
-            backgroundColor: '#ffffff',
+            border: '1px solid var(--dp-neutral-200)',
+            backgroundColor: 'var(--dp-neutral-0)',
+            transition: 'var(--dp-transition-fast)',
             '&:hover': {
-              backgroundColor: '#f8f9fa',
-              borderColor: '#d1d5db',
+              backgroundColor: 'var(--dp-neutral-50)',
+              borderColor: 'var(--dp-neutral-300)',
+              color: 'var(--dp-neutral-900)',
             },
           }}
         >
@@ -570,7 +603,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             <Typography variant="body2" sx={{ 
               fontWeight: 600, 
               fontSize: '14px',
-              color: '#1e3a5f'
+              color: 'var(--dp-neutral-800)'
             }}>
               John
             </Typography>
@@ -600,7 +633,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               sx={{
                 width: 36,
                 height: 36,
-                backgroundColor: '#3498db',
+                backgroundColor: 'var(--dp-primary-500)',
                 fontSize: '14px',
                 fontWeight: 600,
                 border: '2px solid #e9ecef',
@@ -686,7 +719,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             }}
           >
             <ListItemIcon>
-              <LogoutIcon fontSize="small" sx={{ color: '#dc3545' }} />
+              <LogoutIcon fontSize="small" sx={{ color: 'var(--dp-error-500)' }} />
             </ListItemIcon>
             Logout
           </MenuItem>
@@ -725,16 +758,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                 sx={{ 
                   py: 1, 
                   px: 2,
-                  backgroundColor: isActive ? alpha('#3498db', 0.1) : 'transparent',
-                  color: isActive ? '#3498db' : '#374151',
+                  backgroundColor: isActive ? alpha('#0ea5e9', 0.1) : 'transparent',
+                  color: isActive ? 'var(--dp-primary-500)' : '#374151',
                   '&:hover': {
-                    backgroundColor: alpha('#3498db', 0.1),
-                    color: '#3498db',
+                    backgroundColor: alpha('#0ea5e9', 0.1),
+                    color: 'var(--dp-primary-500)',
                   },
                 }}
               >
                 <ListItemIcon>
-                  <IconComponent fontSize="small" sx={{ color: isActive ? '#3498db' : '#6b7280' }} />
+                  <IconComponent fontSize="small" sx={{ color: isActive ? 'var(--dp-primary-500)' : 'var(--dp-neutral-500)' }} />
                 </ListItemIcon>
                 {item.label}
               </MenuItem>
@@ -770,11 +803,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               sx={{ 
                 py: 1, 
                 px: 2,
-                backgroundColor: currentViewType === viewType ? alpha('#3498db', 0.1) : 'transparent',
-                color: currentViewType === viewType ? '#3498db' : '#374151',
+                backgroundColor: currentViewType === viewType ? alpha('#0ea5e9', 0.1) : 'transparent',
+                color: currentViewType === viewType ? 'var(--dp-primary-500)' : '#374151',
                 '&:hover': {
-                  backgroundColor: alpha('#3498db', 0.1),
-                  color: '#3498db',
+                  backgroundColor: alpha('#0ea5e9', 0.1),
+                  color: 'var(--dp-primary-500)',
                 },
               }}
             >
@@ -798,11 +831,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            color: '#1e3a5f',
+            color: 'var(--dp-neutral-800)',
             fontSize: '18px',
             fontWeight: 600
           }}>
-            <DateRangeIcon sx={{ color: '#3498db' }} />
+            <DateRangeIcon sx={{ color: 'var(--dp-primary-500)' }} />
             Go to Date
           </DialogTitle>
           <DialogContent>
@@ -826,14 +859,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3498db',
+                    borderColor: 'var(--dp-primary-500)',
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3498db',
+                    borderColor: 'var(--dp-primary-500)',
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#3498db',
+                  color: 'var(--dp-primary-500)',
                 },
                 // Disable weekends in calendar picker
                 '& input[type="date"]::-webkit-calendar-picker-indicator': {
@@ -933,14 +966,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               }}
               disabled={!selectedDate || !onDirectDateNavigation}
               sx={{
-                backgroundColor: '#3498db',
+                backgroundColor: 'var(--dp-primary-500)',
                 color: 'white',
                 textTransform: 'none',
                 borderRadius: '8px',
                 padding: '8px 24px',
                 fontWeight: 600,
                 '&:hover': {
-                  backgroundColor: '#2980b9',
+                  backgroundColor: 'var(--dp-primary-600)',
                 },
                 '&:disabled': {
                   backgroundColor: '#bdc3c7',

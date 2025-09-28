@@ -40,20 +40,24 @@ const DayColumn: React.FC<DayColumnProps> = ({
   });
 
   const getDayHeaderStyle = (): React.CSSProperties => ({
-    padding: '8px',
-    backgroundColor: day.isToday ? '#1e40af' : '#1e293b',
+    padding: '12px 8px',
+    backgroundColor: day.isToday ? 'var(--dp-primary-600)' : 'var(--dp-neutral-800)',
     color: 'white',
     textAlign: 'center',
     position: 'sticky',
     top: 0,
     zIndex: 10,
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid var(--dp-neutral-200)',
+    boxShadow: day.isToday ? '0 2px 8px rgba(14, 165, 233, 0.25)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+    fontFamily: 'var(--dp-font-family-primary)',
   });
 
   const getDayNameStyle = (): React.CSSProperties => ({
-    fontSize: '0.875rem',
-    fontWeight: '700',
-    lineHeight: '1.2',
+    fontSize: 'var(--dp-text-body-large)',
+    fontWeight: 'var(--dp-font-weight-bold)',
+    lineHeight: 'var(--dp-line-height-tight)',
+    letterSpacing: '-0.01em',
+    fontFamily: 'var(--dp-font-family-primary)',
   });
 
   const getTimeSlotContainerStyle = (isAM: boolean): React.CSSProperties => ({
@@ -62,18 +66,34 @@ const DayColumn: React.FC<DayColumnProps> = ({
     position: 'relative',
   });
 
-  const getTimeSlotLabelStyle = (isAM: boolean): React.CSSProperties => ({
-    position: 'absolute',
-    top: '8px',
-    left: '8px',
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    color: '#6b7280',
-    backgroundColor: isAM ? '#dbeafe' : '#fef3c7',
-    padding: '2px 8px',
-    borderRadius: '4px',
-    zIndex: 5,
-  });
+  const getTimeSlotLabelStyle = (isAM: boolean): React.CSSProperties => {
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    let backgroundColor: string;
+    if (isDarkTheme) {
+      // Dark theme: AM should be slightly lighter than PM
+      backgroundColor = isAM ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-0)';
+    } else {
+      // Light theme: AM darker grey, PM even darker grey
+      backgroundColor = isAM ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-200)';
+    }
+
+    return {
+      position: 'absolute',
+      top: '8px',
+      left: '8px',
+      fontSize: 'var(--dp-text-body-small)',
+      fontWeight: 'var(--dp-font-weight-bold)',
+      color: 'var(--dp-neutral-700)',
+      backgroundColor,
+      padding: '4px 10px',
+      borderRadius: 'var(--dp-radius-md)',
+      zIndex: 5,
+      letterSpacing: '-0.005em',
+      fontFamily: 'var(--dp-font-family-primary)',
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    };
+  };
 
   const getTasksContainerStyle = (): React.CSSProperties => ({
     padding: '24px 8px 8px 8px',
