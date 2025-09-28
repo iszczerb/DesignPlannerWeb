@@ -323,5 +323,97 @@ namespace DesignPlanner.Data.Services
                 TaskTypesCount = skill.TaskTypeSkills?.Count ?? 0
             };
         }
+
+        /// <summary>
+        /// Gets all employee skill levels
+        /// </summary>
+        /// <param name="requestingUserId">ID of the user requesting the data</param>
+        /// <returns>List of employee skill levels</returns>
+        public async Task<List<EmployeeSkillResponseDto>> GetEmployeeSkillsAsync(int requestingUserId)
+        {
+            var employeeSkills = await _context.EmployeeSkills
+                .Include(es => es.Employee)
+                .Include(es => es.Skill)
+                .Where(es => es.Employee.IsActive && es.Skill.IsActive)
+                .ToListAsync();
+
+            return employeeSkills.Select(es => new EmployeeSkillResponseDto
+            {
+                EmployeeId = es.EmployeeId,
+                SkillId = es.SkillId,
+                ProficiencyLevel = es.ProficiencyLevel,
+                Notes = es.Notes,
+                AcquiredDate = es.AcquiredDate
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Updates an employee's skill level
+        /// </summary>
+        /// <param name="employeeId">Employee ID</param>
+        /// <param name="skillId">Skill ID</param>
+        /// <param name="request">Update request</param>
+        /// <param name="requestingUserId">ID of the user making the request</param>
+        /// <returns>Task</returns>
+        public async Task UpdateEmployeeSkillAsync(int employeeId, int skillId, UpdateEmployeeSkillRequestDto request, int requestingUserId)
+        {
+            // Verify employee and skill exist
+            var employee = await _context.Employees.FindAsync(employeeId);
+            if (employee == null)
+                throw new ArgumentException($"Employee with ID {employeeId} not found");
+
+            var skill = await _context.Skills.FindAsync(skillId);
+            if (skill == null)
+                throw new ArgumentException($"Skill with ID {skillId} not found");
+
+            // Find existing employee skill
+            var existingEmployeeSkill = await _context.EmployeeSkills
+                .FirstOrDefaultAsync(es => es.EmployeeId == employeeId && es.SkillId == skillId);
+
+            if (existingEmployeeSkill == null)
+            {
+                // Create new employee skill
+                var newEmployeeSkill = new EmployeeSkill
+                {
+                    EmployeeId = employeeId,
+                    SkillId = skillId,
+                    ProficiencyLevel = request.ProficiencyLevel,
+                    Notes = request.Notes,
+                    AcquiredDate = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.EmployeeSkills.Add(newEmployeeSkill);
+            }
+            else
+            {
+                // Update existing employee skill
+                existingEmployeeSkill.ProficiencyLevel = request.ProficiencyLevel;
+                existingEmployeeSkill.Notes = request.Notes;
+                existingEmployeeSkill.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Deletes an employee's skill level
+        /// </summary>
+        /// <param name="employeeId">Employee ID</param>
+        /// <param name="skillId">Skill ID</param>
+        /// <param name="requestingUserId">ID of the user making the request</param>
+        /// <returns>Task</returns>
+        public async Task DeleteEmployeeSkillAsync(int employeeId, int skillId, int requestingUserId)
+        {
+            var employeeSkill = await _context.EmployeeSkills
+                .FirstOrDefaultAsync(es => es.EmployeeId == employeeId && es.SkillId == skillId);
+
+            if (employeeSkill == null)
+                throw new ArgumentException($"Employee skill not found for employee {employeeId} and skill {skillId}");
+
+            _context.EmployeeSkills.Remove(employeeSkill);
+            await _context.SaveChangesAsync();
+        }
     }
 }

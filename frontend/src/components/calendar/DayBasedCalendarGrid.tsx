@@ -658,7 +658,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
         enabled: !hasLeave && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
       },
       {
-        label: '⧉ Paste Task',
+        label: '↓ Paste Task',
         action: () => handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId),
         enabled: !hasLeave && hasCopiedTask && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
       }
@@ -1233,7 +1233,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   }}
                   title="Paste task"
                 >
-                  ⧉
+                  ↓
                 </button>
               )}
             </div>
@@ -1383,7 +1383,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   }}
                   title="Paste task"
                 >
-                  ⧉
+                  ↓
                 </button>
               )}
             </div>
@@ -1702,28 +1702,77 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           >
             {/* Top colored section with project code */}
             <div style={{
-              padding: `6px ${tasksToShow.length === 4 ? '4px' : '8px'} 3px ${tasksToShow.length === 4 ? '4px' : '8px'}`, // Responsive padding for small cards
+              padding: `6px ${tasksToShow.length >= 4 ? '2px' : tasksToShow.length === 3 ? '4px' : '8px'} 3px ${tasksToShow.length >= 4 ? '2px' : tasksToShow.length === 3 ? '4px' : '8px'}`, // More responsive padding based on task density
               fontWeight: '700',
-              fontSize: '0.75rem',
+              fontSize: (() => {
+                const hours = task.hours || 4;
+                const textLength = task.projectName?.length || 0;
+
+                // For 1-hour tasks (narrowest), use much smaller fonts
+                if (hours === 1) {
+                  if (textLength > 15) return '0.45rem';
+                  if (textLength > 10) return '0.5rem';
+                  return '0.52rem'; // Reduced from 0.55rem for short text
+                }
+
+                // For 2-hour tasks
+                if (hours === 2) {
+                  if (textLength > 15) return '0.6rem';
+                  if (textLength > 10) return '0.65rem';
+                  return '0.7rem';
+                }
+
+                // For 3+ hour tasks (default behavior)
+                if (textLength > 15) return '0.65rem';
+                if (textLength > 10) return '0.7rem';
+                return '0.75rem';
+              })(),
               textAlign: 'center',
               textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               letterSpacing: '0.025em',
+              WebkitFontSmoothing: 'antialiased',
+              MozOsxFontSmoothing: 'grayscale',
+              textRendering: 'optimizeLegibility',
               color: '#ffffff',
               overflow: 'hidden',
               whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
             }}>
               {task.projectName || 'PROJ'}
             </div>
             <div style={{
-              fontSize: '0.7rem', // Increased client text size
+              fontSize: (() => {
+                const hours = task.hours || 4;
+                const textLength = task.clientName?.length || 0;
+
+                // For 1-hour tasks (narrowest), use smaller fonts
+                if (hours === 1) {
+                  if (textLength > 20) return '0.5rem';
+                  if (textLength > 15) return '0.55rem';
+                  return '0.6rem';
+                }
+
+                // For 2-hour tasks
+                if (hours === 2) {
+                  if (textLength > 20) return '0.55rem';
+                  if (textLength > 15) return '0.6rem';
+                  return '0.65rem';
+                }
+
+                // For 3+ hour tasks (default behavior)
+                if (textLength > 20) return '0.6rem';
+                if (textLength > 15) return '0.65rem';
+                return '0.7rem';
+              })(), // Dynamic client text size based on both length and task width
               opacity: 0.95,
-              padding: `0 ${tasksToShow.length === 4 ? '4px' : '8px'} 6px ${tasksToShow.length === 4 ? '4px' : '8px'}`, // Responsive padding for small cards
+              padding: `0 ${tasksToShow.length >= 4 ? '2px' : tasksToShow.length === 3 ? '4px' : '8px'} 6px ${tasksToShow.length >= 4 ? '2px' : tasksToShow.length === 3 ? '4px' : '8px'}`, // More responsive padding based on task density
               textAlign: 'center',
               textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               fontWeight: '600',
+              WebkitFontSmoothing: 'antialiased',
+              MozOsxFontSmoothing: 'grayscale',
+              textRendering: 'optimizeLegibility',
               color: '#ffffff',
               lineHeight: '1.1',
             }}>
@@ -1736,7 +1785,29 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               backdropFilter: 'blur(10px)',
               color: '#1f2937',
               padding: `4px ${tasksToShow.length === 4 ? '4px' : '8px'} 8px ${tasksToShow.length === 4 ? '4px' : '8px'}`, // Responsive padding + move text UP from bottom
-              fontSize: tasksToShow.length === 4 ? '0.52rem' : '0.62rem', // Slightly smaller font
+              fontSize: (() => {
+                const hours = task.hours || 4;
+                const textLength = task.taskTypeName?.length || task.taskName?.length || 0;
+
+                // For 1-hour tasks (narrowest), use much smaller fonts
+                if (hours === 1) {
+                  if (textLength > 15) return '0.4rem';
+                  if (textLength > 10) return '0.45rem';
+                  return '0.46rem'; // Reduced from 0.48rem for short text
+                }
+
+                // For 2-hour tasks
+                if (hours === 2) {
+                  if (textLength > 15) return '0.48rem';
+                  if (textLength > 10) return '0.53rem';
+                  return '0.57rem';
+                }
+
+                // For 3+ hour tasks (default behavior with density consideration)
+                if (textLength > 15) return '0.5rem';
+                if (textLength > 10) return '0.55rem';
+                return tasksToShow.length === 4 ? '0.52rem' : '0.62rem';
+              })(), // Dynamic font sizing based on text length and task width
               fontWeight: '700',
               textAlign: 'center',
               borderRadius: '0 0 10px 10px',
@@ -1748,10 +1819,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               minHeight: '18px',
               maxHeight: '18px',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              WebkitFontSmoothing: 'antialiased',
+              MozOsxFontSmoothing: 'grayscale',
+              textRendering: 'optimizeLegibility',
               boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 -1px 0 rgba(0, 0, 0, 0.1)',
               overflow: 'hidden',
               whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
             }}>
               {task.taskTypeName || task.taskName || 'Task'}
             </div>
@@ -1806,7 +1879,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
                     e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                   }}
-                  title="Duplicate task"
+                  title="Copy task"
                 >
                   ⧉
                 </button>
@@ -2045,7 +2118,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                 }}
                 title="Paste task"
               >
-                ⧉
+                ↓
               </button>
             )}
           </div>

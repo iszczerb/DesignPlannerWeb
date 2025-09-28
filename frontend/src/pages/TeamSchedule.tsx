@@ -18,8 +18,11 @@ import ConfirmationDialog from '../components/calendar/ConfirmationDialog';
 import NotificationManager from '../components/common/NotificationManager';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import DatabaseManagementModal from '../components/database/DatabaseManagementModal';
+import SkillsManagementModal from '../components/skills/SkillsManagementModal';
 import AnalyticsDashboardModal from '../components/analytics/AnalyticsDashboardModal';
 import AbsenceManagementModal from '../components/leave/AbsenceManagementModal';
+import SettingsModal from '../components/modals/SettingsModal';
+import ProfileModal from '../components/modals/ProfileModal';
 import { TeamViewMode } from '../components/calendar/TeamToggle';
 import {
   CalendarViewType,
@@ -407,7 +410,16 @@ const TeamScheduleContent: React.FC<{
     return today;
   });
   const [lastNavigatedDate, setLastNavigatedDate] = useState<Date | null>(null); // Track navigation direction
-  const [viewType, setViewType] = useState(CalendarViewType.Week);
+  const [viewType, setViewType] = useState(() => {
+    const savedView = localStorage.getItem('defaultCalendarView');
+    switch (savedView) {
+      case 'daily': return CalendarViewType.Day;
+      case 'weekly': return CalendarViewType.Week;
+      case 'biweekly': return CalendarViewType.BiWeek;
+      case 'monthly': return CalendarViewType.Month;
+      default: return CalendarViewType.Week;
+    }
+  });
   const [teamViewMode, setTeamViewMode] = useState(TeamViewMode.MyTeam);
   const [calendarData, setCalendarData] = useState<CalendarViewDto | undefined>();
   const [teams, setTeams] = useState<TeamInfo[]>([]);
@@ -662,6 +674,9 @@ const TeamScheduleContent: React.FC<{
   const [showDatabaseModal, setShowDatabaseModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
+  const [showSkillsModal, setShowSkillsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [databaseRefreshTrigger, setDatabaseRefreshTrigger] = useState(0);
 
   // Day Details modal state
@@ -742,13 +757,18 @@ const TeamScheduleContent: React.FC<{
       [UserRole.TeamMember]: 'TeamMember'
     }[authUser.role] || 'Unknown';
 
-    // Create initials from firstName and lastName
-    const initials = `${authUser.firstName.charAt(0).toUpperCase()} ${authUser.lastName.charAt(0).toUpperCase()}`;
+    // Create full name and initials from firstName and lastName
+    const fullName = `${authUser.firstName} ${authUser.lastName}`;
+    const initials = `${authUser.firstName.charAt(0).toUpperCase()}${authUser.lastName.charAt(0).toUpperCase()}`;
 
     return {
       id: authUser.id,
+      userId: authUser.id,
       role: roleString,
-      name: initials
+      name: fullName,
+      username: authUser.username || authUser.email || `user${authUser.id}`,
+      teamId: authUser.teamId,
+      teamName: authUser.teamName
     };
   }, [authUser, isAuthenticated]);
 
@@ -824,6 +844,8 @@ const TeamScheduleContent: React.FC<{
       setShowAnalyticsModal(true);
     } else if (page === 'absence') {
       setShowAbsenceModal(true);
+    } else if (page === 'skills') {
+      setShowSkillsModal(true);
     } else {
       // TODO: Implement other navigation logic
     }
@@ -834,14 +856,13 @@ const TeamScheduleContent: React.FC<{
     // TODO: Implement search functionality
   };
 
+
   const handleProfile = () => {
-    console.log('Open profile');
-    // TODO: Implement profile functionality
+    setShowProfileModal(true);
   };
 
   const handleSettings = () => {
-    console.log('Open settings');
-    // TODO: Implement settings functionality
+    setShowSettingsModal(true);
   };
 
   const handleLogout = async () => {
@@ -2011,7 +2032,29 @@ const TeamScheduleContent: React.FC<{
   }, []);
 
   /**
-   * Handle task paste - paste copied task to a new slot
+   * Get tasks in a specific slot by date, slot, and employee
+   */
+  const getSlotTasksByParams = useCallback((date: Date, slot: Slot, employeeId: number): AssignmentTaskDto[] => {
+    if (!calendarData) return [];
+
+    const targetEmployee = calendarData.employees.find(emp => emp.employeeId === employeeId);
+    if (!targetEmployee) return [];
+
+    const targetDate = date.toDateString();
+    const targetDayAssignment = targetEmployee.dayAssignments.find(day =>
+      new Date(day.date).toDateString() === targetDate
+    );
+
+    if (!targetDayAssignment) return [];
+
+    const slotKey = slot === 1 ? 'morningSlot' : 'afternoonSlot';
+    const slotData = targetDayAssignment[slotKey];
+
+    return slotData?.tasks || [];
+  }, [calendarData]);
+
+  /**
+   * Handle task paste - paste copied task to a new slot with automatic resizing
    */
   const handleTaskPaste = useCallback(async (date: Date, slot: Slot, employeeId: number) => {
     if (!copiedTask) {
@@ -2020,32 +2063,104 @@ const TeamScheduleContent: React.FC<{
     }
 
     try {
+      // Get existing tasks in the target slot
+      const existingTasks = getSlotTasksByParams(date, slot, employeeId);
+
+      console.log('🍃 Paste operation:', {
+        copiedTaskId: copiedTask.assignmentId,
+        originalHours: copiedTask.hours,
+        targetSlot: slot === 1 ? 'Morning' : 'Afternoon',
+        existingTasksCount: existingTasks.length,
+        existingTasks: existingTasks.map(t => ({ id: t.assignmentId, hours: t.hours }))
+      });
+
       // Format date for API
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
 
-      const assignment: CreateAssignmentDto = {
-        taskId: copiedTask.taskId,
-        employeeId: employeeId,
-        assignedDate: dateStr,
-        slot: slot,
-        notes: copiedTask.notes || undefined,
-      };
+      if (existingTasks.length === 0) {
+        // Empty slot - paste with original hours
+        const assignment: CreateAssignmentDto = {
+          taskId: copiedTask.taskId,
+          employeeId: employeeId,
+          assignedDate: dateStr,
+          slot: slot,
+          notes: copiedTask.notes || undefined,
+          hours: copiedTask.hours || 4 // Use original hours for empty slot
+        };
 
-      await scheduleService.createAssignment(assignment);
-      
+        console.log('✅ Empty slot - pasting with original hours:', assignment.hours);
+        await scheduleService.createAssignment(assignment);
+
+      } else {
+        // Occupied slot - need to resize existing tasks to make room
+        const totalTasksAfterPaste = existingTasks.length + 1;
+
+        // Maximum 4 tasks per slot
+        if (totalTasksAfterPaste > 4) {
+          alert('Cannot paste task - slot already has maximum of 4 tasks.');
+          return;
+        }
+
+        // Calculate new hours for all tasks (divide 4 hours equally)
+        const hoursPerTask = Math.floor(4 / totalTasksAfterPaste);
+        const remainder = 4 % totalTasksAfterPaste;
+
+        console.log('📊 Resizing calculation:', {
+          totalTasksAfterPaste,
+          hoursPerTask,
+          remainder
+        });
+
+        // Update existing tasks with new hours
+        const updatePromises = existingTasks.map(async (task, index) => {
+          // First 'remainder' tasks get an extra hour
+          const newHours = index < remainder ? hoursPerTask + 1 : hoursPerTask;
+
+          console.log(`📉 Resizing task ${task.assignmentId}: ${task.hours}h → ${newHours}h`);
+
+          return scheduleService.updateAssignment({
+            assignmentId: task.assignmentId,
+            hours: newHours
+          });
+        });
+
+        // Wait for all updates to complete
+        await Promise.all(updatePromises);
+
+        // Now create the new task with calculated hours
+        // The new task is the last one, so check if it should get extra hour
+        const newTaskIndex = existingTasks.length;
+        const newTaskHours = newTaskIndex < remainder ? hoursPerTask + 1 : hoursPerTask;
+
+        const assignment: CreateAssignmentDto = {
+          taskId: copiedTask.taskId,
+          employeeId: employeeId,
+          assignedDate: dateStr,
+          slot: slot,
+          notes: copiedTask.notes || undefined,
+          hours: newTaskHours
+        };
+
+        console.log('✅ Creating new task with hours:', newTaskHours);
+        await scheduleService.createAssignment(assignment);
+      }
+
       // Refresh calendar data
       await loadCalendarData(
         teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
         teamViewMode
       );
+
+      console.log('✅ Paste operation completed successfully');
+
     } catch (error) {
       console.error('Error pasting task:', error);
       alert('Failed to paste task. Please try again.');
     }
-  }, [copiedTask, teamViewMode, managedTeamId, loadCalendarData]);
+  }, [copiedTask, teamViewMode, managedTeamId, loadCalendarData, getSlotTasksByParams]);
 
   /**
    * Handle paste to multiple selected slots (used by DayBasedCalendarGrid)
@@ -4339,6 +4454,37 @@ ${dateInfo}`;
         onRequestProcessed={() => {
           // Refresh data after absence changes
           loadCalendarData();
+        }}
+      />
+
+      {/* Skills Management Modal */}
+      <SkillsManagementModal
+        open={showSkillsModal}
+        onClose={() => setShowSkillsModal(false)}
+        employees={calendarData?.employees || []}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        open={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        currentUser={{
+          id: userContext.userId,
+          username: userContext.username,
+          name: userContext.name
+        }}
+      />
+
+      <ProfileModal
+        open={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        currentUser={{
+          id: userContext.userId,
+          username: userContext.username,
+          name: userContext.name,
+          role: userContext.role,
+          teamId: userContext.teamId,
+          teamName: userContext.teamName
         }}
       />
 

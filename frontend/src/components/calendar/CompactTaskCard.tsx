@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { AssignmentTaskDto } from '../../types/schedule';
 
 interface CompactTaskCardProps {
@@ -12,12 +12,52 @@ const CompactTaskCard: React.FC<CompactTaskCardProps> = ({
   onClick,
   isReadOnly = false
 }) => {
+  const projectNameRef = useRef<HTMLSpanElement>(null);
+  const clientNameRef = useRef<HTMLSpanElement>(null);
+  const taskTypeRef = useRef<HTMLSpanElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [projectFontSize, setProjectFontSize] = useState('0.75rem');
+  const [clientFontSize, setClientFontSize] = useState('0.7rem');
+  const [taskTypeFontSize, setTaskTypeFontSize] = useState('0.65rem');
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onClick && !isReadOnly) {
       onClick(task);
     }
   };
+
+  // Calculate font size based on text length - simpler approach
+  const calculateFontSizeByLength = (text: string, minSize: number = 0.45, maxSize: number = 0.75): string => {
+    if (!text) return `${maxSize}rem`;
+
+    const length = text.length;
+    let fontSize: number;
+
+    if (length <= 8) {
+      fontSize = maxSize; // Short text gets max size
+    } else if (length <= 15) {
+      fontSize = maxSize * 0.85; // Medium text gets reduced size
+    } else if (length <= 25) {
+      fontSize = maxSize * 0.7; // Long text gets more reduced size
+    } else {
+      fontSize = minSize; // Very long text gets minimum size
+    }
+
+    return `${fontSize}rem`;
+  };
+
+  // Update font sizes when task changes
+  useEffect(() => {
+    const projectOptimalSize = calculateFontSizeByLength(task.projectName, 0.45, 0.75);
+    const clientOptimalSize = calculateFontSizeByLength(task.clientName, 0.4, 0.65);
+    const taskTypeOptimalSize = calculateFontSizeByLength(task.taskTypeName || '', 0.35, 0.6);
+
+    setProjectFontSize(projectOptimalSize);
+    setClientFontSize(clientOptimalSize);
+    setTaskTypeFontSize(taskTypeOptimalSize);
+  }, [task.projectName, task.clientName, task.taskTypeName]);
 
   // Get initials from employee name
   const getInitials = (name: string): string => {
@@ -65,7 +105,6 @@ const CompactTaskCard: React.FC<CompactTaskCardProps> = ({
     fontWeight: '500',
     cursor: isReadOnly ? 'default' : 'pointer',
     minHeight: '18px',
-    overflow: 'hidden',
     border: '1px solid rgba(0, 0, 0, 0.08)',
     transition: 'all 0.1s ease',
     lineHeight: '1.2',
@@ -84,6 +123,7 @@ const CompactTaskCard: React.FC<CompactTaskCardProps> = ({
 
   return (
     <div
+      ref={containerRef}
       style={isHovered ? hoverStyle : cardStyle}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -95,19 +135,16 @@ const CompactTaskCard: React.FC<CompactTaskCardProps> = ({
         display: 'flex',
         alignItems: 'center',
         flex: 1,
-        overflow: 'hidden',
         minWidth: 0,
       }}>
         {/* Project name */}
         <span
+          ref={projectNameRef}
           style={{
             fontWeight: '600',
+            fontSize: projectFontSize,
             marginRight: '6px',
-            flexShrink: 1,
-            minWidth: 0,
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
+            flexShrink: 0,
           }}
         >
           {task.projectName}
@@ -115,15 +152,12 @@ const CompactTaskCard: React.FC<CompactTaskCardProps> = ({
 
         {/* Client name */}
         <span
+          ref={clientNameRef}
           style={{
-            fontSize: '0.7rem',
+            fontSize: clientFontSize,
             opacity: 0.8,
             marginRight: '6px',
             flexShrink: 0,
-            maxWidth: '25%',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
           }}
         >
           {task.clientName}
@@ -132,16 +166,14 @@ const CompactTaskCard: React.FC<CompactTaskCardProps> = ({
         {/* Task type */}
         {task.taskTypeName && (
           <span
+            ref={taskTypeRef}
             style={{
-              fontSize: '0.65rem',
+              fontSize: taskTypeFontSize,
               opacity: 0.7,
               flexShrink: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.05)',
               padding: '1px 4px',
               borderRadius: '2px',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
             }}
           >
             {task.taskTypeName}

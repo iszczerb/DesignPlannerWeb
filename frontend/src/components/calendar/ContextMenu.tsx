@@ -4,7 +4,6 @@ import { Paper, MenuList, MenuItem, ListItemIcon, ListItemText, Divider } from '
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { AssignmentTaskDto } from '../../types/schedule';
 

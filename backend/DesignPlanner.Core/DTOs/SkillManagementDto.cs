@@ -282,4 +282,64 @@ namespace DesignPlanner.Core.DTOs
     public class UpdateSkillRequestDto : UpdateSkillDto
     {
     }
+
+    /// <summary>
+    /// Request DTO for updating employee skill level
+    /// </summary>
+    public class UpdateEmployeeSkillRequestDto
+    {
+        /// <summary>
+        /// Skill proficiency level (1-5 scale: 1-2=beginner, 3=intermediate, 4-5=advanced)
+        /// </summary>
+        [Range(1, 5, ErrorMessage = "Proficiency level must be between 1 and 5")]
+        public int ProficiencyLevel { get; set; }
+
+        /// <summary>
+        /// Optional notes about the skill level
+        /// </summary>
+        [MaxLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
+        public string? Notes { get; set; }
+    }
+
+    /// <summary>
+    /// Response DTO for employee skill data
+    /// </summary>
+    public class EmployeeSkillResponseDto
+    {
+        /// <summary>
+        /// Employee ID
+        /// </summary>
+        public int EmployeeId { get; set; }
+
+        /// <summary>
+        /// Skill ID
+        /// </summary>
+        public int SkillId { get; set; }
+
+        /// <summary>
+        /// Proficiency level (1-5)
+        /// </summary>
+        public int ProficiencyLevel { get; set; }
+
+        /// <summary>
+        /// Level category for frontend (beginner/intermediate/advanced)
+        /// </summary>
+        public string Level => ProficiencyLevel switch
+        {
+            1 or 2 => "beginner",
+            3 => "intermediate",
+            4 or 5 => "advanced",
+            _ => "beginner"
+        };
+
+        /// <summary>
+        /// Optional notes
+        /// </summary>
+        public string? Notes { get; set; }
+
+        /// <summary>
+        /// When the skill was acquired
+        /// </summary>
+        public DateTime AcquiredDate { get; set; }
+    }
 }

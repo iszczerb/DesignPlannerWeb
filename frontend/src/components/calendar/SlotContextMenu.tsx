@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Paper, MenuList, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import CallReceivedIcon from '@mui/icons-material/CallReceived';
 import { AssignmentTaskDto, Slot } from '../../types/schedule';
 
 interface SlotContextMenuProps {
@@ -111,7 +111,7 @@ const SlotContextMenu: React.FC<SlotContextMenuProps> = ({
         {hasCopiedTask && (
           <MenuItem onClick={handlePasteTask}>
             <ListItemIcon>
-              <ContentPasteIcon fontSize="small" />
+              <CallReceivedIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary="Paste Task Here" />
           </MenuItem>

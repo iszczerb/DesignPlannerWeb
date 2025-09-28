@@ -195,6 +195,19 @@ class DatabaseService {
     return apiService.post<BulkActionResult>(endpoint, ids || undefined);
   }
 
+  // Employee Skill Operations
+  async getEmployeeSkills(): Promise<any[]> {
+    return apiService.get<any[]>('/skill/employee-skills');
+  }
+
+  async updateEmployeeSkill(employeeId: number, skillId: number, data: { proficiencyLevel: number; notes?: string }): Promise<void> {
+    return apiService.put<void>(`/skill/employee/${employeeId}/skill/${skillId}`, data);
+  }
+
+  async deleteEmployeeSkill(employeeId: number, skillId: number): Promise<void> {
+    return apiService.delete<void>(`/skill/employee/${employeeId}/skill/${skillId}`);
+  }
+
   // Task Type CRUD Operations
   async getTaskTypes(): Promise<TaskType[]> {
     const response = await apiService.get<{taskTypes: TaskType[]}>('/tasktype');

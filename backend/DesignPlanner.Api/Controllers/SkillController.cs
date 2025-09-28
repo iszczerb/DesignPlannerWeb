@@ -341,5 +341,100 @@ namespace DesignPlanner.Api.Controllers
                 return StatusCode(500, "An error occurred while retrieving employees with skill");
             }
         }
+
+        /// <summary>
+        /// Get all employee skill levels
+        /// </summary>
+        /// <returns>List of all employee skill levels</returns>
+        [HttpGet("employee-skills")]
+        public async Task<ActionResult<List<object>>> GetEmployeeSkills()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized("Unable to identify user");
+                }
+
+                var employeeSkills = await _skillService.GetEmployeeSkillsAsync(userId);
+                return Ok(employeeSkills);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving employee skills");
+                return StatusCode(500, "An error occurred while retrieving employee skills");
+            }
+        }
+
+        /// <summary>
+        /// Update employee skill level
+        /// </summary>
+        /// <param name="employeeId">Employee ID</param>
+        /// <param name="skillId">Skill ID</param>
+        /// <param name="request">Skill level update request</param>
+        /// <returns>Updated skill level</returns>
+        [HttpPut("employee/{employeeId}/skill/{skillId}")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<ActionResult> UpdateEmployeeSkill(int employeeId, int skillId, [FromBody] UpdateEmployeeSkillRequestDto request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized("Unable to identify user");
+                }
+
+                await _skillService.UpdateEmployeeSkillAsync(employeeId, skillId, request, userId);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating employee skill for employee {EmployeeId} and skill {SkillId}", employeeId, skillId);
+                return StatusCode(500, "An error occurred while updating employee skill");
+            }
+        }
+
+        /// <summary>
+        /// Delete employee skill level
+        /// </summary>
+        /// <param name="employeeId">Employee ID</param>
+        /// <param name="skillId">Skill ID</param>
+        /// <returns>No content on success</returns>
+        [HttpDelete("employee/{employeeId}/skill/{skillId}")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<ActionResult> DeleteEmployeeSkill(int employeeId, int skillId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized("Unable to identify user");
+                }
+
+                await _skillService.DeleteEmployeeSkillAsync(employeeId, skillId, userId);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting employee skill for employee {EmployeeId} and skill {SkillId}", employeeId, skillId);
+                return StatusCode(500, "An error occurred while deleting employee skill");
+            }
+        }
     }
 }

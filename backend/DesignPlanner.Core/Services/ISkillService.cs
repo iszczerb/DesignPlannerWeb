@@ -87,5 +87,31 @@ namespace DesignPlanner.Core.Services
         /// <param name="excludeSkillId">Optional skill ID to exclude from the check (for updates)</param>
         /// <returns>True if the name is already in use</returns>
         Task<bool> IsSkillNameExistsAsync(string name, int? excludeSkillId = null);
+
+        /// <summary>
+        /// Gets all employee skill levels
+        /// </summary>
+        /// <param name="requestingUserId">ID of the user requesting the data</param>
+        /// <returns>List of employee skill levels</returns>
+        Task<List<EmployeeSkillResponseDto>> GetEmployeeSkillsAsync(int requestingUserId);
+
+        /// <summary>
+        /// Updates an employee's skill level
+        /// </summary>
+        /// <param name="employeeId">Employee ID</param>
+        /// <param name="skillId">Skill ID</param>
+        /// <param name="request">Update request</param>
+        /// <param name="requestingUserId">ID of the user making the request</param>
+        /// <returns>Task</returns>
+        Task UpdateEmployeeSkillAsync(int employeeId, int skillId, UpdateEmployeeSkillRequestDto request, int requestingUserId);
+
+        /// <summary>
+        /// Deletes an employee's skill level
+        /// </summary>
+        /// <param name="employeeId">Employee ID</param>
+        /// <param name="skillId">Skill ID</param>
+        /// <param name="requestingUserId">ID of the user making the request</param>
+        /// <returns>Task</returns>
+        Task DeleteEmployeeSkillAsync(int employeeId, int skillId, int requestingUserId);
     }
 }

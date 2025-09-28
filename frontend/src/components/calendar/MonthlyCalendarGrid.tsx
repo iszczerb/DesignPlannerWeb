@@ -369,7 +369,7 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
     borderBottom: '1px solid #e5e7eb',
   };
 
-  const dayCellStyle = (dayData: DayTaskData): React.CSSProperties => ({
+  const dayCellStyle = (dayData: CalendarDayData): React.CSSProperties => ({
     flex: 1,
     minWidth: 0,
     borderRight: '1px solid #e5e7eb',
