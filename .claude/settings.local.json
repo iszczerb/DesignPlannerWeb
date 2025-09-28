@@ -49,7 +49,9 @@
       "WebSearch",
       "WebFetch(domain:stackoverflow.com)",
       "Bash(netsh advfirewall firewall add rule:*)",
-      "WebFetch(domain:pageflows.com)"
+      "WebFetch(domain:pageflows.com)",
+      "Bash(git checkout:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
