@@ -888,379 +888,382 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
       fullScreen
       PaperProps={{
         sx: {
-          backgroundColor: 'var(--dp-neutral-25) !important',
+          backgroundColor: 'var(--dp-neutral-50) !important',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'visible'
         }
       }}
     >
-      {/* Single Compact Header - iOS Glassmorphism Style */}
+      {/* Clean Professional Header */}
       <Box sx={{
         display: 'flex',
         flexDirection: 'column',
         px: 4,
-        py: 1,
-        background: 'linear-gradient(135deg, var(--dp-primary-800), var(--dp-primary-700))',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(var(--dp-neutral-0-rgb), 0.1)',
-        minHeight: '90px',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
-          pointerEvents: 'none'
-        }
+        py: 2,
+        backgroundColor: 'var(--dp-neutral-0)',
+        borderBottom: '1px solid var(--dp-neutral-200)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+        minHeight: '100px',
+        position: 'relative'
       }}>
 
-        {/* Single Row Layout */}
+        {/* Single Row Layout - Using CSS Grid for perfect symmetry */}
         <Box sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
+          display: 'grid',
+          gridTemplateColumns: 'auto auto auto auto auto auto auto',
           alignItems: 'flex-end',
           width: '100%',
-          gap: 0.5,
-          position: 'relative',
-          height: '100%'
-        }}>
-
-        {/* Toggle centered at top - absolute positioning */}
-        <Box sx={{
-          position: 'absolute',
-          left: '50%',
-          top: '10px',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
           gap: 0.3,
-          zIndex: 10,
-          width: 'auto'
+          position: 'relative',
+          height: '100%',
+          justifyContent: 'space-between'
         }}>
-          <ToggleButtonGroup
-            value={timelineMode}
-            exclusive
-            onChange={handleTimelineChange}
-            size="small"
-            sx={{
-              '& .MuiToggleButton-root': {
-                background: 'var(--dp-neutral-800)',
-                backdropFilter: 'blur(20px)',
-                color: 'var(--dp-neutral-0)',
-                border: '1px solid var(--dp-neutral-600)',
-                fontSize: '12px',
-                px: 1.5,
-                py: 0.5,
-                fontWeight: 600,
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  background: 'var(--dp-neutral-700)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
-                },
-                '&.Mui-selected': {
-                  background: 'var(--dp-neutral-0)',
-                  color: 'var(--dp-neutral-900)',
-                  fontWeight: 700,
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid var(--dp-neutral-300)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)'
-                }
-              }
-            }}
-          >
-            <ToggleButton value="DAILY">DAILY</ToggleButton>
-            <ToggleButton value="WEEKLY">WEEKLY</ToggleButton>
-            <ToggleButton value="MONTHLY">MONTHLY</ToggleButton>
-            <ToggleButton value="YEARLY">YEARLY</ToggleButton>
-          </ToggleButtonGroup>
 
-          {/* Date aligned centered */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton onClick={() => navigatePeriod('prev')} size="small" sx={{
-              color: 'var(--dp-neutral-100)',
-              backgroundColor: 'var(--dp-neutral-800)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--dp-neutral-600)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                backgroundColor: 'var(--dp-neutral-700)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
-              }
-            }}>
-              <ChevronLeft fontSize="small" />
-            </IconButton>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                width: '150px',
-                textAlign: 'center',
-                fontWeight: 700,
-                fontSize: '14px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                color: 'var(--dp-neutral-0)',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              {formatPeriodDisplay()}
-            </Typography>
-            <IconButton onClick={() => navigatePeriod('next')} size="small" sx={{
-              color: 'var(--dp-neutral-100)',
-              backgroundColor: 'var(--dp-neutral-800)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--dp-neutral-600)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                backgroundColor: 'var(--dp-neutral-700)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
-              }
-            }}>
-              <ChevronRight fontSize="small" />
-            </IconButton>
-          </Box>
-        </Box>
+        {/* Close button at very top right */}
+        <IconButton onClick={onClose} sx={{
+          position: 'absolute',
+          top: 2,
+          right: 4,
+          width: '32px',
+          height: '32px',
+          color: 'var(--dp-neutral-600)',
+          backgroundColor: 'var(--dp-neutral-0)',
+          border: '1px solid var(--dp-neutral-300)',
+          borderRadius: '8px',
+          zIndex: 10,
+          transition: 'all 0.2s ease-out',
+          '&:hover': {
+            backgroundColor: 'var(--dp-error-50)',
+            borderColor: 'var(--dp-error-300)',
+            color: 'var(--dp-error-600)',
+            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
+          },
+          '&:active': {
+            transform: 'translateY(0px)',
+            boxShadow: '0 2px 6px rgba(239, 68, 68, 0.1)'
+          },
+          '& .MuiSvgIcon-root': {
+            fontSize: '20px'
+          }
+        }}>
+          <CloseIcon />
+        </IconButton>
+
           {/* Left Logo */}
           <Box onClick={goToCurrentPeriod} sx={{ cursor: 'pointer' }}>
             <img
               src="/assets/logos/design-planner-logo.png"
               alt="Design Planner"
               style={{
-                height: '50px',
+                height: '60px',
                 width: 'auto',
-                filter: 'brightness(0) invert(1)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                filter: 'var(--dp-logo-filter, none)'
               }}
             />
           </Box>
 
-          {/* 2 KPIs BEFORE toggle - grouped */}
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-            <Card sx={{
-              minWidth: '120px',
-              height: '60px',
-              background: 'var(--dp-neutral-800)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--dp-neutral-600)',
-              borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 var(--dp-neutral-200)'
-              }
+          {/* First KPI - PROJECTS */}
+          <Card sx={{
+            width: '120px',
+            height: '70px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            border: '1px solid var(--dp-neutral-200)',
+            borderRadius: '16px',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+            transition: 'all 0.2s ease-out',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+            }
+          }}>
+            <CardContent sx={{
+              textAlign: 'center',
+              py: 3,
+              px: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 1
             }}>
-              <CardContent sx={{
-                textAlign: 'center',
-                py: 0.5,
-                px: 2,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
+              <Typography variant="caption" sx={{
+                fontSize: '11px',
+                fontWeight: 600,
+                fontFamily: 'var(--dp-font-family-primary)',
+                letterSpacing: '0.5px',
+                color: 'var(--dp-neutral-500)',
+                textTransform: 'uppercase'
               }}>
-                <Typography variant="caption" sx={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                  letterSpacing: '0.5px',
-                  color: 'var(--dp-neutral-100)'
-                }}>
-                  PROJECTS
-                </Typography>
-                <Typography variant="h6" sx={{
-                  fontSize: '18px',
-                  fontWeight: 800,
-                  color: 'var(--dp-neutral-0)',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-                }}>
-                  {getFilteredSummary().totalProjects}
-                </Typography>
-              </CardContent>
-            </Card>
+                PROJECTS
+              </Typography>
+              <Typography variant="h6" sx={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: 'var(--dp-primary-700)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                lineHeight: 1
+              }}>
+                {getFilteredSummary().totalProjects}
+              </Typography>
+            </CardContent>
+          </Card>
 
-            <Card sx={{
-              minWidth: '120px',
-              height: '60px',
-              background: 'var(--dp-neutral-800)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--dp-neutral-600)',
-              borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 var(--dp-neutral-200)'
-              }
+          {/* Second KPI - HOURS */}
+          <Card sx={{
+            width: '120px',
+            height: '70px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            border: '1px solid var(--dp-neutral-200)',
+            borderRadius: '16px',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+            transition: 'all 0.2s ease-out',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+            }
+          }}>
+            <CardContent sx={{
+              textAlign: 'center',
+              py: 3,
+              px: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 1
             }}>
-              <CardContent sx={{
-                textAlign: 'center',
-                py: 0.5,
-                px: 2,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
+              <Typography variant="caption" sx={{
+                fontSize: '11px',
+                fontWeight: 600,
+                fontFamily: 'var(--dp-font-family-primary)',
+                letterSpacing: '0.5px',
+                color: 'var(--dp-neutral-500)',
+                textTransform: 'uppercase'
               }}>
-                <Typography variant="caption" sx={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: 'var(--dp-neutral-100)',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                  letterSpacing: '0.5px'
+                HOURS
+              </Typography>
+              <Typography variant="h6" sx={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: 'var(--dp-warning-600)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                lineHeight: 1
+              }}>
+                {getFilteredSummary().totalHours.toFixed(1)}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* CENTER TOGGLE - part of grid */}
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 0.3,
+            width: 'auto'
+          }}>
+            <ToggleButtonGroup
+              value={timelineMode}
+              exclusive
+              onChange={handleTimelineChange}
+              size="small"
+              sx={{
+                backgroundColor: 'var(--dp-neutral-100)',
+                borderRadius: '12px',
+                padding: '4px',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                '& .MuiToggleButton-root': {
+                  backgroundColor: 'transparent',
+                  color: 'var(--dp-neutral-600)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  padding: '6px 12px',
+                  transition: 'all 0.2s ease-out',
+                  '&.Mui-selected': {
+                    backgroundColor: 'var(--dp-neutral-0)',
+                    color: 'var(--dp-primary-700)',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-1px)'
+                  },
+                  '&:hover': {
+                    backgroundColor: 'var(--dp-neutral-200)'
+                  }
+                }
+              }}
+            >
+              <ToggleButton value="DAILY">DAILY</ToggleButton>
+              <ToggleButton value="WEEKLY">WEEKLY</ToggleButton>
+              <ToggleButton value="MONTHLY">MONTHLY</ToggleButton>
+              <ToggleButton value="YEARLY">YEARLY</ToggleButton>
+            </ToggleButtonGroup>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+              <IconButton
+                size="small"
+                onClick={() => setCurrentPeriod(currentPeriod.subtract(1, timelineMode.toLowerCase() as any))}
+                sx={{
+                  width: '28px',
+                  height: '28px',
+                  backgroundColor: 'var(--dp-neutral-0)',
+                  border: '1px solid var(--dp-neutral-300)',
+                  borderRadius: '6px',
+                  color: 'var(--dp-neutral-700)',
+                  transition: 'all 0.2s ease-out',
+                  '&:hover': {
+                    backgroundColor: 'var(--dp-neutral-100)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)'
+                  }
                 }}>
-                  HOURS
-                </Typography>
-                <Typography variant="h6" sx={{
-                  fontSize: '18px',
-                  fontWeight: 800,
-                  color: 'var(--dp-neutral-0)',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                <ChevronLeft fontSize="small" />
+              </IconButton>
+              <Typography variant="body2" sx={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: 'var(--dp-neutral-700)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                minWidth: '120px',
+                textAlign: 'center'
+              }}>
+                {formatPeriodDisplay()}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => setCurrentPeriod(currentPeriod.add(1, timelineMode.toLowerCase() as any))}
+                sx={{
+                  width: '28px',
+                  height: '28px',
+                  backgroundColor: 'var(--dp-neutral-0)',
+                  border: '1px solid var(--dp-neutral-300)',
+                  borderRadius: '6px',
+                  color: 'var(--dp-neutral-700)',
+                  transition: 'all 0.2s ease-out',
+                  '&:hover': {
+                    backgroundColor: 'var(--dp-neutral-100)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)'
+                  }
                 }}>
-                  {formatHours(getFilteredSummary().totalHours)}
-                </Typography>
-              </CardContent>
-            </Card>
+                <ChevronRight fontSize="small" />
+              </IconButton>
+            </Box>
           </Box>
 
-          {/* Spacer for center area */}
-          <Box sx={{ width: '80px' }} />
-
-          {/* 2 KPIs AFTER toggle - grouped */}
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-            <Card sx={{
-              minWidth: '120px',
-              height: '60px',
-              background: 'var(--dp-neutral-800)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--dp-neutral-600)',
-              borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 var(--dp-neutral-200)'
-              }
+          {/* Third KPI - TASKS */}
+          <Card sx={{
+            width: '120px',
+            height: '70px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            border: '1px solid var(--dp-neutral-200)',
+            borderRadius: '16px',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+            transition: 'all 0.2s ease-out',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+            }
+          }}>
+            <CardContent sx={{
+              textAlign: 'center',
+              py: 3,
+              px: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 1
             }}>
-              <CardContent sx={{
-                textAlign: 'center',
-                py: 0.5,
-                px: 2,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
+              <Typography variant="caption" sx={{
+                fontSize: '11px',
+                fontWeight: 600,
+                fontFamily: 'var(--dp-font-family-primary)',
+                letterSpacing: '0.5px',
+                color: 'var(--dp-neutral-500)',
+                textTransform: 'uppercase'
               }}>
-                <Typography variant="caption" sx={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: 'var(--dp-neutral-100)',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                  letterSpacing: '0.5px'
-                }}>
-                  TASKS
-                </Typography>
-                <Typography variant="h6" sx={{
-                  fontSize: '18px',
-                  fontWeight: 800,
-                  color: 'var(--dp-neutral-0)',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-                }}>
-                  {getFilteredSummary().totalTasks}
-                </Typography>
-              </CardContent>
-            </Card>
+                TASKS
+              </Typography>
+              <Typography variant="h6" sx={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: 'var(--dp-success-600)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                lineHeight: 1
+              }}>
+                {getFilteredSummary().totalTasks}
+              </Typography>
+            </CardContent>
+          </Card>
 
-            <Card sx={{
-              minWidth: '120px',
-              height: '60px',
-              background: 'var(--dp-neutral-800)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--dp-neutral-600)',
-              borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 var(--dp-neutral-200)'
-              }
+          {/* Fourth KPI - PROJ/CLIENT */}
+          <Card sx={{
+            width: '120px',
+            height: '70px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            border: '1px solid var(--dp-neutral-200)',
+            borderRadius: '16px',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+            transition: 'all 0.2s ease-out',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+            }
+          }}>
+            <CardContent sx={{
+              textAlign: 'center',
+              py: 3,
+              px: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 1
             }}>
-              <CardContent sx={{
-                textAlign: 'center',
-                py: 0.5,
-                px: 2,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
+              <Typography variant="caption" sx={{
+                fontSize: '11px',
+                fontWeight: 600,
+                fontFamily: 'var(--dp-font-family-primary)',
+                letterSpacing: '0.5px',
+                color: 'var(--dp-neutral-500)',
+                textTransform: 'uppercase'
               }}>
-                <Typography variant="caption" sx={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: 'var(--dp-neutral-100)',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                  letterSpacing: '0.5px'
-                }}>
-                  PROJ/CLIENT
-                </Typography>
-                <Typography variant="h6" sx={{
-                  fontSize: '18px',
-                  fontWeight: 800,
-                  color: 'var(--dp-neutral-0)',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-                }}>
-                  {getFilteredSummary().averageProjectClient.toFixed(1)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Box>
+                PROJ/CLIENT
+              </Typography>
+              <Typography variant="h6" sx={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: 'var(--dp-info-600)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                lineHeight: 1
+              }}>
+                {getFilteredSummary().averageProjectClient.toFixed(1)}
+              </Typography>
+            </CardContent>
+          </Card>
 
-          {/* Right Logo + Close */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Right Tate Logo */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 2 }}>
             <img
               src="/assets/logos/tate-logo.png"
               alt="Tate"
               style={{
-                height: '50px',
+                height: '60px',
                 width: 'auto',
-                filter: 'brightness(0) invert(1)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                filter: 'var(--dp-logo-filter, none)'
               }}
             />
-            <IconButton onClick={onClose} sx={{
-              width: '28px',
-              height: '28px',
-              color: 'rgba(var(--dp-neutral-0-rgb), 0.9)',
-              backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.08)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(var(--dp-neutral-0-rgb), 0.15)',
-              borderRadius: '8px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.15)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
-              },
-              '& .MuiSvgIcon-root': {
-                fontSize: '18px'
-              }
-            }}>
-              <CloseIcon />
-            </IconButton>
           </Box>
         </Box>
       </Box>
@@ -1274,66 +1277,87 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
       }}>
 
         {/* LEFT SIDEBAR - Projects */}
-        <Box sx={{ width: '280px', display: 'flex', flexDirection: 'column', p: 0.5 }}>
+        <Box sx={{ width: '280px', display: 'flex', flexDirection: 'column', p: 1 }}>
           <Card sx={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, rgba(var(--dp-neutral-0-rgb), 0.25), rgba(var(--dp-neutral-0-rgb), 0.1))',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(var(--dp-neutral-0-rgb), 0.3)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(var(--dp-neutral-0-rgb), 0.2)',
+            borderRadius: '16px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            border: '1px solid var(--dp-neutral-200)',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
             position: 'relative',
             overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
-              pointerEvents: 'none',
-              zIndex: 0
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              borderColor: 'var(--dp-primary-200)'
             }
           }}>
             <CardContent sx={{
-              backgroundColor: 'var(--dp-primary-700) !important',
-              py: 0.5,
-              px: 2,
+              backgroundColor: 'var(--dp-neutral-0)',
+              borderBottom: '1px solid var(--dp-neutral-100)',
+              py: 0.75,
+              px: 2.5,
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              position: 'relative'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'var(--dp-neutral-0)' }}>
-                PROJECTS
+              <Typography variant="h6" sx={{
+                fontSize: '18px',
+                fontWeight: 600,
+                color: 'var(--dp-neutral-900)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                letterSpacing: '0',
+                textTransform: 'none'
+              }}>
+                Projects
               </Typography>
-              <Button size="small" onClick={() => setSelectedProjects([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'var(--dp-neutral-0)' }}>
-                clear
+              <Button size="small" onClick={() => setSelectedProjects([])} sx={{
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'var(--dp-neutral-600)',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                px: 0.75,
+                py: 0.25,
+                minWidth: 'auto',
+                minHeight: '28px',
+                height: '28px',
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-neutral-50)',
+                  color: 'var(--dp-neutral-700)',
+                  border: 'none'
+                }
+              }}>
+                Clear
               </Button>
             </CardContent>
             <Box sx={{
               flex: 1,
               overflow: 'auto',
-              px: 1,
-              py: 0.25,
-              background: 'linear-gradient(135deg, rgba(var(--dp-neutral-0-rgb), 0.15), rgba(var(--dp-neutral-0-rgb), 0.05))',
-              backdropFilter: 'blur(15px)',
-              borderRadius: '0 0 20px 20px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderTop: 'none',
+              px: 0,
+              py: 1,
+              backgroundColor: 'var(--dp-neutral-0)',
+              borderRadius: '0 0 16px 16px',
               position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
-                pointerEvents: 'none',
-                zIndex: 0
+              '&::-webkit-scrollbar': {
+                width: '6px',
+                height: '6px'
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: 'var(--dp-neutral-100)'
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'var(--dp-neutral-400)',
+                borderRadius: '3px',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-neutral-500)'
+                }
               }
             }}>
               <Box>
@@ -1344,56 +1368,83 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                                    (project.hours === 0); // Grey out if hours reduced to 0 by other filters
 
                   return (
-                    <Card
+                    <Box
                       key={index}
                       onClick={() => toggleProjectFilter(project.projectCode)}
                       sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        py: 1.5,
+                        px: 2,
                         mb: 0.5,
-                        backgroundColor: isSelected
-                          ? 'rgba(59, 130, 246, 0.2)'
-                          : 'var(--dp-neutral-0)',
-                        border: isSelected
-                          ? '2px solid #3B82F6'
-                          : '1px solid var(--dp-neutral-200)',
-                        borderRadius: 2,
+                        borderRadius: '12px',
                         cursor: 'pointer',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                        transition: 'all 0.2s',
-                        opacity: isFiltered ? 0.4 : 1,
+                        backgroundColor: isSelected
+                          ? 'var(--dp-primary-50)'
+                          : 'transparent',
+                        border: 'none',
+                        transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        opacity: isFiltered ? 0.6 : 1,
+                        pointerEvents: isFiltered ? 'none' : 'auto',
+
                         '&:hover': {
-                          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                          border: '2px solid #3B82F6',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                          transform: 'translateY(-1px)',
-                          opacity: 1
-                        }
+                          backgroundColor: isSelected
+                            ? 'var(--dp-primary-100)'
+                            : 'var(--dp-neutral-100)',
+                          transform: 'none',
+                          boxShadow: 'none'
+                        },
+
+                        '&::before': isSelected ? {
+                          content: '""',
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '4px',
+                          backgroundColor: 'var(--dp-primary-600)',
+                          borderRadius: '0 2px 2px 0'
+                        } : {}
                       }}
                     >
-                      <CardContent sx={{ px: 1.5, py: 1, '&:last-child': { pb: 1 } }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-neutral-700)'
-                            }}
-                          >
-                            {project.projectCode}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: '14px',
-                              fontWeight: 'bold',
-                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-primary-700)',
-                            }}
-                          >
-                            {formatHours(project.hours)}
-                          </Typography>
-                        </Box>
-                      </CardContent>
-                    </Card>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: '14px',
+                            fontWeight: isSelected ? 600 : 500,
+                            color: isSelected ? 'var(--dp-primary-700)' : 'var(--dp-neutral-700)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {project.projectCode}
+                        </Typography>
+                      </Box>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: isSelected ? 'var(--dp-primary-600)' : 'var(--dp-neutral-500)',
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          backgroundColor: isSelected ? 'var(--dp-primary-100)' : 'var(--dp-neutral-100)',
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: '6px',
+                          minWidth: '32px',
+                          textAlign: 'center'
+                        }}
+                      >
+                        {project.hours.toFixed(1)}h
+                      </Typography>
+                    </Box>
                   );
                 })}
               </Box>
@@ -1402,32 +1453,100 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         </Box>
 
         {/* CENTER - Charts and Summary */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0.5, gap: 0.5 }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, gap: 1 }}>
 
 
           {/* Charts Grid - Compact Layout */}
           <Box sx={{
             flex: 1,
             display: 'grid',
-            gridTemplateColumns: '2fr 1fr',
-            gridTemplateRows: '1fr 1fr',
-            gap: 0.5,
+            gridTemplateColumns: {
+              xs: '1fr', // Stack vertically on extra small screens
+              sm: '1fr', // Stack vertically on small screens
+              md: '3fr 2fr', // More balanced ratio on medium screens
+              lg: '2fr 1fr', // Original ratio on large screens
+              xl: '2fr 1fr'  // Original ratio on extra large screens
+            },
+            gridTemplateRows: {
+              xs: 'auto auto auto auto', // 4 rows when stacked
+              sm: 'auto auto auto auto', // 4 rows when stacked
+              md: '1fr 1fr', // 2 rows when side-by-side
+              lg: '1fr 1fr',
+              xl: '1fr 1fr'
+            },
+            gap: 1,
             minHeight: 0
           }}>
 
             {/* Project Hours Chart - Top Left (spans row 1) */}
-            <Card sx={{ gridRow: '1', gridColumn: '1', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '8px', backgroundColor: 'var(--dp-neutral-0) !important' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
+            <Card sx={{
+              gridRow: { xs: '1', sm: '1', md: '1', lg: '1', xl: '1' },
+              gridColumn: { xs: '1', sm: '1', md: '1', lg: '1', xl: '1' },
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+              borderRadius: '16px',
+              backgroundColor: 'var(--dp-neutral-0) !important',
+              border: '1px solid var(--dp-neutral-200)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                borderColor: 'var(--dp-primary-200)'
+              }
+            }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0 }}>
-                  <Typography variant="subtitle2" fontWeight="600" sx={{ fontSize: '14px', color: 'var(--dp-primary-700)' }}>
-                    PROJECT HOURS
+                  <Typography variant="h6" sx={{
+                    fontSize: '18px',
+                    fontWeight: 600,
+                    color: 'var(--dp-neutral-900)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    letterSpacing: '0',
+                    textTransform: 'none'
+                  }}>
+                    Project Hours
                   </Typography>
                   <FormControl size="small" sx={{ minWidth: 120 }}>
                     <Select
                       value={colorMode}
                       onChange={(e) => setColorMode(e.target.value as ColorMode)}
                       variant="outlined"
-                      sx={{ fontSize: '12px', height: '32px' }}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            backgroundColor: 'var(--dp-neutral-0)',
+                            border: '1px solid var(--dp-neutral-200)',
+                            '& .MuiMenuItem-root': {
+                              color: 'var(--dp-neutral-700)',
+                              '&:hover': {
+                                backgroundColor: 'var(--dp-neutral-100)'
+                              },
+                              '&.Mui-selected': {
+                                backgroundColor: 'var(--dp-primary-50)',
+                                '&:hover': {
+                                  backgroundColor: 'var(--dp-primary-100)'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }}
+                      sx={{
+                        fontSize: '12px',
+                        height: '32px',
+                        color: 'var(--dp-neutral-700)',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--dp-neutral-300)'
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--dp-neutral-400)'
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--dp-primary-500)'
+                        },
+                        '& .MuiSelect-icon': {
+                          color: 'var(--dp-neutral-700)'
+                        }
+                      }}
                     >
                       <MenuItem value="default">Default</MenuItem>
                       <MenuItem value="client">Client</MenuItem>
@@ -1459,12 +1578,16 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         dataKey="name"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 10, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 12, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        interval={0}
                       />
                       <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 11, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 13, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
                         tickFormatter={(value) => `${value}h`}
                         grid={false}
                       />
@@ -1475,13 +1598,16 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         ]}
                         labelFormatter={(label: string) => `Project: ${label}`}
                         contentStyle={{
-                          backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.75)',
+                          backgroundColor: 'var(--dp-neutral-0)',
                           border: '1px solid var(--dp-neutral-300)',
-                          borderRadius: '4px',
-                          fontSize: '12px'
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+                          color: 'var(--dp-neutral-600)',
+                          color: 'var(--dp-neutral-700)'
                         }}
                         itemStyle={{
-                          color: 'var(--dp-primary-500)'
+                          color: 'var(--dp-primary-600)'
                         }}
                         cursor={{fill: 'transparent'}}
                       />
@@ -1524,7 +1650,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           position="top"
                           formatter={(value: number) => `${value}%`}
                           style={{
-                            fontSize: '11px',
+                            fontSize: '13px',
                             fontWeight: '600',
                             fill: 'var(--dp-neutral-700)',
                             fontFamily: 'Roboto, sans-serif'
@@ -1538,30 +1664,58 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             </Card>
 
             {/* Category Distribution - Top Right (smaller square) */}
-            <Card sx={{ gridRow: '1', gridColumn: '2', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '8px', backgroundColor: 'var(--dp-neutral-0) !important' }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: 'var(--dp-primary-700)' }}>
-                  CATEGORY DISTRIBUTION
+            <Card sx={{
+              gridRow: { xs: '2', sm: '2', md: '1', lg: '1', xl: '1' },
+              gridColumn: { xs: '1', sm: '1', md: '2', lg: '2', xl: '2' },
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+              borderRadius: '16px',
+              backgroundColor: 'var(--dp-neutral-0) !important',
+              border: '1px solid var(--dp-neutral-200)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                borderColor: 'var(--dp-primary-200)'
+              }
+            }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+                <Typography variant="h6" sx={{
+                  mb: 0,
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  color: 'var(--dp-neutral-900)',
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  letterSpacing: '0',
+                  textTransform: 'none'
+                }}>
+                  Category Distribution
                 </Typography>
-                <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart style={{ backgroundColor: 'transparent' }}>
-                      <Pie
-                        data={(() => {
-                          const categoryData = getFilteredCategoryData() || [];
-                          const total = categoryData.reduce((sum, cat) => sum + cat.hours, 0);
-                          return categoryData.map(cat => ({
-                            name: cat.categoryName,
-                            value: cat.hours,
-                            color: cat.color,
-                            percentage: total > 0 ? Math.round((cat.hours / total) * 100) : 0
-                          }));
-                        })()}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={65}
-                        outerRadius={110}
+                <ResponsiveChartContainer minHeight={250} aspectRatio={1}>
+                  {({ width, height }) => {
+                    const size = Math.min(width, height);
+                    const outerRadius = Math.min(110, size * 0.4);
+                    const innerRadius = outerRadius * 0.6; // Maintain donut hole ratio
+
+                    return (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart style={{ backgroundColor: 'transparent' }}>
+                          <Pie
+                            data={(() => {
+                              const categoryData = getFilteredCategoryData() || [];
+                              const total = categoryData.reduce((sum, cat) => sum + cat.hours, 0);
+                              return categoryData.map(cat => ({
+                                name: cat.categoryName,
+                                value: cat.hours,
+                                color: cat.color,
+                                percentage: total > 0 ? Math.round((cat.hours / total) * 100) : 0
+                              }));
+                            })()}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={innerRadius}
+                            outerRadius={outerRadius}
                         paddingAngle={2}
+                        stroke="none"
                         cornerRadius={6}
                         dataKey="value"
                         isAnimationActive={true}
@@ -1579,12 +1733,13 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             <text
                               x={x}
                               y={y}
-                              fill="var(--dp-neutral-0)"
+                              fill="white"
                               textAnchor="middle"
                               dominantBaseline="central"
                               fontSize="14px"
                               fontWeight="700"
                               fontFamily="Roboto, sans-serif"
+                              style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
                             >
                               {`${Math.round(percent * 100)}%`}
                             </text>
@@ -1618,45 +1773,70 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           `${value}h`,
                           `${name}`
                         ]}
-                        labelFormatter={(label: string) => `Category: ${label}`}
-                        contentStyle={{
-                          backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.75)',
-                          border: '1px solid var(--dp-neutral-300)',
-                          borderRadius: '4px',
-                          fontSize: '12px'
-                        }}
-                      />
-                      <Legend
-                        verticalAlign="middle"
-                        align="right"
-                        layout="vertical"
-                        iconType="circle"
-                        wrapperStyle={{
-                          fontSize: '12px',
-                          paddingLeft: '10px',
-                          lineHeight: '24px'
-                        }}
-                        formatter={(value, entry) => (
-                          <span style={{ color: 'var(--dp-neutral-900)', fontSize: '12px' }}>{value}</span>
-                        )}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Box>
+                            labelFormatter={(label: string) => `Category: ${label}`}
+                            contentStyle={{
+                              backgroundColor: 'var(--dp-neutral-0)',
+                              border: '1px solid var(--dp-neutral-300)',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+                              color: 'var(--dp-neutral-600)'
+                            }}
+                            labelStyle={{
+                              color: 'var(--dp-neutral-600)'
+                            }}
+                            itemStyle={{
+                              color: 'var(--dp-neutral-600)'
+                            }}
+                          />
+                          <Legend
+                            verticalAlign={width < 300 ? "bottom" : "middle"}
+                            align={width < 300 ? "center" : "right"}
+                            layout={width < 300 ? "horizontal" : "vertical"}
+                            iconType="circle"
+                            wrapperStyle={{
+                              fontSize: '12px',
+                              paddingLeft: width < 300 ? '0px' : '10px',
+                              lineHeight: '24px'
+                            }}
+                            formatter={(value, entry) => (
+                              <span style={{ color: 'var(--dp-neutral-900)', fontSize: '12px' }}>{value}</span>
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    );
+                  }}
+                </ResponsiveChartContainer>
               </CardContent>
             </Card>
 
             {/* Task Types Chart - Bottom Left */}
             <Card sx={{
-              gridRow: '2',
-              gridColumn: '1',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              borderRadius: '8px',
-              backgroundColor: 'var(--dp-neutral-0) !important'
+              gridRow: { xs: '3', sm: '3', md: '2', lg: '2', xl: '2' },
+              gridColumn: { xs: '1', sm: '1', md: '1', lg: '1', xl: '1' },
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+              borderRadius: '16px',
+              backgroundColor: 'var(--dp-neutral-0) !important',
+              border: '1px solid var(--dp-neutral-200)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                borderColor: 'var(--dp-primary-200)'
+              }
             }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: 'var(--dp-primary-700)' }}>
-                  TASK TYPES
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+                <Typography variant="h6" sx={{
+                  mb: 0,
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  color: 'var(--dp-neutral-900)',
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  letterSpacing: '0',
+                  textTransform: 'none'
+                }}>
+                  Task Types
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
                   <ResponsiveContainer width="100%" height="100%">
@@ -1684,10 +1864,11 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                       <YAxis
                         type="category"
                         dataKey="name"
-                        tick={{ fontSize: 11, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 13, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
                         axisLine={false}
                         tickLine={false}
-                        width={100}
+                        width={115}
+                        interval={0}
                       />
                       <Tooltip
                         formatter={(value: number, name: string, props: any) => [
@@ -1696,10 +1877,13 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         ]}
                         labelFormatter={(label: string) => `Task Type: ${label}`}
                         contentStyle={{
-                          backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.75)',
+                          backgroundColor: 'var(--dp-neutral-0)',
                           border: '1px solid var(--dp-neutral-300)',
-                          borderRadius: '4px',
-                          fontSize: '12px'
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+                          color: 'var(--dp-neutral-600)',
+                          color: 'var(--dp-neutral-700)'
                         }}
                         cursor={{fill: 'transparent'}}
                       />
@@ -1738,7 +1922,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           position="right"
                           formatter={(value: number) => `${value}%`}
                           style={{
-                            fontSize: '11px',
+                            fontSize: '13px',
                             fontWeight: '600',
                             fill: 'var(--dp-neutral-700)',
                             fontFamily: 'Roboto, sans-serif'
@@ -1753,35 +1937,57 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
 
             {/* Client Distribution - Bottom Right (smaller square) */}
             <Card sx={{
-              gridRow: '2',
-              gridColumn: '2',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              borderRadius: '8px',
-              backgroundColor: 'var(--dp-neutral-0) !important'
+              gridRow: { xs: '4', sm: '4', md: '2', lg: '2', xl: '2' },
+              gridColumn: { xs: '1', sm: '1', md: '2', lg: '2', xl: '2' },
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+              borderRadius: '16px',
+              backgroundColor: 'var(--dp-neutral-0) !important',
+              border: '1px solid var(--dp-neutral-200)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                borderColor: 'var(--dp-primary-200)'
+              }
             }}>
-              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pt: 0.5, pr: 0.5, pb: 0, pl: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0, fontSize: '14px', color: 'var(--dp-primary-700)' }}>
-                  CLIENT DISTRIBUTION
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+                <Typography variant="h6" sx={{
+                  mb: 0,
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  color: 'var(--dp-neutral-900)',
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  letterSpacing: '0',
+                  textTransform: 'none'
+                }}>
+                  Client Distribution
                 </Typography>
-                <Box sx={{ flex: 1, minHeight: 0, height: 250 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart style={{ backgroundColor: 'transparent' }}>
-                      <Pie
-                        data={(() => {
-                          const clientData = getFilteredClientData() || [];
-                          const total = clientData.reduce((sum, client) => sum + client.hours, 0);
-                          return clientData.map(client => ({
-                            name: client.clientName,
-                            value: client.hours,
-                            color: client.clientColor,
-                            percentage: total > 0 ? Math.round((client.hours / total) * 100) : 0
-                          }));
-                        })()}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={65}
-                        outerRadius={110}
+                <ResponsiveChartContainer minHeight={250} aspectRatio={1}>
+                  {({ width, height }) => {
+                    const size = Math.min(width, height);
+                    const outerRadius = Math.min(110, size * 0.4);
+                    const innerRadius = outerRadius * 0.6; // Maintain donut hole ratio
+
+                    return (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart style={{ backgroundColor: 'transparent' }}>
+                          <Pie
+                            data={(() => {
+                              const clientData = getFilteredClientData() || [];
+                              const total = clientData.reduce((sum, client) => sum + client.hours, 0);
+                              return clientData.map(client => ({
+                                name: client.clientName,
+                                value: client.hours,
+                                color: client.clientColor,
+                                percentage: total > 0 ? Math.round((client.hours / total) * 100) : 0
+                              }));
+                            })()}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={innerRadius}
+                            outerRadius={outerRadius}
                         paddingAngle={2}
+                        stroke="none"
                         cornerRadius={6}
                         dataKey="value"
                         isAnimationActive={true}
@@ -1799,12 +2005,13 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             <text
                               x={x}
                               y={y}
-                              fill="var(--dp-neutral-0)"
+                              fill="white"
                               textAnchor="middle"
                               dominantBaseline="central"
                               fontSize="14px"
                               fontWeight="700"
                               fontFamily="Roboto, sans-serif"
+                              style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
                             >
                               {`${Math.round(percent * 100)}%`}
                             </text>
@@ -1838,152 +2045,242 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           `${value}h`,
                           `${name}`
                         ]}
-                        labelFormatter={(label: string) => `Client: ${label}`}
-                        contentStyle={{
-                          backgroundColor: 'rgba(var(--dp-neutral-0-rgb), 0.75)',
-                          border: '1px solid var(--dp-neutral-300)',
-                          borderRadius: '4px',
-                          fontSize: '12px'
-                        }}
-                      />
-                      <Legend
-                        verticalAlign="middle"
-                        align="right"
-                        layout="vertical"
-                        iconType="circle"
-                        wrapperStyle={{
-                          fontSize: '12px',
-                          paddingLeft: '10px',
-                          lineHeight: '24px'
-                        }}
-                        formatter={(value, entry) => (
-                          <span style={{ color: 'var(--dp-neutral-900)', fontSize: '12px' }}>{value}</span>
-                        )}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Box>
+                            labelFormatter={(label: string) => `Client: ${label}`}
+                            contentStyle={{
+                              backgroundColor: 'var(--dp-neutral-0)',
+                              border: '1px solid var(--dp-neutral-300)',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+                              color: 'var(--dp-neutral-600)'
+                            }}
+                            labelStyle={{
+                              color: 'var(--dp-neutral-600)'
+                            }}
+                            itemStyle={{
+                              color: 'var(--dp-neutral-600)'
+                            }}
+                          />
+                          <Legend
+                            verticalAlign={width < 300 ? "bottom" : "middle"}
+                            align={width < 300 ? "center" : "right"}
+                            layout={width < 300 ? "horizontal" : "vertical"}
+                            iconType="circle"
+                            wrapperStyle={{
+                              fontSize: '12px',
+                              paddingLeft: width < 300 ? '0px' : '10px',
+                              lineHeight: '24px'
+                            }}
+                            formatter={(value, entry) => (
+                              <span style={{ color: 'var(--dp-neutral-900)', fontSize: '12px' }}>{value}</span>
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    );
+                  }}
+                </ResponsiveChartContainer>
               </CardContent>
             </Card>
           </Box>
         </Box>
 
         {/* RIGHT SIDEBAR - Team & Clients */}
-        <Box sx={{ width: '280px', display: 'flex', flexDirection: 'column', p: 0.5, gap: 0.5 }}>
+        <Box sx={{ width: '280px', display: 'flex', flexDirection: 'column', p: 1, gap: 1 }}>
 
           {/* Team Card */}
           <Card sx={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, rgba(var(--dp-neutral-0-rgb), 0.25), rgba(var(--dp-neutral-0-rgb), 0.1))',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(var(--dp-neutral-0-rgb), 0.3)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(var(--dp-neutral-0-rgb), 0.2)',
+            borderRadius: '16px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            border: '1px solid var(--dp-neutral-200)',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
             position: 'relative',
             overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
-              pointerEvents: 'none',
-              zIndex: 0
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              borderColor: 'var(--dp-primary-200)'
             }
           }}>
             <CardContent sx={{
-              backgroundColor: 'var(--dp-primary-700) !important',
-              py: 0.5,
-              px: 2,
+              backgroundColor: 'var(--dp-neutral-0)',
+              borderBottom: '1px solid var(--dp-neutral-100)',
+              py: 0.75,
+              px: 2.5,
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              position: 'relative'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'var(--dp-neutral-0)' }}>
-                TEAM
+              <Typography variant="h6" sx={{
+                fontSize: '18px',
+                fontWeight: 600,
+                color: 'var(--dp-neutral-900)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                letterSpacing: '0',
+                textTransform: 'none'
+              }}>
+                Team
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Button
                   size="small"
                   onClick={handleTeamFilterToggle}
                   sx={{
-                    fontSize: '12px',
-                    minWidth: '50px',
-                    color: 'var(--dp-neutral-0)',
-                    backgroundColor: teamFilters.length > 0 ? 'rgba(255,255,255,0.2)' : 'transparent',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: 'var(--dp-neutral-600)',
+                    backgroundColor: teamFilters.length > 0 ? 'var(--dp-primary-50)' : 'transparent',
+                    border: 'none',
+                    borderRadius: '6px',
+                    px: 0.75,
+                    py: 0.25,
+                    minWidth: 'auto',
+                    minHeight: '28px',
+                    height: '28px',
+                    textTransform: 'none',
                     '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,0.3)'
+                      backgroundColor: 'var(--dp-neutral-50)',
+                      color: 'var(--dp-neutral-700)',
+                      border: 'none'
                     }
                   }}
                 >
-                  {teamFilters.length > 0 ? `filter (${teamFilters.length})` : 'filter'}
+                  {teamFilters.length > 0 ? `Filter (${teamFilters.length})` : 'Filter'}
                 </Button>
-                <Button size="small" onClick={() => setSelectedTeamMembers([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'var(--dp-neutral-0)' }}>
-                  clear
+                <Button size="small" onClick={() => setSelectedTeamMembers([])} sx={{
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: 'var(--dp-neutral-600)',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderRadius: '6px',
+                  px: 0.75,
+                  py: 0.25,
+                  minWidth: 'auto',
+                  minHeight: '28px',
+                  height: '28px',
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    color: 'var(--dp-neutral-700)',
+                    border: 'none'
+                  }
+                }}>
+                  Clear
                 </Button>
               </Box>
             </CardContent>
-            <Box sx={{ flex: 1, overflow: 'auto', px: 1, py: 0.25 }}>
+            <Box sx={{
+              flex: 1,
+              overflow: 'auto',
+              px: 0,
+              py: 1,
+              backgroundColor: 'var(--dp-neutral-0)',
+              borderRadius: '0 0 16px 16px',
+              position: 'relative',
+              '&::-webkit-scrollbar': {
+                width: '6px',
+                height: '6px'
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: 'var(--dp-neutral-100)'
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'var(--dp-neutral-400)',
+                borderRadius: '3px',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-neutral-500)'
+                }
+              }
+            }}>
               <Box>
                 {getFilteredTeamMembersForSidebar().map((employee, index) => {
                   const isSelected = selectedTeamMembers.includes(employee.employeeId);
                   const isFiltered = (selectedTeamMembers.length > 0 && !isSelected) || employee.totalHours === 0;
 
                   return (
-                    <Card
+                    <Box
                       key={index}
                       onClick={() => toggleTeamMemberFilter(employee.employeeId)}
                       sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        py: 1.5,
+                        px: 2,
                         mb: 0.5,
-                        backgroundColor: isSelected
-                          ? 'rgba(59, 130, 246, 0.2)'
-                          : 'var(--dp-neutral-0)',
-                        border: isSelected
-                          ? '2px solid #3B82F6'
-                          : '1px solid var(--dp-neutral-200)',
-                        borderRadius: 2,
+                        borderRadius: '12px',
                         cursor: 'pointer',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                        transition: 'all 0.2s',
-                        opacity: isFiltered ? 0.4 : 1,
+                        backgroundColor: isSelected
+                          ? 'var(--dp-primary-50)'
+                          : 'transparent',
+                        border: 'none',
+                        transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        opacity: isFiltered ? 0.6 : 1,
+                        pointerEvents: isFiltered ? 'none' : 'auto',
+
                         '&:hover': {
-                          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                          border: '2px solid #3B82F6',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                          transform: 'translateY(-1px)',
-                          opacity: 1
-                        }
+                          backgroundColor: isSelected
+                            ? 'var(--dp-primary-100)'
+                            : 'var(--dp-neutral-100)',
+                          transform: 'none',
+                          boxShadow: 'none'
+                        },
+
+                        '&::before': isSelected ? {
+                          content: '""',
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '4px',
+                          backgroundColor: 'var(--dp-primary-600)',
+                          borderRadius: '0 2px 2px 0'
+                        } : {}
                       }}
                     >
-                      <CardContent sx={{ px: 1.5, py: 1, '&:last-child': { pb: 1 } }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-neutral-700)'
-                            }}
-                          >
-                            {employee.employeeName}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: '14px',
-                              fontWeight: 'bold',
-                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-primary-700)',
-                            }}
-                          >
-                            {formatHours(employee.totalHours)}
-                          </Typography>
-                        </Box>
-                      </CardContent>
-                    </Card>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: '14px',
+                            fontWeight: isSelected ? 600 : 500,
+                            color: isSelected ? 'var(--dp-primary-700)' : 'var(--dp-neutral-700)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {employee.employeeName}
+                        </Typography>
+                      </Box>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: isSelected ? 'var(--dp-primary-600)' : 'var(--dp-neutral-500)',
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          backgroundColor: isSelected ? 'var(--dp-primary-100)' : 'var(--dp-neutral-100)',
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: '6px',
+                          minWidth: '32px',
+                          textAlign: 'center'
+                        }}
+                      >
+                        {employee.totalHours.toFixed(1)}h
+                      </Typography>
+                    </Box>
                   );
                 })}
               </Box>
@@ -1995,97 +2292,167 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, rgba(var(--dp-neutral-0-rgb), 0.25), rgba(var(--dp-neutral-0-rgb), 0.1))',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(var(--dp-neutral-0-rgb), 0.3)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(var(--dp-neutral-0-rgb), 0.2)',
+            borderRadius: '16px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            border: '1px solid var(--dp-neutral-200)',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
             position: 'relative',
             overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
-              pointerEvents: 'none',
-              zIndex: 0
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              borderColor: 'var(--dp-primary-200)'
             }
           }}>
             <CardContent sx={{
-              backgroundColor: 'var(--dp-primary-700) !important',
-              py: 0.5,
-              px: 2,
+              backgroundColor: 'var(--dp-neutral-0)',
+              borderBottom: '1px solid var(--dp-neutral-100)',
+              py: 0.75,
+              px: 2.5,
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              position: 'relative'
             }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: '16px', color: 'var(--dp-neutral-0)' }}>
-                CLIENTS
+              <Typography variant="h6" sx={{
+                fontSize: '18px',
+                fontWeight: 600,
+                color: 'var(--dp-neutral-900)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                letterSpacing: '0',
+                textTransform: 'none'
+              }}>
+                Clients
               </Typography>
-              <Button size="small" onClick={() => setSelectedClients([])} sx={{ fontSize: '12px', minWidth: '30px', color: 'var(--dp-neutral-0)' }}>
-                clear
+              <Button size="small" onClick={() => setSelectedClients([])} sx={{
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'var(--dp-neutral-600)',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                px: 0.75,
+                py: 0.25,
+                minWidth: 'auto',
+                minHeight: '28px',
+                height: '28px',
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-neutral-50)',
+                  color: 'var(--dp-neutral-700)',
+                  border: 'none'
+                }
+              }}>
+                Clear
               </Button>
             </CardContent>
-            <Box sx={{ flex: 1, overflow: 'auto', px: 1, py: 0.25 }}>
+            <Box sx={{
+              flex: 1,
+              overflow: 'auto',
+              px: 0,
+              py: 1,
+              backgroundColor: 'var(--dp-neutral-0)',
+              borderRadius: '0 0 16px 16px',
+              position: 'relative',
+              '&::-webkit-scrollbar': {
+                width: '6px',
+                height: '6px'
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: 'var(--dp-neutral-100)'
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'var(--dp-neutral-400)',
+                borderRadius: '3px',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-neutral-500)'
+                }
+              }
+            }}>
               <Box>
                 {getFilteredClientsForSidebar().map((client, index) => {
                   const isSelected = selectedClients.includes(client.clientCode);
                   const isFiltered = (selectedClients.length > 0 && !isSelected) || client.hours === 0;
 
                   return (
-                    <Card
+                    <Box
                       key={index}
                       onClick={() => toggleClientFilter(client.clientCode)}
                       sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        py: 1.5,
+                        px: 2,
                         mb: 0.5,
-                        backgroundColor: isSelected
-                          ? 'rgba(59, 130, 246, 0.2)'
-                          : 'var(--dp-neutral-0)',
-                        border: isSelected
-                          ? '2px solid #3B82F6'
-                          : '1px solid var(--dp-neutral-200)',
-                        borderRadius: 2,
+                        borderRadius: '12px',
                         cursor: 'pointer',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                        transition: 'all 0.2s',
-                        opacity: isFiltered ? 0.4 : 1,
+                        backgroundColor: isSelected
+                          ? 'var(--dp-primary-50)'
+                          : 'transparent',
+                        border: 'none',
+                        transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        opacity: isFiltered ? 0.6 : 1,
+                        pointerEvents: isFiltered ? 'none' : 'auto',
+
                         '&:hover': {
-                          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                          border: '2px solid #3B82F6',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                          transform: 'translateY(-1px)',
-                          opacity: 1
-                        }
+                          backgroundColor: isSelected
+                            ? 'var(--dp-primary-100)'
+                            : 'var(--dp-neutral-100)',
+                          transform: 'none',
+                          boxShadow: 'none'
+                        },
+
+                        '&::before': isSelected ? {
+                          content: '""',
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '4px',
+                          backgroundColor: 'var(--dp-primary-600)',
+                          borderRadius: '0 2px 2px 0'
+                        } : {}
                       }}
                     >
-                      <CardContent sx={{ px: 1.5, py: 1, '&:last-child': { pb: 1 } }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-neutral-700)'
-                            }}
-                          >
-                            {client.clientName}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: '14px',
-                              fontWeight: 'bold',
-                              color: isFiltered ? 'var(--dp-neutral-400)' : 'var(--dp-primary-700)',
-                            }}
-                          >
-                            {formatHours(client.hours)}
-                          </Typography>
-                        </Box>
-                      </CardContent>
-                    </Card>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: '14px',
+                            fontWeight: isSelected ? 600 : 500,
+                            color: isSelected ? 'var(--dp-primary-700)' : 'var(--dp-neutral-700)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {client.clientName}
+                        </Typography>
+                      </Box>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: isSelected ? 'var(--dp-primary-600)' : 'var(--dp-neutral-500)',
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          backgroundColor: isSelected ? 'var(--dp-primary-100)' : 'var(--dp-neutral-100)',
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: '6px',
+                          minWidth: '32px',
+                          textAlign: 'center'
+                        }}
+                      >
+                        {client.hours.toFixed(1)}h
+                      </Typography>
+                    </Box>
                   );
                 })}
               </Box>
@@ -2143,12 +2510,12 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               <Box sx={{ mb: 2 }}>
                 <Button
                   fullWidth
-                  variant="outlined"
+                  variant="text"
                   onClick={clearTeamFilters}
                   disabled={teamFilters.length === 0}
                   sx={{
                     color: 'var(--dp-primary-700)',
-                    borderColor: 'var(--dp-primary-700)',
+                    border: 'none',
                     '&:hover': {
                       backgroundColor: 'rgba(0, 38, 92, 0.1)'
                     }
@@ -2208,28 +2575,17 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         </>
       )}
 
-      {/* Footer with Filters - iOS Glassmorphism Style */}
+      {/* Footer with Category Filters - Clean Professional Style */}
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         px: 3,
-        py: 1.5,
-        background: 'linear-gradient(135deg, var(--dp-primary-800), var(--dp-primary-700))',
-        backdropFilter: 'blur(20px)',
-        borderTop: '1px solid var(--dp-neutral-600)',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)',
-          pointerEvents: 'none'
-        }
+        py: 2,
+        backgroundColor: 'var(--dp-neutral-0)',
+        borderTop: '1px solid var(--dp-neutral-200)',
+        boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)',
+        position: 'relative'
       }}>
         {/* Category Filters */}
         <Box sx={{ display: 'flex', gap: 1, position: 'relative', zIndex: 1 }}>
@@ -2239,37 +2595,33 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               label={category.name}
               onClick={() => toggleCategoryFilter(category.id)}
               sx={{
-                background: selectedCategories.includes(category.id) ?
-                  'var(--dp-neutral-0)' :
-                  'var(--dp-neutral-800)',
-                backdropFilter: 'blur(20px)',
+                backgroundColor: selectedCategories.includes(category.id) ?
+                  'var(--dp-primary-600)' :
+                  'var(--dp-neutral-100)',
                 color: selectedCategories.includes(category.id) ?
-                  'var(--dp-neutral-900)' :
-                  'var(--dp-neutral-0)',
-                border: selectedCategories.includes(category.id) ?
-                  '1px solid var(--dp-neutral-300)' :
-                  '1px solid var(--dp-neutral-600)',
-                borderRadius: '20px',
-                fontWeight: 600,
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif',
-                fontSize: '12px',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: selectedCategories.includes(category.id) ?
-                  '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 var(--dp-neutral-200)' :
-                  '0 4px 12px rgba(0, 0, 0, 0.08)',
+                  'var(--dp-neutral-0)' :
+                  'var(--dp-neutral-700)',
+                border: '1px solid var(--dp-neutral-200)',
+                borderRadius: '16px',
+                fontWeight: selectedCategories.includes(category.id) ? 600 : 500,
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontSize: '14px',
+                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                boxShadow: 'none',
                 '&:hover': {
-                  background: selectedCategories.includes(category.id) ?
-                    'var(--dp-neutral-0)' :
-                    'var(--dp-neutral-700)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+                  backgroundColor: selectedCategories.includes(category.id) ?
+                    'var(--dp-primary-700)' :
+                    'var(--dp-neutral-200)',
+                  transform: 'none',
+                  boxShadow: 'none'
                 },
                 '&:active': {
-                  transform: 'translateY(0px)'
+                  transform: 'none'
                 },
                 '& .MuiChip-label': {
                   px: 2,
-                  py: 0.5
+                  py: 0.5,
+                  fontWeight: 'inherit'
                 }
               }}
             />
