@@ -1572,13 +1572,13 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           categoryName: p.categoryName
                         }));
                       })()}
-                      margin={{ top: 80, right: 5, left: 0, bottom: 0 }}
+                      margin={{ top: 80, right: 5, left: 0, bottom: 20 }}
                     >
                       <XAxis
                         dataKey="name"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 12, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 12, fill: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}
                         angle={-45}
                         textAnchor="end"
                         height={60}
@@ -1587,7 +1587,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                       <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 13, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 13, fill: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}
                         tickFormatter={(value) => `${value}h`}
                         grid={false}
                       />
@@ -1649,12 +1649,33 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           dataKey="percentage"
                           position="top"
                           formatter={(value: number) => `${value}%`}
-                          style={{
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            fill: 'var(--dp-neutral-700)',
-                            fontFamily: 'Roboto, sans-serif'
-                          }}
+                          style={(() => {
+                            const projectData = getProjectChartData() || [];
+                            const projectCount = projectData.length;
+
+                            // Calculate responsive font size based on project count
+                            let labelFontSize;
+                            if (projectCount <= 3) {
+                              labelFontSize = '16px'; // Very few projects - use extra large font
+                            } else if (projectCount <= 6) {
+                              labelFontSize = '14px'; // Few projects - use large font
+                            } else if (projectCount <= 10) {
+                              labelFontSize = '13px'; // Medium projects - use good medium font
+                            } else if (projectCount <= 15) {
+                              labelFontSize = '12px'; // Many projects - still readable
+                            } else if (projectCount <= 20) {
+                              labelFontSize = '11px'; // Lots of projects - smaller but visible
+                            } else {
+                              labelFontSize = '10px'; // 20+ projects - smallest size
+                            }
+
+                            return {
+                              fontSize: labelFontSize,
+                              fontWeight: '600',
+                              fill: 'var(--dp-neutral-700)',
+                              fontFamily: 'var(--dp-font-family-primary)'
+                            };
+                          })()}
                         />
                       </Bar>
                     </BarChart>
@@ -1738,7 +1759,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                               dominantBaseline="central"
                               fontSize="14px"
                               fontWeight="700"
-                              fontFamily="Roboto, sans-serif"
+                              fontFamily="var(--dp-font-family-primary)"
                               style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
                             >
                               {`${Math.round(percent * 100)}%`}
@@ -1864,7 +1885,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                       <YAxis
                         type="category"
                         dataKey="name"
-                        tick={{ fontSize: 13, fill: 'var(--dp-neutral-600)', fontFamily: 'Roboto, sans-serif' }}
+                        tick={{ fontSize: 13, fill: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}
                         axisLine={false}
                         tickLine={false}
                         width={115}
@@ -1925,7 +1946,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                             fontSize: '13px',
                             fontWeight: '600',
                             fill: 'var(--dp-neutral-700)',
-                            fontFamily: 'Roboto, sans-serif'
+                            fontFamily: 'var(--dp-font-family-primary)'
                           }}
                         />
                       </Bar>
@@ -2010,7 +2031,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                               dominantBaseline="central"
                               fontSize="14px"
                               fontWeight="700"
-                              fontFamily="Roboto, sans-serif"
+                              fontFamily="var(--dp-font-family-primary)"
                               style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
                             >
                               {`${Math.round(percent * 100)}%`}
