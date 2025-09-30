@@ -71,6 +71,24 @@
   --dp-info-700:    #1d4ed8;    /* Info active */
 
   /* =======================================================================
+     TATE BRAND COLORS
+     Official Tate brand colors from brand guidelines
+     ======================================================================= */
+
+  /* Tate Oxford Blue - Primary Brand Color */
+  --dp-tate-oxford-blue: #00265C;     /* R:0, G:39, B:93 - Primary brand */
+  --dp-tate-oxford-blue-dark: #001a3f; /* Darker shade for borders/depth */
+  --dp-tate-oxford-blue-light: #1a4576; /* Lighter shade for hover states */
+
+  /* Tate Capri Blue - Secondary Brand Color */
+  --dp-tate-capri-blue: #0099FF;      /* R:0, G:153, B:255 - Secondary brand */
+  --dp-tate-capri-blue-dark: #0066cc; /* Darker shade for hover states */
+  --dp-tate-capri-blue-light: #33aaff; /* Lighter shade for backgrounds */
+
+  /* Logo Filter System - Light Mode */
+  --dp-logo-filter: none;             /* Keep original colors in light mode */
+
+  /* =======================================================================
      TYPOGRAPHY SYSTEM
      Material Design 3 inspired typography scale with professional fonts
      ======================================================================= */
@@ -247,6 +265,9 @@
   --dp-info-500:    #60a5fa;    /* Brighter info in dark */
   --dp-info-600:    #93c5fd;    /* Brighter hover */
   --dp-info-700:    #bfdbfe;    /* Brightest active */
+
+  /* Logo Filter System - Dark Mode */
+  --dp-logo-filter: brightness(0) invert(1); /* Make logos white in dark mode */
 
   /* Shadows adjusted for dark mode */
   --dp-shadow-sm:  0 1px 2px 0 rgba(0, 0, 0, 0.4);
