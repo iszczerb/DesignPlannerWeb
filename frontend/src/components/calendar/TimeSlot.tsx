@@ -325,7 +325,7 @@ const TimeSlot: React.FC<ExtendedTimeSlotProps> = ({
         ...getSlotStyle(),
         ...(isHovered && !isReadOnly && !isOver && !slotData?.leave && {
           borderColor: '#3b82f6',
-          backgroundColor: '#fafbff',
+          backgroundColor: 'rgba(51, 170, 255, 0.15)',
           transform: 'translateY(-1px)',
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
         }),

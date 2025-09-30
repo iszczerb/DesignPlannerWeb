@@ -156,7 +156,7 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
         projectService.getClients(),
         projectService.getTaskTypes()
       ]);
-      setClients(clientsData);
+      setClients(clientsData.sort((a, b) => a.name.localeCompare(b.name)));
       setTaskTypes(taskTypesData);
     } catch (error) {
       console.error('❌ TaskCreationModal: Error loading clients and task types:', error);
@@ -177,7 +177,7 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
     if (newClient) {
       try {
         const projectsData = await projectService.getProjectsByClient(newClient.id);
-        setProjects(projectsData);
+        setProjects(projectsData.sort((a, b) => a.name.localeCompare(b.name)));
       } catch (error) {
         console.error('Error loading projects:', error);
         setProjects([]);

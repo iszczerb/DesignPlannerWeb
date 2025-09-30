@@ -671,6 +671,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               mt: 1.5,
               borderRadius: '8px',
               minWidth: 180,
+              backgroundColor: 'var(--dp-neutral-0)',
+              border: '1px solid var(--dp-neutral-200)',
+              '& .MuiMenuItem-root': {
+                color: 'var(--dp-neutral-700)',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-neutral-100)',
+                },
+              },
               '&:before': {
                 content: '""',
                 display: 'block',
@@ -679,9 +687,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                 right: 14,
                 width: 10,
                 height: 10,
-                bgcolor: 'background.paper',
+                bgcolor: 'var(--dp-neutral-0)',
                 transform: 'translateY(-50%) rotate(45deg)',
                 zIndex: 0,
+                border: '1px solid var(--dp-neutral-200)',
               },
             },
           }}
@@ -693,7 +702,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             sx={{ py: 1, px: 2 }}
           >
             <ListItemIcon>
-              <PersonIcon fontSize="small" />
+              <PersonIcon fontSize="small" sx={{ color: 'var(--dp-neutral-500)' }} />
             </ListItemIcon>
             Profile
           </MenuItem>
@@ -702,7 +711,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             sx={{ py: 1, px: 2 }}
           >
             <ListItemIcon>
-              <SettingsIcon fontSize="small" />
+              <SettingsIcon fontSize="small" sx={{ color: 'var(--dp-neutral-500)' }} />
             </ListItemIcon>
             Settings
           </MenuItem>
@@ -738,6 +747,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               mt: 1.5,
               borderRadius: '8px',
               minWidth: 180,
+              backgroundColor: 'var(--dp-neutral-0)',
+              border: '1px solid var(--dp-neutral-200)',
+              '& .MuiMenuItem-root': {
+                color: 'var(--dp-neutral-700)',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-neutral-100)',
+                },
+              },
             },
           }}
           transformOrigin={{ horizontal: 'left', vertical: 'top' }}
@@ -788,6 +805,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               mt: 1.5,
               borderRadius: '8px',
               minWidth: 120,
+              backgroundColor: 'var(--dp-neutral-0)',
+              border: '1px solid var(--dp-neutral-200)',
+              '& .MuiMenuItem-root': {
+                color: 'var(--dp-neutral-700)',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-neutral-100)',
+                },
+              },
             },
           }}
           transformOrigin={{ horizontal: 'center', vertical: 'top' }}

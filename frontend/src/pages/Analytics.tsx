@@ -107,6 +107,7 @@ const Analytics: React.FC = () => {
     setLoading(true);
     try {
       const { startDate, endDate } = getDateRange();
+      console.log('📊 Fetching analytics data for:', { startDate, endDate, viewType, currentDate });
       const filter: AnalyticsFilterDto = {
         startDate,
         endDate,
@@ -154,6 +155,7 @@ const Analytics: React.FC = () => {
 
   // Navigation handlers
   const navigateDate = (direction: 'prev' | 'next') => {
+    console.log('🔄 Navigation clicked:', direction, 'Current date:', currentDate, 'View type:', viewType);
     const newDate = new Date(currentDate);
 
     switch (viewType) {
@@ -171,6 +173,7 @@ const Analytics: React.FC = () => {
         break;
     }
 
+    console.log('🔄 New date will be:', newDate);
     setCurrentDate(newDate);
   };
 

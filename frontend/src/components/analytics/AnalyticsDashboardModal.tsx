@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,7 @@ import {
   Schedule as ScheduleIcon,
   Assignment as AssignmentIcon,
   Business as BusinessIcon,
+  SaveAlt as SaveIcon,
   ChevronLeft,
   ChevronRight,
   FileDownload as ExportIcon
@@ -46,6 +47,7 @@ import {
   Legend,
 } from 'recharts';
 import useMeasure from 'react-use-measure';
+import html2canvas from 'html2canvas';
 
 
 // Responsive chart container with resize observer
@@ -137,6 +139,40 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
   const [allEmployeeAnalytics, setAllEmployeeAnalytics] = useState<EmployeeAnalyticsDto[]>([]); // Cache all employees without category filter
   const [teams, setTeams] = useState<TeamOption[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+
+  // Refs for chart export
+  const projectHoursChartRef = useRef<HTMLDivElement>(null);
+  const categoryChartRef = useRef<HTMLDivElement>(null);
+  const taskTypesChartRef = useRef<HTMLDivElement>(null);
+  const clientChartRef = useRef<HTMLDivElement>(null);
+
+  // Save chart as PNG function
+  const saveChartAsPNG = async (chartRef: React.RefObject<HTMLDivElement>, chartName: string) => {
+    if (!chartRef.current) return;
+
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        scale: 2, // High resolution
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        width: chartRef.current.offsetWidth,
+        height: chartRef.current.offsetHeight,
+      });
+
+      // Create download link
+      const link = document.createElement('a');
+      link.download = `${chartName}-${timelineMode}-${currentPeriod.format('YYYY-MM-DD')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error saving chart:', error);
+    }
+  };
 
   // Calculate date range based on timeline mode
   const getDateRange = () => {
@@ -299,7 +335,9 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
     }
   };
 
+  // THIS IS THE CORRECT DASHBOARD - AnalyticsDashboardModal.tsx
   const navigatePeriod = (direction: 'prev' | 'next') => {
+    console.log('🔄 ANALYTICS NAVIGATION:', direction, 'Current period:', currentPeriod.format(), 'Timeline mode:', timelineMode);
     const amount = direction === 'next' ? 1 : -1;
     let newPeriod: dayjs.Dayjs;
 
@@ -320,6 +358,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         newPeriod = currentPeriod.add(amount, 'year');
     }
 
+    console.log('🔄 NEW PERIOD:', newPeriod.format());
     setCurrentPeriod(newPeriod);
   };
 
@@ -1109,7 +1148,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
               <IconButton
                 size="small"
-                onClick={() => setCurrentPeriod(currentPeriod.subtract(1, timelineMode.toLowerCase() as any))}
+                onClick={() => navigatePeriod('prev')}
                 sx={{
                   width: '28px',
                   height: '28px',
@@ -1138,7 +1177,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               </Typography>
               <IconButton
                 size="small"
-                onClick={() => setCurrentPeriod(currentPeriod.add(1, timelineMode.toLowerCase() as any))}
+                onClick={() => navigatePeriod('next')}
                 sx={{
                   width: '28px',
                   height: '28px',
@@ -1479,7 +1518,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           }}>
 
             {/* Project Hours Chart - Top Left (spans row 1) */}
-            <Card sx={{
+            <Card ref={projectHoursChartRef} sx={{
               gridRow: { xs: '1', sm: '1', md: '1', lg: '1', xl: '1' },
               gridColumn: { xs: '1', sm: '1', md: '1', lg: '1', xl: '1' },
               boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
@@ -1487,10 +1526,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               backgroundColor: 'var(--dp-neutral-0) !important',
               border: '1px solid var(--dp-neutral-200)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              position: 'relative',
               '&:hover': {
                 transform: 'translateY(-2px)',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
                 borderColor: 'var(--dp-primary-200)'
+              },
+              '&:hover .save-icon': {
+                opacity: 1
               }
             }}>
               <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
@@ -1603,7 +1646,6 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           borderRadius: '8px',
                           fontSize: '12px',
                           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
-                          color: 'var(--dp-neutral-600)',
                           color: 'var(--dp-neutral-700)'
                         }}
                         itemStyle={{
@@ -1682,10 +1724,34 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                   </ResponsiveContainer>
                 </Box>
               </CardContent>
+              {/* Save Icon */}
+              <IconButton
+                className="save-icon"
+                onClick={() => saveChartAsPNG(projectHoursChartRef, 'project-hours')}
+                sx={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: 12,
+                  opacity: 0,
+                  transition: 'opacity 0.2s ease-in-out',
+                  backgroundColor: 'var(--dp-neutral-0)',
+                  color: 'var(--dp-primary-600)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  border: '1px solid var(--dp-neutral-200)',
+                  '&:hover': {
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    color: 'var(--dp-primary-700)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                    borderColor: 'var(--dp-primary-200)'
+                  }
+                }}
+              >
+                <SaveIcon fontSize="small" />
+              </IconButton>
             </Card>
 
             {/* Category Distribution - Top Right (smaller square) */}
-            <Card sx={{
+            <Card ref={categoryChartRef} sx={{
               gridRow: { xs: '2', sm: '2', md: '1', lg: '1', xl: '1' },
               gridColumn: { xs: '1', sm: '1', md: '2', lg: '2', xl: '2' },
               boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
@@ -1693,10 +1759,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               backgroundColor: 'var(--dp-neutral-0) !important',
               border: '1px solid var(--dp-neutral-200)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              position: 'relative',
               '&:hover': {
                 transform: 'translateY(-2px)',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
                 borderColor: 'var(--dp-primary-200)'
+              },
+              '&:hover .save-icon': {
+                opacity: 1
               }
             }}>
               <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
@@ -1744,27 +1814,78 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         animationEasing="ease-out"
                         animationBegin={0}
                         activeOpacity={0.8}
-                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
                           const RADIAN = Math.PI / 180;
-                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          // For small segments (<3%), extend the label outward with enhanced callout
+                          const isSmallSegment = (percent * 100) < 3;
 
-                          return (
-                            <text
-                              x={x}
-                              y={y}
-                              fill="white"
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              fontSize="14px"
-                              fontWeight="700"
-                              fontFamily="var(--dp-font-family-primary)"
-                              style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
-                            >
-                              {`${Math.round(percent * 100)}%`}
-                            </text>
-                          );
+                          if (isSmallSegment) {
+                            // Enhanced callout for small segments - position very close to chart edge
+                            const baseExtension = 4; // Small gap from chart edge
+
+                            // Angular spacing for multiple small segments (spread them around)
+                            const smallSegmentIndex = index || 0;
+                            const angularSpacing = smallSegmentIndex * 0.1; // 0.1 radians between small segments
+                            const adjustedAngle = midAngle + angularSpacing;
+
+                            const labelRadius = outerRadius + baseExtension;
+
+                            // Calculate positions using adjusted angle for spacing
+                            const chartEdgeX = cx + outerRadius * Math.cos(-midAngle * RADIAN);
+                            const chartEdgeY = cy + outerRadius * Math.sin(-midAngle * RADIAN);
+                            const labelX = cx + labelRadius * Math.cos(-adjustedAngle * RADIAN);
+                            const labelY = cy + labelRadius * Math.sin(-adjustedAngle * RADIAN);
+
+                            return (
+                              <g>
+                                {/* Connecting line */}
+                                <line
+                                  x1={chartEdgeX}
+                                  y1={chartEdgeY}
+                                  x2={labelX}
+                                  y2={labelY}
+                                  stroke="rgba(255, 255, 255, 0.9)"
+                                  strokeWidth="1.5"
+                                  strokeDasharray="3,2"
+                                />
+                                {/* Label text */}
+                                <text
+                                  x={labelX}
+                                  y={labelY}
+                                  fill="white"
+                                  textAnchor="middle"
+                                  dominantBaseline="central"
+                                  fontSize="14px"
+                                  fontWeight="700"
+                                  fontFamily="var(--dp-font-family-primary)"
+                                  style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
+                                >
+                                  {`${Math.round(percent * 100)}%`}
+                                </text>
+                              </g>
+                            );
+                          } else {
+                            // Normal positioning for larger segments
+                            const labelRadius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                            const x = cx + labelRadius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + labelRadius * Math.sin(-midAngle * RADIAN);
+
+                            return (
+                              <text
+                                x={x}
+                                y={y}
+                                fill="white"
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                                fontSize="14px"
+                                fontWeight="700"
+                                fontFamily="var(--dp-font-family-primary)"
+                                style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
+                              >
+                                {`${Math.round(percent * 100)}%`}
+                              </text>
+                            );
+                          }
                         }}
                         labelLine={false}
                       >
@@ -1830,10 +1951,34 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                   }}
                 </ResponsiveChartContainer>
               </CardContent>
+              {/* Save Icon */}
+              <IconButton
+                className="save-icon"
+                onClick={() => saveChartAsPNG(categoryChartRef, 'category-distribution')}
+                sx={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: 12,
+                  opacity: 0,
+                  transition: 'opacity 0.2s ease-in-out',
+                  backgroundColor: 'var(--dp-neutral-0)',
+                  color: 'var(--dp-primary-600)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  border: '1px solid var(--dp-neutral-200)',
+                  '&:hover': {
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    color: 'var(--dp-primary-700)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                    borderColor: 'var(--dp-primary-200)'
+                  }
+                }}
+              >
+                <SaveIcon fontSize="small" />
+              </IconButton>
             </Card>
 
             {/* Task Types Chart - Bottom Left */}
-            <Card sx={{
+            <Card ref={taskTypesChartRef} sx={{
               gridRow: { xs: '3', sm: '3', md: '2', lg: '2', xl: '2' },
               gridColumn: { xs: '1', sm: '1', md: '1', lg: '1', xl: '1' },
               boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
@@ -1841,10 +1986,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               backgroundColor: 'var(--dp-neutral-0) !important',
               border: '1px solid var(--dp-neutral-200)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              position: 'relative',
               '&:hover': {
                 transform: 'translateY(-2px)',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
                 borderColor: 'var(--dp-primary-200)'
+              },
+              '&:hover .save-icon': {
+                opacity: 1
               }
             }}>
               <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
@@ -1874,7 +2023,8 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         }));
                         return chartData;
                       })()}
-                      margin={{ top: 80, right: 60, left: 5, bottom: 0 }}
+                      margin={{ top: 25, right: 60, left: 5, bottom: 5 }}
+                      barCategoryGap="20%"
                     >
                       <XAxis
                         type="number"
@@ -1903,7 +2053,6 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           borderRadius: '8px',
                           fontSize: '12px',
                           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
-                          color: 'var(--dp-neutral-600)',
                           color: 'var(--dp-neutral-700)'
                         }}
                         cursor={{fill: 'transparent'}}
@@ -1954,10 +2103,34 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                   </ResponsiveContainer>
                 </Box>
               </CardContent>
+              {/* Save Icon */}
+              <IconButton
+                className="save-icon"
+                onClick={() => saveChartAsPNG(taskTypesChartRef, 'task-types')}
+                sx={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: 12,
+                  opacity: 0,
+                  transition: 'opacity 0.2s ease-in-out',
+                  backgroundColor: 'var(--dp-neutral-0)',
+                  color: 'var(--dp-primary-600)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  border: '1px solid var(--dp-neutral-200)',
+                  '&:hover': {
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    color: 'var(--dp-primary-700)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                    borderColor: 'var(--dp-primary-200)'
+                  }
+                }}
+              >
+                <SaveIcon fontSize="small" />
+              </IconButton>
             </Card>
 
             {/* Client Distribution - Bottom Right (smaller square) */}
-            <Card sx={{
+            <Card ref={clientChartRef} sx={{
               gridRow: { xs: '4', sm: '4', md: '2', lg: '2', xl: '2' },
               gridColumn: { xs: '1', sm: '1', md: '2', lg: '2', xl: '2' },
               boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
@@ -1965,10 +2138,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
               backgroundColor: 'var(--dp-neutral-0) !important',
               border: '1px solid var(--dp-neutral-200)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              position: 'relative',
               '&:hover': {
                 transform: 'translateY(-2px)',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
                 borderColor: 'var(--dp-primary-200)'
+              },
+              '&:hover .save-icon': {
+                opacity: 1
               }
             }}>
               <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
@@ -2016,27 +2193,78 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         animationEasing="ease-out"
                         animationBegin={0}
                         activeOpacity={0.8}
-                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
                           const RADIAN = Math.PI / 180;
-                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          // For small segments (<3%), extend the label outward with enhanced callout
+                          const isSmallSegment = (percent * 100) < 3;
 
-                          return (
-                            <text
-                              x={x}
-                              y={y}
-                              fill="white"
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              fontSize="14px"
-                              fontWeight="700"
-                              fontFamily="var(--dp-font-family-primary)"
-                              style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
-                            >
-                              {`${Math.round(percent * 100)}%`}
-                            </text>
-                          );
+                          if (isSmallSegment) {
+                            // Enhanced callout for small segments - position very close to chart edge
+                            const baseExtension = 4; // Small gap from chart edge
+
+                            // Angular spacing for multiple small segments (spread them around)
+                            const smallSegmentIndex = index || 0;
+                            const angularSpacing = smallSegmentIndex * 0.1; // 0.1 radians between small segments
+                            const adjustedAngle = midAngle + angularSpacing;
+
+                            const labelRadius = outerRadius + baseExtension;
+
+                            // Calculate positions using adjusted angle for spacing
+                            const chartEdgeX = cx + outerRadius * Math.cos(-midAngle * RADIAN);
+                            const chartEdgeY = cy + outerRadius * Math.sin(-midAngle * RADIAN);
+                            const labelX = cx + labelRadius * Math.cos(-adjustedAngle * RADIAN);
+                            const labelY = cy + labelRadius * Math.sin(-adjustedAngle * RADIAN);
+
+                            return (
+                              <g>
+                                {/* Connecting line */}
+                                <line
+                                  x1={chartEdgeX}
+                                  y1={chartEdgeY}
+                                  x2={labelX}
+                                  y2={labelY}
+                                  stroke="rgba(255, 255, 255, 0.9)"
+                                  strokeWidth="1.5"
+                                  strokeDasharray="3,2"
+                                />
+                                {/* Label text */}
+                                <text
+                                  x={labelX}
+                                  y={labelY}
+                                  fill="white"
+                                  textAnchor="middle"
+                                  dominantBaseline="central"
+                                  fontSize="14px"
+                                  fontWeight="700"
+                                  fontFamily="var(--dp-font-family-primary)"
+                                  style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
+                                >
+                                  {`${Math.round(percent * 100)}%`}
+                                </text>
+                              </g>
+                            );
+                          } else {
+                            // Normal positioning for larger segments
+                            const labelRadius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                            const x = cx + labelRadius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + labelRadius * Math.sin(-midAngle * RADIAN);
+
+                            return (
+                              <text
+                                x={x}
+                                y={y}
+                                fill="white"
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                                fontSize="14px"
+                                fontWeight="700"
+                                fontFamily="var(--dp-font-family-primary)"
+                                style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
+                              >
+                                {`${Math.round(percent * 100)}%`}
+                              </text>
+                            );
+                          }
                         }}
                         labelLine={false}
                       >
@@ -2102,6 +2330,30 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                   }}
                 </ResponsiveChartContainer>
               </CardContent>
+              {/* Save Icon */}
+              <IconButton
+                className="save-icon"
+                onClick={() => saveChartAsPNG(clientChartRef, 'client-distribution')}
+                sx={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: 12,
+                  opacity: 0,
+                  transition: 'opacity 0.2s ease-in-out',
+                  backgroundColor: 'var(--dp-neutral-0)',
+                  color: 'var(--dp-primary-600)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  border: '1px solid var(--dp-neutral-200)',
+                  '&:hover': {
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    color: 'var(--dp-primary-700)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                    borderColor: 'var(--dp-primary-200)'
+                  }
+                }}
+              >
+                <SaveIcon fontSize="small" />
+              </IconButton>
             </Card>
           </Box>
         </Box>
