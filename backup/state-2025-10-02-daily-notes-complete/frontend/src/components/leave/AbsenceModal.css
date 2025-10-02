@@ -1,0 +1,45 @@
+/* Absence Modal Styles */
+.absence-modal {
+  background: var(--dp-neutral-0) !important;
+}
+
+.absence-modal-content {
+  background: var(--dp-neutral-25) !important;
+}
+
+.absence-modal-footer {
+  background: var(--dp-neutral-50) !important;
+  border-top: 1px solid var(--dp-neutral-200) !important;
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+  .absence-modal {
+    background: var(--dp-neutral-900) !important;
+  }
+
+  .absence-modal-content {
+    background: var(--dp-neutral-800) !important;
+  }
+
+  .absence-modal-footer {
+    background: var(--dp-neutral-800) !important;
+    border-top: 1px solid var(--dp-neutral-600) !important;
+  }
+}
+
+/* Light mode overrides */
+[data-theme="light"] {
+  .absence-modal {
+    background: var(--dp-neutral-0) !important;
+  }
+
+  .absence-modal-content {
+    background: var(--dp-neutral-25) !important;
+  }
+
+  .absence-modal-footer {
+    background: var(--dp-neutral-50) !important;
+    border-top: 1px solid var(--dp-neutral-200) !important;
+  }
+}

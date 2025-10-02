@@ -2336,8 +2336,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     const isTodayDate = isToday(new Date(day.date));
     const isSelected = isDaySelected(new Date(day.date));
     const isMonday = new Date(day.date).getDay() === 1;
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
     // Dynamic column width: 250px for ≤5 days (weekly), 125px for >5 days (biweekly)
     const dynamicMinWidth = days.length <= 5 ? '250px' : '125px';
+
+    // For today: light mode uses primary-200 (visible blue), dark mode uses primary-100 (subtle)
+    const todayBgColor = isDarkTheme ? 'var(--dp-primary-100)' : 'var(--dp-primary-200)';
 
     return {
       flex: '1 1 0',
@@ -2352,7 +2356,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       borderRight: '1px solid var(--dp-neutral-200)',
       backgroundColor: isSelected
         ? 'var(--dp-primary-500)'
-        : (isTodayDate ? 'var(--dp-primary-50)' : (isMonday ? 'var(--dp-neutral-300)' : 'var(--dp-neutral-100)')),
+        : (isTodayDate ? todayBgColor : (isMonday ? 'var(--dp-neutral-300)' : 'var(--dp-neutral-100)')),
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -2885,7 +2889,14 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                 return (
                   <>
                     {dayName} {dayNumber}
-                    <span style={{ fontSize: 'var(--dp-text-body-small)', fontWeight: 'var(--dp-font-weight-bold)', marginLeft: '4px' }}>
+                    <span style={{
+                      fontSize: 'var(--dp-text-body-small)',
+                      fontWeight: 'var(--dp-font-weight-medium)',
+                      marginLeft: '6px',
+                      opacity: 0.8,
+                      display: 'inline-block',
+                      verticalAlign: 'middle'
+                    }}>
                       (Today)
                     </span>
                   </>

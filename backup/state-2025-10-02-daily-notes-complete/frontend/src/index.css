@@ -1,0 +1,83 @@
+:root {
+  font-family: var(--dp-font-family-primary);
+  line-height: var(--dp-line-height-normal);
+  font-weight: var(--dp-font-weight-regular);
+
+  color-scheme: light;
+  color: var(--dp-neutral-800);
+  background-color: var(--dp-neutral-50);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: var(--dp-font-weight-medium);
+  color: var(--dp-primary-500);
+  text-decoration: inherit;
+  transition: var(--dp-transition-fast);
+}
+a:hover {
+  color: var(--dp-primary-600);
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: var(--dp-font-family-primary);
+  background-color: var(--dp-neutral-50);
+  color: var(--dp-neutral-800);
+}
+
+h1 {
+  font-size: var(--dp-text-display-large);
+  line-height: var(--dp-line-height-tight);
+  font-weight: var(--dp-font-weight-bold);
+  font-family: var(--dp-font-family-primary);
+  color: var(--dp-neutral-800);
+}
+
+button {
+  border-radius: var(--dp-radius-md);
+  border: 1px solid transparent;
+  padding: var(--dp-space-3) var(--dp-space-5);
+  font-size: var(--dp-text-body-medium);
+  font-weight: var(--dp-font-weight-medium);
+  font-family: var(--dp-font-family-primary);
+  background-color: var(--dp-primary-500);
+  color: var(--dp-neutral-0);
+  cursor: pointer;
+  transition: var(--dp-transition-fast);
+}
+button:hover {
+  background-color: var(--dp-primary-600);
+  transform: translateY(-1px);
+  box-shadow: var(--dp-shadow-md);
+}
+button:focus,
+button:focus-visible {
+  outline: 2px solid var(--dp-primary-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: var(--dp-neutral-800);
+    background-color: var(--dp-neutral-0);
+  }
+  a:hover {
+    color: var(--dp-primary-600);
+  }
+  button {
+    background-color: var(--dp-primary-500);
+    color: var(--dp-neutral-0);
+  }
+  button:hover {
+    background-color: var(--dp-primary-600);
+  }
+}

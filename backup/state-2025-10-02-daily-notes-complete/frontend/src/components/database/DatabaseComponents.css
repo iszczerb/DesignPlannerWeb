@@ -1,0 +1,459 @@
+/* Database Management Component Styles */
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--dp-space-1) var(--dp-space-2);
+  border-radius: var(--dp-radius-lg);
+  font-size: var(--dp-text-caption);
+  font-weight: var(--dp-font-weight-semibold);
+  font-family: var(--dp-font-family-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background: var(--dp-success-100);
+  color: var(--dp-success-700);
+}
+
+.status-badge.inactive {
+  background: var(--dp-error-100);
+  color: var(--dp-error-700);
+}
+
+/* Project Status Badges */
+.status-badge.project-status {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: var(--dp-font-weight-medium);
+}
+
+/* Count Badges */
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--dp-space-1p5);
+  background: var(--dp-neutral-100);
+  color: var(--dp-neutral-700);
+  border-radius: var(--dp-radius-md);
+  font-size: var(--dp-text-caption);
+  font-weight: var(--dp-font-weight-semibold);
+  font-family: var(--dp-font-family-primary);
+}
+
+/* Category Badges */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--dp-space-1) var(--dp-space-2);
+  border-radius: var(--dp-radius-lg);
+  font-size: var(--dp-text-caption);
+  font-weight: var(--dp-font-weight-semibold);
+  font-family: var(--dp-font-family-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Type Badges */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--dp-space-1) var(--dp-space-2);
+  border-radius: var(--dp-radius-lg);
+  font-size: var(--dp-text-caption);
+  font-weight: var(--dp-font-weight-semibold);
+  font-family: var(--dp-font-family-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Leader Badge */
+.leader-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dp-space-1);
+  padding: var(--dp-space-1) var(--dp-space-2);
+  background: var(--dp-primary-50);
+  color: var(--dp-primary-700);
+  border-radius: var(--dp-radius-lg);
+  font-size: var(--dp-text-body-small);
+  font-weight: var(--dp-font-weight-medium);
+  font-family: var(--dp-font-family-primary);
+}
+
+/* Skills Badges */
+.skills-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dp-space-1);
+}
+
+.skill-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--dp-space-1p5);
+  background: var(--dp-neutral-100);
+  color: var(--dp-neutral-600);
+  border-radius: var(--dp-radius-md);
+  font-size: var(--dp-text-caption);
+  font-weight: var(--dp-font-weight-medium);
+  font-family: var(--dp-font-family-primary);
+}
+
+.skill-badge-more {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--dp-space-1p5);
+  background: var(--dp-neutral-200);
+  color: var(--dp-neutral-500);
+  border-radius: var(--dp-radius-md);
+  font-size: var(--dp-text-caption);
+  font-weight: var(--dp-font-weight-medium);
+  font-family: var(--dp-font-family-primary);
+  font-style: italic;
+}
+
+/* Color Indicators */
+.color-indicator-container {
+  display: flex;
+  align-items: center;
+  gap: var(--dp-space-2);
+}
+
+.color-indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--dp-radius-sm);
+  border: 2px solid var(--dp-neutral-200);
+  flex-shrink: 0;
+}
+
+.color-code {
+  font-family: var(--dp-font-family-mono);
+  font-size: var(--dp-text-caption);
+  color: var(--dp-neutral-500);
+  text-transform: uppercase;
+}
+
+/* Recurring Badge */
+.recurring-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dp-space-1);
+  padding: var(--dp-space-1) var(--dp-space-2);
+  background: var(--dp-success-50);
+  color: var(--dp-success-700);
+  border-radius: var(--dp-radius-lg);
+  font-size: var(--dp-text-caption);
+  font-weight: var(--dp-font-weight-medium);
+  font-family: var(--dp-font-family-primary);
+}
+
+/* Date Cells */
+.date-cell {
+  font-size: var(--dp-text-body-small);
+  font-family: var(--dp-font-family-primary);
+}
+
+.date-cell.upcoming {
+  color: var(--dp-success-600);
+  font-weight: var(--dp-font-weight-semibold);
+}
+
+.date-cell.past {
+  color: var(--dp-neutral-500);
+}
+
+/* Text Utilities */
+.text-muted {
+  color: var(--dp-neutral-500);
+  font-style: italic;
+  font-family: var(--dp-font-family-primary);
+}
+
+.text-danger {
+  color: var(--dp-error-600);
+  font-weight: var(--dp-font-weight-semibold);
+  font-family: var(--dp-font-family-primary);
+}
+
+.text-success {
+  color: var(--dp-success-600);
+  font-weight: var(--dp-font-weight-semibold);
+  font-family: var(--dp-font-family-primary);
+}
+
+.text-warning {
+  color: var(--dp-warning-600);
+  font-weight: var(--dp-font-weight-semibold);
+  font-family: var(--dp-font-family-primary);
+}
+
+/* Form Validation States */
+.form-field-success {
+  border-color: var(--dp-success-500);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-field-warning {
+  border-color: var(--dp-warning-500);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+/* Loading States */
+.entity-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--dp-space-10);
+  gap: var(--dp-space-4);
+  color: var(--dp-neutral-500);
+  font-family: var(--dp-font-family-primary);
+}
+
+.entity-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--dp-neutral-200);
+  border-top: 3px solid var(--dp-primary-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Tooltips */
+.tooltip-trigger {
+  position: relative;
+  cursor: help;
+}
+
+.tooltip-trigger:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--dp-space-2) var(--dp-space-3);
+  background: var(--dp-neutral-800);
+  color: var(--dp-neutral-0);
+  border-radius: var(--dp-radius-sm);
+  font-size: var(--dp-text-body-small);
+  font-family: var(--dp-font-family-primary);
+  white-space: nowrap;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.tooltip-trigger:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--dp-neutral-800);
+  z-index: 1000;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Progress Indicators */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--dp-neutral-200);
+  border-radius: var(--dp-radius-sm);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--dp-primary-500), var(--dp-primary-600));
+  border-radius: var(--dp-radius-sm);
+  transition: var(--dp-transition-normal);
+}
+
+/* Notification Styles */
+.notification-success {
+  background: var(--dp-success-50);
+  border: 1px solid var(--dp-success-200);
+  color: var(--dp-success-700);
+  font-family: var(--dp-font-family-primary);
+}
+
+.notification-error {
+  background: var(--dp-error-50);
+  border: 1px solid var(--dp-error-200);
+  color: var(--dp-error-700);
+  font-family: var(--dp-font-family-primary);
+}
+
+.notification-warning {
+  background: var(--dp-warning-50);
+  border: 1px solid var(--dp-warning-200);
+  color: var(--dp-warning-700);
+  font-family: var(--dp-font-family-primary);
+}
+
+.notification-info {
+  background: var(--dp-primary-50);
+  border: 1px solid var(--dp-primary-200);
+  color: var(--dp-primary-700);
+  font-family: var(--dp-font-family-primary);
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .status-badge,
+  .category-badge,
+  .type-badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .count-badge {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .color-indicator {
+    width: 16px;
+    height: 16px;
+  }
+
+  .color-code {
+    font-size: 10px;
+  }
+
+  .skills-badges {
+    gap: 2px;
+  }
+
+  .skill-badge,
+  .skill-badge-more {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] {
+  .status-badge.active {
+    background: #064e3b;
+    color: #6ee7b7;
+  }
+
+  .status-badge.inactive {
+    background: #7f1d1d;
+    color: #fca5a5;
+  }
+
+  .count-badge {
+    background: #374151;
+    color: #d1d5db;
+  }
+
+  .leader-badge {
+    background: #1e3a8a;
+    color: #93c5fd;
+  }
+
+  .skill-badge {
+    background: #374151;
+    color: #d1d5db;
+  }
+
+  .skill-badge-more {
+    background: #4b5563;
+    color: #9ca3af;
+  }
+
+  .color-indicator {
+    border-color: #4b5563;
+  }
+
+  .color-code {
+    color: #9ca3af;
+  }
+
+  .recurring-badge {
+    background: #064e3b;
+    color: #6ee7b7;
+  }
+
+  .date-cell.upcoming {
+    color: #5eead4;
+  }
+
+  .date-cell.past {
+    color: #9ca3af;
+  }
+
+  .text-muted {
+    color: #6b7280;
+  }
+
+  .text-danger {
+    color: #f87171;
+  }
+
+  .text-success {
+    color: #34d399;
+  }
+
+  .text-warning {
+    color: #fbbf24;
+  }
+
+  .entity-loading {
+    color: #9ca3af;
+  }
+
+  .entity-loading-spinner {
+    border-color: #374151;
+    border-top-color: #6366f1;
+  }
+
+  .progress-bar {
+    background: #374151;
+  }
+
+  .notification-success {
+    background: #064e3b;
+    border-color: #065f46;
+    color: #6ee7b7;
+  }
+
+  .notification-error {
+    background: #7f1d1d;
+    border-color: #991b1b;
+    color: #fca5a5;
+  }
+
+  .notification-warning {
+    background: #78350f;
+    border-color: #92400e;
+    color: #fbbf24;
+  }
+
+  .notification-info {
+    background: #1e3a8a;
+    border-color: #1e40af;
+    color: #93c5fd;
+  }
+}

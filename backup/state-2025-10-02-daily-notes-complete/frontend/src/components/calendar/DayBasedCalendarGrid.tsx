@@ -1,0 +1,3041 @@
+import React, { useState, useRef, useEffect } from 'react';
+import SimplifiedEmployeeRow from './SimplifiedEmployeeRow';
+import TeamDetailsModal from './TeamDetailsModal';
+import {
+  EmployeeCalendarDto,
+  CalendarDayDto,
+  AssignmentTaskDto,
+  Slot,
+  LeaveType,
+  LeaveDuration,
+  LEAVE_TYPE_COLORS,
+  LEAVE_TYPE_ICONS,
+  LEAVE_TYPE_LABELS
+} from '../../types/schedule';
+import { DragItem } from '../../types/dragDrop';
+import {
+  migrateTasksToColumns,
+  getTaskHours,
+  getTaskColumnStart,
+  getTaskWidthPercentage,
+  getTaskLeftPercentage,
+  optimizeLayoutAfterResize,
+  calculateOptimalPlacement,
+  getMaxAvailableDuration,
+  autoReflowTasks,
+  smartResizeForNewTask,
+  calculateOptimalLayoutWithNewTask,
+  getTotalUsedHours,
+  calculateActualHours,
+  calculateActualColumnStart
+} from '../../utils/taskLayoutHelpers';
+import {
+  calculateDropColumn,
+  calculateColumnBasedRearrangement,
+  addColumnGuides,
+  removeColumnGuides
+} from '../../utils/columnDropHelpers';
+import { createCardColorScheme, lightenColor } from '../../utils/colorUtils';
+
+interface DayBasedCalendarGridProps {
+  employees: EmployeeCalendarDto[];
+  days: CalendarDayDto[];
+  onTaskClick?: (task: AssignmentTaskDto, event?: React.MouseEvent) => void;
+  onSlotClick?: (date: Date, slot: Slot, employeeId: number) => void;
+  onTaskDrop?: (dragItem: DragItem, targetDate: Date, targetSlot: Slot, targetEmployeeId: number) => void;
+  onDragStart?: (sourceSlotInfo: {employeeId: number, date: Date, slot: Slot, remainingTasks: AssignmentTaskDto[]}) => void;
+  onTaskEdit?: (task: AssignmentTaskDto) => void;
+  onTaskDelete?: (assignmentId: number) => void;
+  onTaskView?: (task: AssignmentTaskDto) => void;
+  onTaskCopy?: (task: AssignmentTaskDto) => void;
+  onTaskPaste?: (date: Date, slot: Slot, employeeId: number) => void;
+  onTaskPasteMultiple?: () => void; // For multi-slot pasting
+  onBulkEdit?: () => void; // For bulk editing multiple tasks
+  onQuickEditTaskType?: (task: AssignmentTaskDto) => void;
+  onQuickEditStatus?: (task: AssignmentTaskDto) => void;
+  onQuickEditPriority?: (task: AssignmentTaskDto) => void;
+  onQuickEditDueDate?: (task: AssignmentTaskDto) => void;
+  onQuickEditNotes?: (task: AssignmentTaskDto) => void;
+  onBulkDelete?: (taskIds: number[]) => void;
+  hasCopiedTask?: boolean;
+  isReadOnly?: boolean;
+  onSetBankHoliday?: (date: Date) => void;
+  onSetLeave?: (date: Date) => void;
+  onClearBlocking?: (date: Date) => void;
+  onDayViewDetails?: (date: Date, day: CalendarDayDto) => void;
+  selectedTaskIds?: number[];
+  selectedSlots?: Array<{ date: Date; slot: Slot; employeeId: number; }>;
+  onSlotFocus?: (date: Date, slot: Slot, employeeId: number, event?: React.MouseEvent) => void;
+  selectedDays?: string[]; // Array of date strings (toDateString() format)
+  onDayClick?: (date: Date, event?: React.MouseEvent) => void;
+  // Team management props
+  onTeamViewDetails?: (teamId: number, teamName: string, teamMembers: EmployeeCalendarDto[]) => void;
+  onTeamFilter?: (action: 'toggle' | 'clear', teamName?: string) => void;
+  selectedTeamFilters?: string[];
+  // Individual employee management props
+  onEmployeeView?: (employee: any) => void;
+  onEmployeeEdit?: (employee: any) => void;
+  onEmployeeDelete?: (employeeId: number) => void;
+  // Refresh callback for actions that need to reload calendar data
+  onRefresh?: () => void;
+}
+
+const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
+  employees,
+  days,
+  onTaskClick,
+  onSlotClick,
+  onTaskDrop,
+  onDragStart,
+  onTaskEdit,
+  onTaskDelete,
+  onTaskView,
+  onTaskCopy,
+  onTaskPaste,
+  onTaskPasteMultiple,
+  onBulkEdit,
+  onQuickEditTaskType,
+  onQuickEditStatus,
+  onQuickEditPriority,
+  onQuickEditDueDate,
+  onQuickEditNotes,
+  onBulkDelete,
+  hasCopiedTask = false,
+  isReadOnly = false,
+  onSetBankHoliday,
+  onSetLeave,
+  onClearBlocking,
+  onDayViewDetails,
+  selectedTaskIds = [],
+  selectedSlots = [],
+  onSlotFocus,
+  selectedDays = [],
+  onDayClick,
+  onTeamViewDetails,
+  onTeamFilter,
+  selectedTeamFilters = [],
+  onEmployeeView,
+  onEmployeeEdit,
+  onEmployeeDelete,
+  onRefresh
+}) => {
+  // State management for hover and context menus
+  const [hoveredSlot, setHoveredSlot] = useState<{
+    employeeId: number;
+    date: string;
+    isAM: boolean;
+  } | null>(null);
+
+  // State for tracking hovered columns in the 4-column grid
+  const [hoveredColumn, setHoveredColumn] = useState<{
+    employeeId: number;
+    date: string;
+    isAM: boolean;
+    column: number;
+  } | null>(null);
+
+  // State for tracking hovered resize handles
+  const [hoveredResizeHandle, setHoveredResizeHandle] = useState<{
+    taskId: number;
+    side: 'left' | 'right';
+  } | null>(null);
+
+  // State for tracking active resize operation
+  const [resizingTask, setResizingTask] = useState<{
+    taskId: number;
+    side: 'left' | 'right';
+    originalHours: number;
+    originalColumnStart: number;
+    startX: number;
+    currentHours: number;
+    currentColumnStart: number;
+    employeeId: number;
+    date: Date;
+    slot: Slot;
+  } | null>(null);
+
+  // Helper function to find available columns for a task
+  const findAvailableColumns = (
+    existingTasks: AssignmentTaskDto[],
+    requiredHours: number
+  ): number | null => {
+    const occupied = new Array(4).fill(false);
+
+    // Mark occupied columns
+    migrateTasksToColumns(existingTasks).forEach((task, taskIndex) => {
+      const start = getTaskColumnStart(task, taskIndex, existingTasks.length);
+      const hours = getTaskHours(task, taskIndex, existingTasks.length);
+      const end = start + hours;
+      for (let i = start; i < end && i < 4; i++) {
+        occupied[i] = true;
+      }
+    });
+
+    // Find first available space that fits
+    for (let i = 0; i <= 4 - requiredHours; i++) {
+      let canFit = true;
+      for (let j = i; j < i + requiredHours; j++) {
+        if (occupied[j]) {
+          canFit = false;
+          break;
+        }
+      }
+      if (canFit) return i;
+    }
+
+    return null; // No space available
+  };
+
+  // Intelligent drop validation with auto-resizing
+  const canDropTask = (
+    task: AssignmentTaskDto,
+    targetSlotTasks: AssignmentTaskDto[]
+  ): {
+    canDrop: boolean;
+    smartLayout?: AssignmentTaskDto[];
+    tasksToUpdate?: { assignmentId: number; newHours: number }[];
+    newTaskHours?: number;
+  } => {
+    const taskHours = task.hours || 1; // Default to 1 hour for new tasks
+
+    console.log('🎯 Smart drop analysis:', {
+      incomingTaskHours: taskHours,
+      currentSlotTasks: targetSlotTasks.length,
+      currentTotalHours: getTotalUsedHours(targetSlotTasks)
+    });
+
+    // Use the smart layout calculator
+    const layoutResult = calculateOptimalLayoutWithNewTask(
+      targetSlotTasks,
+      {
+        assignmentId: task.assignmentId,
+        taskTitle: task.taskTitle,
+        taskDescription: task.taskDescription,
+        priority: task.priority,
+        taskStatus: task.taskStatus,
+        assignedDate: task.assignedDate,
+        slot: task.slot
+      },
+      taskHours
+    );
+
+    console.log('🧠 Smart layout result:', {
+      canPlace: layoutResult.canPlace,
+      tasksToUpdate: layoutResult.tasksToUpdate,
+      finalLayoutLength: layoutResult.finalLayout.length
+    });
+
+    return {
+      canDrop: layoutResult.canPlace,
+      smartLayout: layoutResult.finalLayout,
+      tasksToUpdate: layoutResult.tasksToUpdate,
+      newTaskHours: layoutResult.newTaskHours
+    };
+  };
+
+  // NEW: Column-based drop handler
+  const handleColumnBasedDrop = async (
+    e: React.DragEvent<HTMLDivElement>,
+    slotData: any,
+    dateObj: Date,
+    isAM: boolean,
+    employee: EmployeeCalendarDto
+  ) => {
+    e.preventDefault();
+    e.currentTarget.style.backgroundColor = 'transparent';
+    removeColumnGuides(e.currentTarget);
+
+    const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
+    if (!dragData || dragData.type !== 'task') {
+      return;
+    }
+
+    // Check if the target slot has a leave - prevent task operations on blocked slots
+    // Fix timezone issue - use local date instead of UTC
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dayNum = String(dateObj.getDate()).padStart(2, '0');
+    const dayString = `${year}-${month}-${dayNum}`;
+    const day = { date: dayString } as CalendarDayDto;
+    if (hasLeaveInSlot(employee, day, isAM)) {
+      console.log('❌ Cannot drop task on slot with leave');
+      return;
+    }
+
+    // 🚨 CRITICAL FIX: Get FRESH slot data instead of using stale React state!
+    // The slotData parameter can be stale during rapid operations, causing overlaps
+    console.log('🔍 GETTING FRESH SLOT DATA to prevent stale state overlaps...');
+
+    // Get the most up-to-date slot data from current calendar state
+    const currentDayAssignment = employee.dayAssignments.find(
+      assignment => new Date(assignment.date).toDateString() === dateObj.toDateString()
+    );
+    const freshSlotData = isAM ? currentDayAssignment?.morningSlot : currentDayAssignment?.afternoonSlot;
+    const freshExistingTasks = freshSlotData?.tasks || [];
+
+    // Calculate which column (0-3) the drop occurred in
+    const targetColumn = calculateDropColumn(e.clientX, e.currentTarget);
+
+    console.log('🎯 Column-based drop WITH FRESH DATA:', {
+      targetColumn,
+      staleTaskCount: slotData?.tasks?.length || 0,
+      freshTaskCount: freshExistingTasks.length,
+      draggedTask: dragData.task.taskTitle,
+      freshTasks: freshExistingTasks.map(t => ({ id: t.assignmentId, column: t.columnStart, hours: t.hours }))
+    });
+
+    // CRITICAL: Use FRESH existing tasks for collision detection
+    const existingTasks = freshExistingTasks;
+
+    // Apply column-based rearrangement logic
+    const rearrangementResult = calculateColumnBasedRearrangement(
+      existingTasks,
+      dragData.task,
+      targetColumn
+    );
+
+    if (!rearrangementResult.canDrop) {
+      console.log('❌ Drop rejected:', rearrangementResult.reason);
+      return;
+    }
+
+    console.log('✅ Drop accepted! New arrangement:', rearrangementResult.newArrangement);
+
+    // CRITICAL: Update the dragged task with its new position from the arrangement
+    const droppedTaskInArrangement = rearrangementResult.newArrangement.find(
+      t => t.assignmentId === dragData.task.assignmentId
+    );
+
+    if (droppedTaskInArrangement) {
+      // Update drag data with the calculated position
+      dragData.task.columnStart = droppedTaskInArrangement.columnStart;
+      dragData.task.hours = droppedTaskInArrangement.hours;
+
+      console.log('📍 Updated task position:', {
+        taskId: dragData.task.assignmentId,
+        columnStart: droppedTaskInArrangement.columnStart,
+        hours: droppedTaskInArrangement.hours
+      });
+    }
+
+    // Call the original drop handler with updated task data
+    onTaskDrop?.(dragData, dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+
+    // Update all other tasks in the slot with their new positions
+    if (rearrangementResult.newArrangement.length > 1) {
+      console.log('🔄 Updating other tasks in slot with new positions...');
+
+      // Import the schedule service dynamically
+      const { default: scheduleService } = await import('../../services/scheduleService');
+
+      // Update ALL tasks in the new arrangement (except the dropped one)
+      // This ensures compression changes are always saved to backend
+      for (const task of rearrangementResult.newArrangement) {
+        if (task.assignmentId !== dragData.task.assignmentId) {
+          console.log(`📦 FORCE UPDATING task ${task.assignmentId}: column ${task.columnStart}, hours ${task.hours} (ensuring compression is saved)`);
+
+          await scheduleService.updateAssignment({
+            assignmentId: task.assignmentId,
+            columnStart: task.columnStart,
+            hours: task.hours
+          });
+        }
+      }
+
+      // ⚡ SMART REFRESH: Only refresh after all operations complete
+      // Reduced delay and single refresh point to eliminate race conditions
+      setTimeout(() => {
+        console.log('⚡ Smart refresh after operations complete');
+        onRefresh?.();
+      }, 100);
+    }
+  };
+
+  // Helper function to check if a task can be resized
+  const canResizeTask = (task: AssignmentTaskDto, side: 'left' | 'right', allSlotTasks: AssignmentTaskDto[]): boolean => {
+    const currentHours = task.hours || 4;
+    const currentColumnStart = task.columnStart || 0;
+
+    // CRITICAL: Don't show resize handles when slot has 4 tasks (no more space)
+    if (allSlotTasks.length >= 4) {
+      return false;
+    }
+
+    if (side === 'left') {
+      // Can resize left if task can be made smaller (> 1 hour)
+      return currentHours > 1;
+    } else {
+      // Can resize right if task can be made smaller or larger within bounds
+      const currentEnd = currentColumnStart + currentHours;
+      return currentHours > 1 || currentEnd < 4;
+    }
+  };
+
+  // Handle resize start
+  const handleResizeStart = (e: React.MouseEvent, task: AssignmentTaskDto, side: 'left' | 'right', employeeId: number, date: Date, slot: Slot) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const currentHours = task.hours || 4;
+    const currentColumnStart = task.columnStart || 0;
+
+    setResizingTask({
+      taskId: task.assignmentId,
+      side,
+      originalHours: currentHours,
+      originalColumnStart: currentColumnStart,
+      startX: e.clientX,
+      currentHours: currentHours,
+      currentColumnStart: currentColumnStart,
+      employeeId,
+      date,
+      slot
+    });
+
+  };
+
+  // Handle resize during mouse move
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!resizingTask) return;
+
+    const deltaX = e.clientX - resizingTask.startX;
+    const columnWidth = 80; // Approximate column width in pixels (adjust based on actual slot width)
+    const columnsChanged = Math.round(deltaX / columnWidth);
+
+    let newHours = resizingTask.originalHours;
+    let newColumnStart = resizingTask.originalColumnStart;
+
+    if (resizingTask.side === 'left') {
+      // Resizing from left: adjust column start and hours
+      const adjustment = Math.max(-resizingTask.originalColumnStart, Math.min(resizingTask.originalHours - 1, columnsChanged));
+      newColumnStart = resizingTask.originalColumnStart + adjustment;
+      newHours = resizingTask.originalHours - adjustment;
+    } else {
+      // Resizing from right: adjust hours only
+      const maxHours = 4 - resizingTask.originalColumnStart;
+      newHours = Math.max(1, Math.min(maxHours, resizingTask.originalHours + columnsChanged));
+    }
+
+    // Validate bounds
+    newHours = Math.max(1, Math.min(4, newHours));
+    newColumnStart = Math.max(0, Math.min(3, newColumnStart));
+
+    // Ensure task doesn't exceed slot boundaries
+    if (newColumnStart + newHours > 4) {
+      if (resizingTask.side === 'left') {
+        newColumnStart = 4 - newHours;
+      } else {
+        newHours = 4 - newColumnStart;
+      }
+    }
+
+    // Update current state for visual feedback
+    setResizingTask(prev => prev ? {
+      ...prev,
+      currentHours: newHours,
+      currentColumnStart: newColumnStart
+    } : null);
+
+  };
+
+  // Handle bulk task resizing during smart drops
+  const handleBulkTaskResize = async (tasksToUpdate: { assignmentId: number; newHours: number }[]) => {
+    try {
+      console.log('🔄 Starting bulk task resize for smart drop:', tasksToUpdate);
+
+      // Import schedule service
+      const { default: scheduleService } = await import('../../services/scheduleService');
+
+      // Update each task individually (can be optimized to bulk update later)
+      const updatePromises = tasksToUpdate.map(async (taskUpdate) => {
+        console.log(`📤 Updating task ${taskUpdate.assignmentId} to ${taskUpdate.newHours} hours`);
+
+        const updateData = {
+          assignmentId: taskUpdate.assignmentId,
+          hours: taskUpdate.newHours
+        };
+
+        return scheduleService.updateAssignment(updateData);
+      });
+
+      // Execute all updates in parallel
+      const results = await Promise.all(updatePromises);
+      console.log('✅ Bulk resize completed:', results);
+
+      // Refresh calendar after bulk update
+      if (onRefresh) {
+        setTimeout(() => {
+          console.log('🔄 Refreshing calendar after bulk resize...');
+          onRefresh();
+        }, 100); // Small delay to ensure API calls complete
+      }
+
+    } catch (error) {
+      console.error('❌ Bulk task resize failed:', error);
+      // TODO: Show error message to user
+    }
+  };
+
+  // Handle resize end
+  const handleResizeEnd = async () => {
+    if (!resizingTask) {
+      return;
+    }
+
+    const { taskId, currentHours, currentColumnStart, originalHours, originalColumnStart, employeeId, date, slot } = resizingTask;
+
+    // Only update if something actually changed
+    if (currentHours !== originalHours || currentColumnStart !== originalColumnStart) {
+      try {
+        // Find the current employee and slot to get fresh data
+        const employee = employees.find(emp => emp.employeeId === employeeId);
+        const day = days.find(d => new Date(d.date).toDateString() === new Date(date).toDateString());
+
+        if (!employee || !day) {
+          console.error('Could not find employee or day for resize collision detection');
+          throw new Error('Invalid employee or day for resize');
+        }
+
+        const dayAssignment = employee.dayAssignments.find(
+          assignment => new Date(assignment.date).toDateString() === new Date(date).toDateString()
+        );
+
+        if (!dayAssignment) {
+          console.error('Could not find day assignment for resize collision detection');
+          throw new Error('Invalid day assignment for resize');
+        }
+
+        const slotData = slot === Slot.Morning ? dayAssignment.morningSlot : dayAssignment.afternoonSlot;
+
+        if (!slotData) {
+          console.error('Could not find slot data for resize collision detection');
+          throw new Error('Invalid slot data for resize');
+        }
+
+        // The slot data structure uses 'tasks' not 'assignmentTasks'
+        const slotTasks = slotData.tasks || [];
+
+        // Get fresh existing tasks (excluding the one being resized)
+        const freshExistingTasks = slotTasks.filter(task => task.assignmentId !== taskId);
+
+        // Create a mock task with the new resize dimensions for collision detection
+        const originalTask = slotTasks.find(task => task.assignmentId === taskId);
+        if (!originalTask) {
+          console.error('Could not find original task in slot data for resize collision detection');
+          throw new Error('Original task not found for resize');
+        }
+
+        const resizedTaskForCollision = {
+          ...originalTask,
+          columnStart: currentColumnStart,
+          hours: currentHours
+        };
+
+        // Apply column-based rearrangement logic (same as drag-and-drop)
+        const rearrangementResult = calculateColumnBasedRearrangement(
+          freshExistingTasks,
+          resizedTaskForCollision,
+          currentColumnStart
+        );
+
+        if (!rearrangementResult.canDrop) {
+          // Reset the task to original state
+          setResizingTask(null);
+          return;
+        }
+
+        const { default: scheduleService } = await import('../../services/scheduleService');
+
+        // Update all tasks in the arrangement (including repositioned ones)
+        for (const task of rearrangementResult.newArrangement) {
+          const updateData = {
+            assignmentId: task.assignmentId,
+            columnStart: task.columnStart,
+            hours: task.hours
+          };
+
+          await scheduleService.updateAssignment(updateData);
+        }
+
+        // Trigger a refresh of the calendar data
+        if (onRefresh) {
+          await onRefresh();
+        }
+
+      } catch (error) {
+        console.error(`Failed to resize task ${taskId}:`, error);
+      }
+    }
+
+    setResizingTask(null);
+  };
+
+  // Add global mouse event listeners for resize
+  React.useEffect(() => {
+    if (resizingTask) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+      };
+    }
+  }, [resizingTask]);
+  const [hoveredTask, setHoveredTask] = useState<number | null>(null);
+  const [contextMenus, setContextMenus] = useState<NodeListOf<Element> | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Team details modal state
+  const [showTeamDetailsModal, setShowTeamDetailsModal] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<{
+    id: number;
+    name: string;
+    members: EmployeeCalendarDto[];
+  } | null>(null);
+  const [teamHeaderHovered, setTeamHeaderHovered] = useState(false);
+
+  // Cleanup context menus
+  useEffect(() => {
+    const handleClickOutside = () => {
+      // Remove all existing context menus
+      document.querySelectorAll('[data-context-menu]').forEach(menu => {
+        if (document.body.contains(menu)) {
+          document.body.removeChild(menu);
+        }
+      });
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      handleClickOutside(); // Cleanup on unmount
+    };
+  }, []);
+
+  // Helper function to create context menus with proper cleanup
+  const createSlotContextMenu = (e: React.MouseEvent, employee: EmployeeCalendarDto, day: CalendarDayDto, isAM: boolean) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Remove existing context menus
+    document.querySelectorAll('[data-context-menu]').forEach(menu => {
+      if (document.body.contains(menu)) {
+        document.body.removeChild(menu);
+      }
+    });
+
+    if (isReadOnly) return;
+
+    const contextMenu = document.createElement('div');
+    contextMenu.setAttribute('data-context-menu', 'true');
+    contextMenu.style.position = 'fixed';
+    contextMenu.style.left = e.clientX + 'px';
+    contextMenu.style.top = e.clientY + 'px';
+    contextMenu.style.backgroundColor = 'var(--dp-neutral-0)';
+    contextMenu.style.border = '1px solid var(--dp-neutral-200)';
+    contextMenu.style.borderRadius = 'var(--dp-radius-lg)';
+    contextMenu.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)';
+    contextMenu.style.backdropFilter = 'blur(8px)';
+    contextMenu.style.zIndex = '10000';
+    contextMenu.style.padding = '4px 0';
+    contextMenu.style.fontSize = '14px';
+    contextMenu.style.minWidth = '160px';
+
+    const dateObj = new Date(day.date);
+    const dayAssignment = employee.dayAssignments.find(
+      assignment => new Date(assignment.date).toDateString() === dateObj.toDateString()
+    );
+    const slotData = isAM ? dayAssignment?.morningSlot : dayAssignment?.afternoonSlot;
+    const hasTasks = slotData?.tasks && slotData.tasks.length > 0;
+
+    // Check if slot has a leave - this blocks all task operations
+    const hasLeave = hasLeaveInSlot(employee, day, isAM);
+
+    const menuItems = [
+      {
+        label: '◯⁺ Create Task',
+        action: () => onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId),
+        enabled: !hasLeave && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
+      },
+      {
+        label: '↓ Paste Task',
+        action: () => handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId),
+        enabled: !hasLeave && hasCopiedTask && (!hasTasks || (slotData?.tasks?.length || 0) < 4)
+      }
+    ];
+
+    menuItems.forEach(item => {
+      if (!item.enabled) return;
+
+      const menuItem = document.createElement('div');
+      menuItem.textContent = item.label;
+      menuItem.style.padding = '8px 16px';
+      menuItem.style.cursor = 'pointer';
+      menuItem.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+      menuItem.style.color = 'var(--dp-neutral-700)';
+
+      menuItem.addEventListener('mouseenter', () => {
+        menuItem.style.backgroundColor = 'var(--dp-primary-50)';
+        menuItem.style.color = 'var(--dp-primary-700)';
+        menuItem.style.transform = 'translateX(2px)';
+      });
+      menuItem.addEventListener('mouseleave', () => {
+        menuItem.style.backgroundColor = 'transparent';
+        menuItem.style.color = 'var(--dp-neutral-700)';
+        menuItem.style.transform = 'translateX(0)';
+      });
+      menuItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.action();
+        if (document.body.contains(contextMenu)) {
+          document.body.removeChild(contextMenu);
+        }
+      });
+
+      contextMenu.appendChild(menuItem);
+    });
+
+    document.body.appendChild(contextMenu);
+  };
+
+  // Helper function to create team header context menu
+  const createTeamHeaderContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Remove existing context menus
+    document.querySelectorAll('[data-context-menu]').forEach(menu => {
+      if (document.body.contains(menu)) {
+        document.body.removeChild(menu);
+      }
+    });
+
+    if (isReadOnly) return;
+
+    const contextMenu = document.createElement('div');
+    contextMenu.setAttribute('data-context-menu', 'true');
+    contextMenu.style.position = 'fixed';
+    contextMenu.style.left = e.clientX + 'px';
+    contextMenu.style.top = e.clientY + 'px';
+    contextMenu.style.backgroundColor = 'var(--dp-neutral-0)';
+    contextMenu.style.border = '1px solid var(--dp-neutral-200)';
+    contextMenu.style.borderRadius = 'var(--dp-radius-lg)';
+    contextMenu.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+    contextMenu.style.backdropFilter = 'blur(8px)';
+    contextMenu.style.zIndex = '10000';
+    contextMenu.style.padding = '8px 0';
+    contextMenu.style.fontSize = '14px';
+    contextMenu.style.minWidth = '200px';
+
+    // Header
+    const header = document.createElement('div');
+    header.textContent = 'Team Management';
+    header.style.padding = '8px 16px';
+    header.style.fontSize = '0.75rem';
+    header.style.fontWeight = '600';
+    header.style.color = 'var(--dp-neutral-600)';
+    header.style.textTransform = 'uppercase';
+    header.style.letterSpacing = '0.05em';
+    header.style.borderBottom = '1px solid var(--dp-neutral-200)';
+    header.style.backgroundColor = 'var(--dp-neutral-50)';
+    contextMenu.appendChild(header);
+
+    // Get unique structural teams from employees
+    const structuralTeams = [...new Set(employees.map(emp => emp.team))].filter(team => team && team !== '');
+
+    const menuItems = [
+      {
+        label: '📊 View Team Details',
+        action: () => {
+          // For admin view, show all employees from all structural teams
+          const teamName = 'Admin View - All Members';
+          const teamId = 1;
+
+          // Show ALL employees (admin can see everyone)
+          setSelectedTeam({
+            id: teamId,
+            name: teamName,
+            members: employees
+          });
+          setShowTeamDetailsModal(true);
+        },
+        icon: '📊'
+      },
+      // Add separator
+      { label: '─────────────────', action: () => {}, icon: '' },
+      {
+        label: '🏠 Clear All Filters',
+        action: () => {
+          if (onTeamFilter) {
+            onTeamFilter('clear');
+          }
+        },
+        icon: '🏠'
+      },
+      // Add separator
+      { label: '─────────────────', action: () => {}, icon: '' },
+      // Add checkbox options for each structural team
+      ...structuralTeams.map(teamName => ({
+        label: teamName,
+        action: () => {
+          if (onTeamFilter) {
+            onTeamFilter('toggle', teamName);
+          }
+        },
+        icon: selectedTeamFilters.includes(teamName) ? '☑️' : '☐',
+        isCheckbox: true,
+        isSelected: selectedTeamFilters.includes(teamName)
+      }))
+    ];
+
+    menuItems.forEach((item, index) => {
+      const menuItem = document.createElement('div');
+      menuItem.style.padding = '12px 16px';
+      menuItem.style.cursor = 'pointer';
+      menuItem.style.transition = 'all 0.2s';
+      menuItem.style.display = 'flex';
+      menuItem.style.alignItems = 'center';
+      menuItem.style.gap = '12px';
+      menuItem.style.fontSize = '0.875rem';
+
+      // Handle separator
+      if (item.label.includes('─')) {
+        menuItem.style.padding = '4px 16px';
+        menuItem.style.cursor = 'default';
+        menuItem.style.borderBottom = '1px solid #e5e7eb';
+        menuItem.style.margin = '4px 0';
+        menuItem.textContent = '';
+        contextMenu.appendChild(menuItem);
+        return;
+      }
+
+      // Style for checkbox items vs regular items
+      if (item.isCheckbox) {
+        menuItem.style.color = item.isSelected ? 'var(--dp-primary-700)' : 'var(--dp-neutral-700)';
+        menuItem.style.backgroundColor = item.isSelected ? 'var(--dp-primary-50)' : 'transparent';
+        menuItem.style.fontWeight = item.isSelected ? '600' : '400';
+      } else {
+        menuItem.style.color = 'var(--dp-neutral-700)';
+        menuItem.style.backgroundColor = 'transparent';
+      }
+
+      // Icon
+      const iconSpan = document.createElement('span');
+      iconSpan.textContent = item.icon;
+      iconSpan.style.fontSize = '1rem';
+      iconSpan.style.minWidth = '20px';
+      menuItem.appendChild(iconSpan);
+
+      // Label - don't remove emoji for new format
+      const labelSpan = document.createElement('span');
+      labelSpan.textContent = item.isCheckbox ? item.label : (item.label.includes(' ') ? item.label.substring(2) : item.label);
+      menuItem.appendChild(labelSpan);
+
+      menuItem.addEventListener('mouseenter', () => {
+        if (item.isCheckbox) {
+          menuItem.style.backgroundColor = item.isSelected ? 'var(--dp-primary-100)' : 'var(--dp-neutral-100)';
+          menuItem.style.transform = 'translateX(4px)';
+        } else {
+          menuItem.style.backgroundColor = 'var(--dp-primary-50)';
+          menuItem.style.color = 'var(--dp-primary-700)';
+          menuItem.style.transform = 'translateX(4px)';
+        }
+      });
+      menuItem.addEventListener('mouseleave', () => {
+        if (item.isCheckbox) {
+          menuItem.style.backgroundColor = item.isSelected ? 'var(--dp-primary-50)' : 'transparent';
+          menuItem.style.transform = 'translateX(0)';
+        } else {
+          menuItem.style.backgroundColor = 'transparent';
+          menuItem.style.color = 'var(--dp-neutral-700)';
+          menuItem.style.transform = 'translateX(0)';
+        }
+      });
+      menuItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.action();
+        // Keep menu open for checkbox items to allow multi-selection
+        if (!item.isCheckbox && document.body.contains(contextMenu)) {
+          document.body.removeChild(contextMenu);
+        }
+      });
+
+      contextMenu.appendChild(menuItem);
+    });
+
+    document.body.appendChild(contextMenu);
+  };
+
+  // Debug: Log when the component receives new days data
+  // Get next weekday from today (skip weekends)
+  const getNextWeekday = (date: Date): Date => {
+    const nextDay = new Date(date);
+    nextDay.setDate(nextDay.getDate() + 1);
+    // If it's Saturday (6) or Sunday (0), move to Monday
+    while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
+      nextDay.setDate(nextDay.getDate() + 1);
+    }
+    return nextDay;
+  };
+
+  // Check if a date is today (ignoring weekends)
+  const isToday = (date: Date): boolean => {
+    const today = new Date();
+    const todayDay = today.getDay();
+    
+    // If today is weekend, consider next Monday as "today"
+    const effectiveToday = (todayDay === 0 || todayDay === 6) ? getNextWeekday(today) : today;
+    
+    return date.toDateString() === effectiveToday.toDateString();
+  };
+
+  // Format day header text
+  const formatDayHeader = (day: CalendarDayDto): string => {
+    const date = new Date(day.date);
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const dayNumber = date.getDate();
+    
+    if (isToday(date)) {
+      return `${dayName} ${dayNumber} (Today)`;
+    }
+    return `${dayName} ${dayNumber}`;
+  };
+  // Helper functions for leave styling
+  const hasLeaveInSlot = (employee: EmployeeCalendarDto, day: CalendarDayDto, isAM: boolean): boolean => {
+    const dateObj = new Date(day.date);
+    const dayAssignment = employee.dayAssignments.find(
+      assignment => new Date(assignment.date).toDateString() === dateObj.toDateString()
+    );
+
+    if (!dayAssignment) return false;
+
+    // Check day-level leave (full day)
+    if (dayAssignment.leave?.duration === LeaveDuration.FullDay) {
+      return true;
+    }
+
+    // Check slot-level leave (half day)
+    const slotData = isAM ? dayAssignment.morningSlot : dayAssignment.afternoonSlot;
+    return !!slotData?.leave;
+  };
+
+  const getLeaveInfo = (employee: EmployeeCalendarDto, day: CalendarDayDto, isAM: boolean) => {
+    const dateObj = new Date(day.date);
+    const dayAssignment = employee.dayAssignments.find(
+      assignment => new Date(assignment.date).toDateString() === dateObj.toDateString()
+    );
+
+    if (!dayAssignment) return null;
+
+    // Check day-level leave first (full day)
+    if (dayAssignment.leave?.duration === LeaveDuration.FullDay) {
+      return dayAssignment.leave;
+    }
+
+    // Check slot-level leave (half day)
+    const slotData = isAM ? dayAssignment.morningSlot : dayAssignment.afternoonSlot;
+    return slotData?.leave || null;
+  };
+
+  const isHoliday = (employee: EmployeeCalendarDto, day: CalendarDayDto): boolean => {
+    const dateObj = new Date(day.date);
+    const dayAssignment = employee.dayAssignments.find(
+      assignment => new Date(assignment.date).toDateString() === dateObj.toDateString()
+    );
+    return !!dayAssignment?.isHoliday;
+  };
+
+  // Color palette for task cards
+  const getTaskColor = (taskId: number): string => {
+    const colors = [
+      '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4',
+      '#f97316', '#84cc16', '#ec4899', '#6366f1', '#14b8a6'
+    ];
+    return colors[taskId % colors.length];
+  };
+
+  // Get darker border color for task cards
+  const getTaskBorderColor = (taskId: number): string => {
+    const borderColors = [
+      '#b45309', '#047857', '#6d28d9', '#b91c1c', '#0e7490', 
+      '#c2410c', '#4d7c0f', '#be185d', '#3730a3', '#0d9488'
+    ];
+    return borderColors[taskId % borderColors.length];
+  };
+
+  // Render leave slot with appropriate styling
+  const renderLeaveSlot = (employee: EmployeeCalendarDto, day: CalendarDayDto, isAM: boolean) => {
+    const leaveInfo = getLeaveInfo(employee, day, isAM);
+    if (!leaveInfo) return null;
+
+    const backgroundColor = LEAVE_TYPE_COLORS[leaveInfo.leaveType];
+    const icon = LEAVE_TYPE_ICONS[leaveInfo.leaveType];
+    const label = LEAVE_TYPE_LABELS[leaveInfo.leaveType];
+    const isFullDay = leaveInfo.duration === LeaveDuration.FullDay;
+    const slotLabel = isFullDay ? 'Full Day' : (isAM ? 'Morning' : 'Afternoon');
+
+    // Detect dark mode
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    // Create text colors that adapt to theme
+    const textColorMap: { [key: string]: { light: string; dark: string } } = {
+      '#10b981': { light: '#065f46', dark: '#d1fae5' }, // Green -> Dark green (light) / Light green (dark)
+      '#ef4444': { light: '#991b1b', dark: '#fecaca' }, // Red -> Dark red (light) / Light red (dark)
+      '#6b7280': { light: '#1f2937', dark: '#e5e7eb' }, // Gray -> Very dark gray (light) / Light gray (dark)
+      '#8b5cf6': { light: '#5b21b6', dark: '#e9d5ff' }, // Purple -> Dark purple (light) / Light purple (dark)
+    };
+    const colorSet = textColorMap[backgroundColor] || { light: '#1f2937', dark: '#e5e7eb' };
+    const textColor = isDarkTheme ? colorSet.dark : colorSet.light;
+
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: backgroundColor + '40', // 40% opacity for light background
+          border: `2px solid ${backgroundColor}`,
+          borderRadius: '4px',
+          fontWeight: '600',
+          fontSize: '0.75rem',
+          padding: '4px',
+          minHeight: '100%',
+          gap: '6px'
+        }}
+      >
+        <div style={{ fontSize: '1rem', flexShrink: 0 }}>{icon}</div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1px'
+        }}>
+          <div style={{
+            fontSize: '0.75rem',
+            lineHeight: '1.1',
+            fontWeight: '700',
+            color: textColor
+          }}>
+            {label}
+          </div>
+          {!isFullDay && (
+            <div style={{
+              fontSize: '0.65rem',
+              fontWeight: '600',
+              color: textColor,
+              opacity: 0.85
+            }}>
+              ({slotLabel})
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Render holiday slot
+  const renderHolidaySlot = (employee: EmployeeCalendarDto, day: CalendarDayDto) => {
+    const dateObj = new Date(day.date);
+    const dayAssignment = employee.dayAssignments.find(
+      assignment => new Date(assignment.date).toDateString() === dateObj.toDateString()
+    );
+
+    const holidayName = dayAssignment?.holidayName || 'Bank Holiday';
+
+    // Detect dark mode
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDarkTheme ? '#e9d5ff' : '#5b21b6'; // Light purple (dark mode) / Dark purple (light mode)
+
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#8b5cf640', // Purple with 40% opacity
+          border: '2px solid #8b5cf6', // Purple border
+          borderRadius: '4px',
+          fontWeight: '600',
+          fontSize: '0.75rem',
+          padding: '4px',
+          minHeight: '100%',
+          gap: '6px'
+        }}
+      >
+        <div style={{ fontSize: '1rem', flexShrink: 0 }}>🏛️</div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1px'
+        }}>
+          <div style={{
+            fontSize: '0.75rem',
+            lineHeight: '1.1',
+            fontWeight: '700',
+            color: textColor
+          }}>
+            {holidayName}
+          </div>
+          <div style={{
+            fontSize: '0.65rem',
+            fontWeight: '600',
+            color: textColor,
+            opacity: 0.85
+          }}>
+            Bank Holiday
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Helper function to check if a slot is selected
+  const isSlotSelected = (employeeId: number, date: Date, isAM: boolean): boolean => {
+    return selectedSlots?.some(slot =>
+      slot.employeeId === employeeId &&
+      slot.date.toDateString() === date.toDateString() &&
+      ((isAM && slot.slot === Slot.Morning) || (!isAM && slot.slot === Slot.Afternoon))
+    ) || false;
+  };
+
+  // Helper function to check if a day is selected
+  const isDaySelected = (date: Date): boolean => {
+    return selectedDays?.includes(date.toDateString()) || false;
+  };
+
+  // Handle slot click with Ctrl detection for multi-select
+  const handleSlotClick = (e: React.MouseEvent, employeeId: number, date: Date, isAM: boolean) => {
+    e.stopPropagation();
+
+    if (isReadOnly) return;
+
+    // Pass the event to onSlotFocus for multi-selection handling
+    onSlotFocus?.(date, isAM ? Slot.Morning : Slot.Afternoon, employeeId, e);
+  };
+
+  // Handle paste action - check if there are multiple selected slots
+  const handlePasteAction = (date: Date, slot: Slot, employeeId: number) => {
+    if (selectedSlots && selectedSlots.length > 0) {
+      // Use multi-slot paste if there are selected slots
+      onTaskPasteMultiple?.();
+    } else {
+      // Use single-slot paste for individual slot
+      onTaskPaste?.(date, slot, employeeId);
+    }
+  };
+
+  // Render task cards with proper styling and max 4 limit
+  const renderTasksInSlot = (employee: EmployeeCalendarDto, day: CalendarDayDto, isAM: boolean) => {
+    const dateObj = new Date(day.date);
+    const dayAssignment = employee.dayAssignments.find(
+      assignment => new Date(assignment.date).toDateString() === dateObj.toDateString()
+    );
+
+    // Check for holiday first (takes precedence)
+    if (isHoliday(employee, day)) {
+      return renderHolidaySlot(employee, day);
+    }
+
+    // Check for leave
+    if (hasLeaveInSlot(employee, day, isAM)) {
+      return renderLeaveSlot(employee, day, isAM);
+    }
+
+    if (!dayAssignment) {
+      const slotKey = `${employee.employeeId}-${day.date}-${isAM}`;
+      const isHovered = hoveredSlot?.employeeId === employee.employeeId &&
+                       hoveredSlot?.date === day.date &&
+                       hoveredSlot?.isAM === isAM;
+      const isSelected = isSlotSelected(employee.employeeId, dateObj, isAM);
+
+      return (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--dp-neutral-500)',
+            fontSize: '0.75rem',
+            cursor: isReadOnly ? 'default' : 'pointer',
+            position: 'relative',
+            transition: 'all 0.2s ease-in-out',
+            backgroundColor: isSelected ? 'rgba(16, 185, 129, 0.15)' : (isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent'),
+            border: isSelected ? '2px solid rgba(16, 185, 129, 0.7)' : (isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none'),
+            borderRadius: '8px',
+            boxShadow: isSelected ? '0 0 12px rgba(16, 185, 129, 0.5), inset 0 0 8px rgba(16, 185, 129, 0.3)' : (isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none'),
+          }}
+          onClick={(e) => handleSlotClick(e, employee.employeeId, dateObj, isAM)}
+          onContextMenu={(e) => createSlotContextMenu(e, employee, day, isAM)}
+          onMouseEnter={() => !isReadOnly && setHoveredSlot({
+            employeeId: employee.employeeId,
+            date: day.date,
+            isAM: isAM
+          })}
+          onMouseLeave={() => setHoveredSlot(null)}
+          onDragOver={(e) => {
+            if (!isReadOnly) {
+              e.preventDefault();
+              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+              e.currentTarget.style.border = '2px solid rgba(59, 130, 246, 0.7)';
+              e.currentTarget.style.boxShadow = '0 0 16px rgba(59, 130, 246, 0.5), inset 0 0 12px rgba(59, 130, 246, 0.3)';
+              addColumnGuides(e.currentTarget);
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!isReadOnly) {
+              e.currentTarget.style.backgroundColor = isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+              e.currentTarget.style.border = isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none';
+              e.currentTarget.style.boxShadow = isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none';
+              removeColumnGuides(e.currentTarget);
+            }
+          }}
+          onDrop={(e) => {
+            if (!isReadOnly) {
+              handleColumnBasedDrop(e, null, dateObj, isAM, employee);
+            }
+          }}
+        >
+          {!isReadOnly ? (isAM ? 'AM' : 'PM') : ''}
+
+          {/* Hover action buttons */}
+          {isHovered && !isReadOnly && (
+            <div style={{
+              position: 'absolute',
+              bottom: '4px',
+              right: '4px',
+              display: 'flex',
+              gap: '4px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '8px',
+              padding: '2px',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+            }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+                }}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  width: '22px',
+                  height: '22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.25rem',
+                  fontWeight: '700',
+                  lineHeight: '1',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.9)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                }}
+                title="Add task"
+              >
+                ＋
+              </button>
+              {hasCopiedTask && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+                  }}
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    width: '22px',
+                    height: '22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.875rem',
+                    fontWeight: '700',
+                    lineHeight: '1',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                  }}
+                  title="Paste task"
+                >
+                  ↓
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const slotData = isAM ? dayAssignment.morningSlot : dayAssignment.afternoonSlot;
+    
+    if (!slotData || !slotData.tasks || slotData.tasks.length === 0) {
+      const isHovered = hoveredSlot?.employeeId === employee.employeeId &&
+                       hoveredSlot?.date === day.date &&
+                       hoveredSlot?.isAM === isAM;
+      const isSelected = isSlotSelected(employee.employeeId, dateObj, isAM);
+
+      return (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--dp-neutral-500)',
+            fontSize: '0.75rem',
+            cursor: isReadOnly ? 'default' : 'pointer',
+            position: 'relative',
+            transition: 'all 0.2s ease-in-out',
+            backgroundColor: isSelected ? 'rgba(16, 185, 129, 0.15)' : (isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent'),
+            border: isSelected ? '2px solid rgba(16, 185, 129, 0.7)' : (isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none'),
+            borderRadius: '8px',
+            boxShadow: isSelected ? '0 0 12px rgba(16, 185, 129, 0.5), inset 0 0 8px rgba(16, 185, 129, 0.3)' : (isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none'),
+          }}
+          onClick={(e) => handleSlotClick(e, employee.employeeId, dateObj, isAM)}
+          onContextMenu={(e) => createSlotContextMenu(e, employee, day, isAM)}
+          onMouseEnter={() => !isReadOnly && setHoveredSlot({
+            employeeId: employee.employeeId,
+            date: day.date,
+            isAM: isAM
+          })}
+          onMouseLeave={() => setHoveredSlot(null)}
+          onDragOver={(e) => {
+            if (!isReadOnly) {
+              e.preventDefault();
+              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+              e.currentTarget.style.border = '2px solid rgba(59, 130, 246, 0.7)';
+              e.currentTarget.style.boxShadow = '0 0 16px rgba(59, 130, 246, 0.5), inset 0 0 12px rgba(59, 130, 246, 0.3)';
+              addColumnGuides(e.currentTarget);
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!isReadOnly) {
+              e.currentTarget.style.backgroundColor = isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+              e.currentTarget.style.border = isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none';
+              e.currentTarget.style.boxShadow = isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none';
+              removeColumnGuides(e.currentTarget);
+            }
+          }}
+          onDrop={(e) => {
+            if (!isReadOnly) {
+              handleColumnBasedDrop(e, null, dateObj, isAM, employee);
+            }
+          }}
+        >
+          {!isReadOnly ? (isAM ? 'AM' : 'PM') : ''}
+
+          {/* Hover action buttons */}
+          {isHovered && !isReadOnly && (
+            <div style={{
+              position: 'absolute',
+              bottom: '4px',
+              right: '4px',
+              display: 'flex',
+              gap: '4px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '8px',
+              padding: '2px',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+            }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+                }}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  width: '22px',
+                  height: '22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.25rem',
+                  fontWeight: '700',
+                  lineHeight: '1',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.9)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                }}
+                title="Add task"
+              >
+                ＋
+              </button>
+              {hasCopiedTask && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+                  }}
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    width: '22px',
+                    height: '22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.875rem',
+                    fontWeight: '700',
+                    lineHeight: '1',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                  }}
+                  title="Paste task"
+                >
+                  ↓
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Limit to maximum 4 tasks per slot
+    const tasksToShow = slotData.tasks.slice(0, 4);
+    const hasMoreTasks = slotData.tasks.length > 4;
+    const isHovered = hoveredSlot?.employeeId === employee.employeeId &&
+                     hoveredSlot?.date === day.date &&
+                     hoveredSlot?.isAM === isAM;
+    const isSelected = isSlotSelected(employee.employeeId, dateObj, isAM);
+
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: 'block', // Changed from 'flex' to support absolute positioning
+          padding: '1px',
+          height: '100%',
+          overflow: 'hidden',
+          position: 'relative', // Essential for absolute positioned children
+          transition: 'all 0.2s ease-in-out',
+          backgroundColor: isSelected ? 'rgba(16, 185, 129, 0.15)' : (isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent'),
+          border: isSelected ? '2px solid rgba(16, 185, 129, 0.7)' : (isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none'),
+          borderRadius: '4px',
+          boxShadow: isSelected ? '0 0 12px rgba(16, 185, 129, 0.5), inset 0 0 8px rgba(16, 185, 129, 0.3)' : (isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none')
+        }}
+        onContextMenu={(e) => createSlotContextMenu(e, employee, day, isAM)}
+        onMouseEnter={() => !isReadOnly && setHoveredSlot({
+          employeeId: employee.employeeId,
+          date: day.date,
+          isAM: isAM
+        })}
+        onMouseLeave={() => setHoveredSlot(null)}
+        onDragOver={(e) => {
+          if (!isReadOnly && !hasLeaveInSlot(employee, day, isAM)) {
+            // Prevent drag over for slots with leaves - they should be blocked
+            e.preventDefault();
+            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+            e.currentTarget.style.border = '2px solid rgba(59, 130, 246, 0.7)';
+            e.currentTarget.style.boxShadow = '0 0 16px rgba(59, 130, 246, 0.5), inset 0 0 12px rgba(59, 130, 246, 0.3)';
+            addColumnGuides(e.currentTarget);
+          }
+        }}
+        onDragLeave={(e) => {
+          if (!isReadOnly) {
+            e.currentTarget.style.backgroundColor = isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+            e.currentTarget.style.border = isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none';
+            e.currentTarget.style.boxShadow = isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none';
+            removeColumnGuides(e.currentTarget);
+          }
+        }}
+        onDrop={(e) => {
+          if (!isReadOnly) {
+            handleColumnBasedDrop(e, slotData, dateObj, isAM, employee);
+          }
+        }}>
+        {/* Auto-reflow tasks to ensure left-aligned positioning */}
+        {autoReflowTasks(tasksToShow).map((task, taskIndex) => {
+          // Calculate actual hours and column position based on visual layout
+          let actualHours = calculateActualHours(task, taskIndex, tasksToShow.length);
+          let actualColumnStart = calculateActualColumnStart(task, taskIndex, tasksToShow.length);
+
+          // Use resizing state for visual feedback if this task is being resized
+          if (resizingTask && resizingTask.taskId === task.assignmentId) {
+            actualHours = resizingTask.currentHours;
+            actualColumnStart = resizingTask.currentColumnStart;
+          }
+
+          const actualWidth = getTaskWidthPercentage(actualHours);
+          const actualLeft = getTaskLeftPercentage(actualColumnStart);
+
+          // Validate bounds to prevent visual cropping
+          const boundedWidth = Math.min(actualWidth, 100 - actualLeft);
+          const boundedLeft = Math.min(actualLeft, 100);
+
+          const finalWidth = boundedWidth;
+          const finalLeft = boundedLeft;
+
+          return (
+            <div
+              key={task.assignmentId}
+              data-task-card="true"
+              draggable={!isReadOnly}
+              onDragStart={(e) => {
+              if (!isReadOnly) {
+                const dragData = {
+                  type: 'task',
+                  task: task,
+                  sourceSlot: {
+                    date: dateObj,
+                    slot: isAM ? Slot.Morning : Slot.Afternoon,
+                    employeeId: employee.employeeId
+                  }
+                };
+                e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+
+                // 🎯 CAPTURE SOURCE SLOT DATA IMMEDIATELY ON DRAG START
+                if (onDragStart) {
+                  const currentSlot = isAM ? Slot.Morning : Slot.Afternoon;
+                  // Use tasksToShow which is already available in this scope
+                  // Get all tasks EXCEPT the one being dragged
+                  const remainingTasks = tasksToShow.filter(t => t.assignmentId !== task.assignmentId);
+
+                  console.log('🚀 DRAG START - Capturing source slot data:', {
+                    employeeId: employee.employeeId,
+                    date: dateObj.toDateString(),
+                    slot: currentSlot,
+                    draggedTask: task.assignmentId,
+                    totalTasks: tasksToShow.length,
+                    remainingTasks: remainingTasks.length,
+                    capturedTasks: remainingTasks.map(t => ({id: t.assignmentId, column: t.columnStart, hours: t.hours}))
+                  });
+
+                  onDragStart({
+                    employeeId: employee.employeeId,
+                    date: dateObj,
+                    slot: currentSlot,
+                    remainingTasks: remainingTasks
+                  });
+                }
+              }
+            }}
+            onClick={(e) => onTaskClick?.(task, e)}
+            onMouseEnter={() => setHoveredTask(task.assignmentId)}
+            onMouseLeave={() => setHoveredTask(null)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation(); // CRITICAL: Prevent slot context menu from also opening
+
+              // Remove existing context menus
+              document.querySelectorAll('[data-context-menu]').forEach(menu => {
+                if (document.body.contains(menu)) {
+                  document.body.removeChild(menu);
+                }
+              });
+
+              // Show context menu with Edit, Delete, View, Copy options
+              const contextMenu = document.createElement('div');
+              contextMenu.setAttribute('data-context-menu', 'true');
+              contextMenu.style.position = 'fixed';
+              contextMenu.style.left = e.clientX + 'px';
+              contextMenu.style.top = e.clientY + 'px';
+              contextMenu.style.backgroundColor = 'var(--dp-neutral-0)';
+              contextMenu.style.border = '1px solid var(--dp-neutral-200)';
+              contextMenu.style.borderRadius = 'var(--dp-radius-lg)';
+              contextMenu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+              contextMenu.style.zIndex = '10000';
+              contextMenu.style.padding = '4px 0';
+              contextMenu.style.fontSize = '14px';
+              contextMenu.style.minWidth = '160px';
+
+              // Check if this task is selected and if there are multiple selected tasks
+              const isTaskSelected = selectedTaskIds.includes(task.assignmentId);
+              const hasMultipleSelected = selectedTaskIds.length > 1;
+
+              let menuItems = [];
+
+              if (isTaskSelected && hasMultipleSelected) {
+                // Show bulk operations for multiple selected tasks
+                menuItems = [
+                  {
+                    label: `📝 Edit Task Type (${selectedTaskIds.length})`,
+                    action: () => onQuickEditTaskType?.(task),
+                    separator: false
+                  },
+                  {
+                    label: `📊 Edit Status (${selectedTaskIds.length})`,
+                    action: () => onQuickEditStatus?.(task),
+                    separator: false
+                  },
+                  {
+                    label: `🔥 Edit Priority (${selectedTaskIds.length})`,
+                    action: () => onQuickEditPriority?.(task),
+                    separator: false
+                  },
+                  {
+                    label: `📅 Edit Due Date (${selectedTaskIds.length})`,
+                    action: () => onQuickEditDueDate?.(task),
+                    separator: false
+                  },
+                  {
+                    label: `📝 Edit Notes (${selectedTaskIds.length})`,
+                    action: () => onQuickEditNotes?.(task),
+                    separator: true
+                  },
+                  {
+                    label: `✏️ Full Edit (${selectedTaskIds.length})`,
+                    action: () => onBulkEdit?.(),
+                    separator: false
+                  },
+                  {
+                    label: `🗑️ Delete Selected (${selectedTaskIds.length})`,
+                    action: () => onBulkDelete?.(selectedTaskIds),
+                    separator: true
+                  },
+                  {
+                    label: 'View/Edit This One',
+                    action: () => onTaskView?.(task),
+                    separator: false
+                  },
+                  {
+                    label: 'Copy This One',
+                    action: () => onTaskCopy?.(task),
+                    separator: false
+                  }
+                ];
+              } else {
+                // Show individual task operations
+                menuItems = [
+                  { label: '📝 Edit Task Type', action: () => onQuickEditTaskType?.(task), separator: false },
+                  { label: '📊 Edit Status', action: () => onQuickEditStatus?.(task), separator: false },
+                  { label: '🔥 Edit Priority', action: () => onQuickEditPriority?.(task), separator: false },
+                  { label: '📅 Edit Due Date', action: () => onQuickEditDueDate?.(task), separator: false },
+                  { label: '📝 Edit Notes', action: () => onQuickEditNotes?.(task), separator: true },
+                  { label: '✏️ View/Edit', action: () => onTaskView?.(task), separator: false },
+                  { label: '📋 Copy', action: () => onTaskCopy?.(task), separator: false },
+                  { label: '🗑️ Delete', action: () => onTaskDelete?.(task.assignmentId), separator: false }
+                ];
+              }
+              
+              menuItems.forEach((item, index) => {
+                const menuItem = document.createElement('div');
+                menuItem.textContent = item.label;
+                menuItem.style.padding = '8px 16px';
+                menuItem.style.cursor = 'pointer';
+                menuItem.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+                menuItem.style.color = 'var(--dp-neutral-700)';
+                menuItem.onmouseenter = () => {
+                  menuItem.style.backgroundColor = 'var(--dp-primary-50)';
+                  menuItem.style.color = 'var(--dp-primary-700)';
+                  menuItem.style.transform = 'translateX(4px)';
+                };
+                menuItem.onmouseleave = () => {
+                  menuItem.style.backgroundColor = 'transparent';
+                  menuItem.style.color = 'var(--dp-neutral-700)';
+                  menuItem.style.transform = 'translateX(0)';
+                };
+                menuItem.onclick = (e) => {
+                  e.stopPropagation();
+                  item.action();
+                  // Use proper cleanup
+                  if (document.body.contains(contextMenu)) {
+                    document.body.removeChild(contextMenu);
+                  }
+                };
+                contextMenu.appendChild(menuItem);
+
+                // Add separator if needed
+                if (item.separator && index < menuItems.length - 1) {
+                  const separator = document.createElement('div');
+                  separator.style.height = '1px';
+                  separator.style.backgroundColor = '#e5e7eb';
+                  separator.style.margin = '4px 0';
+                  contextMenu.appendChild(separator);
+                }
+              });
+              
+              document.body.appendChild(contextMenu);
+              
+              // Remove context menu when clicking elsewhere
+              const removeMenu = (event: MouseEvent) => {
+                if (!contextMenu.contains(event.target as Node)) {
+                  if (document.body.contains(contextMenu)) {
+                    document.body.removeChild(contextMenu);
+                  }
+                  document.removeEventListener('click', removeMenu);
+                }
+              };
+              setTimeout(() => document.addEventListener('click', removeMenu), 0);
+            }}
+            style={{
+              background: (() => {
+                const colorScheme = createCardColorScheme(task.clientColor || 'var(--dp-primary-500)');
+                const isHovered = hoveredTask === task.assignmentId;
+                const adjustedStart = isHovered ? lightenColor(colorScheme.gradient.start, 8) : colorScheme.gradient.start;
+                const adjustedEnd = isHovered ? lightenColor(colorScheme.gradient.end, 8) : colorScheme.gradient.end;
+                return `linear-gradient(135deg, ${adjustedStart} 0%, ${adjustedEnd} 100%)`;
+              })(),
+              color: '#ffffff',
+              border: resizingTask && resizingTask.taskId === task.assignmentId
+                ? '3px dashed #10b981'
+                : selectedTaskIds.includes(task.assignmentId)
+                  ? '3px solid #3b82f6'
+                  : (() => {
+                    const colorScheme = createCardColorScheme(task.clientColor || 'var(--dp-primary-500)');
+                    return `2px solid ${colorScheme.border}`;
+                  })(),
+              borderRadius: '4px',
+              fontSize: '0.625rem',
+              fontWeight: '500',
+              cursor: isReadOnly ? 'pointer' : 'grab',
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'absolute', // NEW: Absolute positioning for column system
+              top: '50%', // Center vertically
+              transform: `translateY(-50%)${resizingTask && resizingTask.taskId === task.assignmentId ? ' scale(1.05)' : selectedTaskIds.includes(task.assignmentId) ? ' scale(1.02)' : hoveredTask === task.assignmentId ? ' scale(1.01)' : ''}`,
+              width: `${finalWidth}%`, // NEW: Column-based width with bounds checking
+              left: `${finalLeft}%`, // NEW: Column-based position with bounds checking
+              height: '62px',
+              boxShadow: resizingTask && resizingTask.taskId === task.assignmentId
+                ? '0 6px 16px rgba(16, 185, 129, 0.4)'
+                : selectedTaskIds.includes(task.assignmentId)
+                  ? '0 4px 12px rgba(59, 130, 246, 0.3)'
+                  : (() => {
+                    const colorScheme = createCardColorScheme(task.clientColor || 'var(--dp-primary-500)');
+                    const isHovered = hoveredTask === task.assignmentId;
+                    const shadowIntensity = isHovered ? '0.25' : '0.15';
+                    return `0 4px 16px rgba(0, 0, 0, ${shadowIntensity}), 0 2px 8px ${colorScheme.glass.shadow}40, inset 0 1px 0 ${colorScheme.glass.highlight}60`;
+                  })(),
+              overflow: 'hidden', // Hidden overflow for clean task appearance
+              flexShrink: 0,
+              opacity: resizingTask && resizingTask.taskId === task.assignmentId ? 0.9 : 1, // Slight transparency during resize
+              transition: resizingTask && resizingTask.taskId === task.assignmentId
+                ? 'none' // No transition during resize for immediate feedback
+                : 'all 0.2s ease-in-out'
+            }}
+          >
+            {/* Top colored section with project code */}
+            <div style={{
+              padding: `6px ${tasksToShow.length >= 4 ? '2px' : tasksToShow.length === 3 ? '4px' : '8px'} 3px ${tasksToShow.length >= 4 ? '2px' : tasksToShow.length === 3 ? '4px' : '8px'}`, // More responsive padding based on task density
+              fontWeight: '700',
+              fontSize: (() => {
+                const hours = task.hours || 4;
+                const textLength = task.projectName?.length || 0;
+
+                // For 1-hour tasks (narrowest), use much smaller fonts
+                if (hours === 1) {
+                  if (textLength > 15) return '0.45rem';
+                  if (textLength > 10) return '0.5rem';
+                  return '0.52rem'; // Reduced from 0.55rem for short text
+                }
+
+                // For 2-hour tasks
+                if (hours === 2) {
+                  if (textLength > 15) return '0.6rem';
+                  if (textLength > 10) return '0.65rem';
+                  return '0.7rem';
+                }
+
+                // For 3+ hour tasks (default behavior)
+                if (textLength > 15) return '0.65rem';
+                if (textLength > 10) return '0.7rem';
+                return '0.75rem';
+              })(),
+              textAlign: 'center',
+              textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              letterSpacing: '0.025em',
+              WebkitFontSmoothing: 'antialiased',
+              MozOsxFontSmoothing: 'grayscale',
+              textRendering: 'optimizeLegibility',
+              color: '#ffffff',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+            }}>
+              {task.projectName || 'PROJ'}
+            </div>
+            <div style={{
+              fontSize: (() => {
+                const hours = task.hours || 4;
+                const textLength = task.clientName?.length || 0;
+
+                // For 1-hour tasks (narrowest), use smaller fonts
+                if (hours === 1) {
+                  if (textLength > 20) return '0.5rem';
+                  if (textLength > 15) return '0.55rem';
+                  return '0.6rem';
+                }
+
+                // For 2-hour tasks
+                if (hours === 2) {
+                  if (textLength > 20) return '0.55rem';
+                  if (textLength > 15) return '0.6rem';
+                  return '0.65rem';
+                }
+
+                // For 3+ hour tasks (default behavior)
+                if (textLength > 20) return '0.6rem';
+                if (textLength > 15) return '0.65rem';
+                return '0.7rem';
+              })(), // Dynamic client text size based on both length and task width
+              opacity: 0.95,
+              padding: `0 ${tasksToShow.length >= 4 ? '2px' : tasksToShow.length === 3 ? '4px' : '8px'} 6px ${tasksToShow.length >= 4 ? '2px' : tasksToShow.length === 3 ? '4px' : '8px'}`, // More responsive padding based on task density
+              textAlign: 'center',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              fontWeight: '600',
+              WebkitFontSmoothing: 'antialiased',
+              MozOsxFontSmoothing: 'grayscale',
+              textRendering: 'optimizeLegibility',
+              color: '#ffffff',
+              lineHeight: '1.1',
+            }}>
+              {(task.clientName === 'Amazon Web Services' ? 'Amazon' : task.clientName) || 'CLIENT'}
+            </div>
+            
+            {/* White bottom section with task type */}
+            <div style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              color: '#1f2937',
+              padding: `4px ${tasksToShow.length === 4 ? '4px' : '8px'} 8px ${tasksToShow.length === 4 ? '4px' : '8px'}`, // Responsive padding + move text UP from bottom
+              fontSize: (() => {
+                const hours = task.hours || 4;
+                const textLength = task.taskTypeName?.length || task.taskName?.length || 0;
+
+                // For 1-hour tasks (narrowest), use much smaller fonts
+                if (hours === 1) {
+                  if (textLength > 15) return '0.4rem';
+                  if (textLength > 10) return '0.45rem';
+                  return '0.46rem'; // Reduced from 0.48rem for short text
+                }
+
+                // For 2-hour tasks
+                if (hours === 2) {
+                  if (textLength > 15) return '0.48rem';
+                  if (textLength > 10) return '0.53rem';
+                  return '0.57rem';
+                }
+
+                // For 3+ hour tasks (default behavior with density consideration)
+                if (textLength > 15) return '0.5rem';
+                if (textLength > 10) return '0.55rem';
+                return tasksToShow.length === 4 ? '0.52rem' : '0.62rem';
+              })(), // Dynamic font sizing based on text length and task width
+              fontWeight: '700',
+              textAlign: 'center',
+              borderRadius: '0 0 4px 4px',
+              marginTop: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: '1.2',
+              minHeight: '18px',
+              maxHeight: '18px',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              WebkitFontSmoothing: 'antialiased',
+              MozOsxFontSmoothing: 'grayscale',
+              textRendering: 'optimizeLegibility',
+              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 -1px 0 rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+            }}>
+              {task.taskTypeName || task.taskName || 'Task'}
+            </div>
+
+            {/* Hover action icons for individual tasks */}
+            {hoveredTask === task.assignmentId && !isReadOnly && (
+              <div style={{
+                position: 'absolute',
+                top: '4px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                gap: '3px',
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(15px)',
+                border: '0.5px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '8px',
+                padding: '3px',
+                boxShadow: '0 3px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+                zIndex: 100
+              }}>
+                {/* Copy icon */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTaskCopy?.(task);
+                  }}
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(16, 185, 129, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                  }}
+                  title="Copy task"
+                >
+                  ⧉
+                </button>
+
+                {/* Edit icon */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTaskEdit?.(task);
+                  }}
+                  style={{
+                    background: 'rgba(107, 114, 128, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(107, 114, 128, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(107, 114, 128, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(107, 114, 128, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                  }}
+                  title="Edit task"
+                >
+                  ✎
+                </button>
+
+                {/* Delete icon */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTaskDelete?.(task.assignmentId);
+                  }}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.7rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(239, 68, 68, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                  }}
+                  title="Delete task"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Resize Handles - Show on hover for all tasks */}
+            {hoveredTask === task.assignmentId && !isReadOnly && (
+              <>
+                {/* Left resize handle - only if can resize left */}
+                {canResizeTask(task, 'left', tasksToShow) && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '-2px',
+                      top: 0,
+                      width: '6px',
+                      height: '100%',
+                      cursor: 'ew-resize',
+                      backgroundColor: hoveredResizeHandle?.taskId === task.assignmentId && hoveredResizeHandle?.side === 'left'
+                        ? '#3b82f6' : 'rgba(59, 130, 246, 0.6)',
+                      borderRadius: '2px 0 0 2px',
+                      opacity: hoveredResizeHandle?.taskId === task.assignmentId && hoveredResizeHandle?.side === 'left' ? 1 : 0.8,
+                      transition: 'all 0.2s ease-in-out',
+                      zIndex: 110
+                    }}
+                    onMouseEnter={() => setHoveredResizeHandle({ taskId: task.assignmentId, side: 'left' })}
+                    onMouseLeave={() => setHoveredResizeHandle(null)}
+                    onMouseDown={(e) => handleResizeStart(e, task, 'left', employee.employeeId, dateObj, isAM ? Slot.Morning : Slot.Afternoon)}
+                    title={`Resize task from left edge (Current: ${actualHours}h)`}
+                  />
+                )}
+
+                {/* Right resize handle - only if can resize right */}
+                {canResizeTask(task, 'right', tasksToShow) && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: '-2px',
+                      top: 0,
+                      width: '6px',
+                      height: '100%',
+                      cursor: 'ew-resize',
+                      backgroundColor: hoveredResizeHandle?.taskId === task.assignmentId && hoveredResizeHandle?.side === 'right'
+                        ? '#3b82f6' : 'rgba(59, 130, 246, 0.6)',
+                      borderRadius: '0 2px 2px 0',
+                      opacity: hoveredResizeHandle?.taskId === task.assignmentId && hoveredResizeHandle?.side === 'right' ? 1 : 0.8,
+                      transition: 'all 0.2s ease-in-out',
+                      zIndex: 110
+                    }}
+                    onMouseEnter={() => setHoveredResizeHandle({ taskId: task.assignmentId, side: 'right' })}
+                    onMouseLeave={() => setHoveredResizeHandle(null)}
+                    onMouseDown={(e) => handleResizeStart(e, task, 'right', employee.employeeId, dateObj, isAM ? Slot.Morning : Slot.Afternoon)}
+                    title={`Resize task from right edge (Current: ${actualHours}h)`}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        );
+        })}
+
+        {hasMoreTasks && (
+          <div style={{
+            fontSize: '0.6875rem',
+            color: 'var(--dp-neutral-500)',
+            fontWeight: '500',
+            padding: '2px 4px',
+            alignSelf: 'center'
+          }}>
+            +{slotData.tasks.length - 4} more
+          </div>
+        )}
+
+        {/* Hover action buttons for slots with tasks */}
+        {isHovered && !isReadOnly && (
+          <div style={{
+            position: 'absolute',
+            bottom: '4px',
+            right: '4px',
+            display: 'flex',
+            gap: '4px',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderRadius: '8px',
+            padding: '2px',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+            zIndex: 10
+          }}>
+            {!hasLeaveInSlot(employee, day, isAM) && slotData.tasks.length < 4 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSlotClick?.(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+                }}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  width: '22px',
+                  height: '22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.25rem',
+                  fontWeight: '700',
+                  lineHeight: '1',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.9)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                }}
+                title="Add new task"
+              >
+                ＋
+              </button>
+            )}
+            {!hasLeaveInSlot(employee, day, isAM) && hasCopiedTask && slotData.tasks.length < 4 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePasteAction(dateObj, isAM ? Slot.Morning : Slot.Afternoon, employee.employeeId);
+                }}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  width: '22px',
+                  height: '22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.875rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.background = 'rgba(16, 185, 129, 1)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                }}
+                title="Paste task"
+              >
+                ↓
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 4-Column Visual Grid - Background only, no interaction */}
+        {!isReadOnly && (
+          <>
+            {/* Subtle column dividers - always visible */}
+            {[1, 2, 3].map(col => (
+              <div
+                key={`divider-${col}`}
+                style={{
+                  position: 'absolute',
+                  left: `${col * 25}%`,
+                  width: '1px',
+                  height: '100%',
+                  top: 0,
+                  backgroundColor: 'rgba(200, 200, 200, 0.2)',
+                  pointerEvents: 'none',
+                  zIndex: 0
+                }}
+              />
+            ))}
+
+            {/* Column hover zones - only for EMPTY slots */}
+            {tasksToShow.length === 0 && [0, 1, 2, 3].map(col => (
+              <div
+                key={`hover-${col}`}
+                style={{
+                  position: 'absolute',
+                  left: `${col * 25}%`,
+                  width: '25%',
+                  height: '100%',
+                  top: 0,
+                  zIndex: 1,
+                  pointerEvents: 'auto',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={() => setHoveredColumn({
+                  employeeId: employee.employeeId,
+                  date: day.date,
+                  isAM: isAM,
+                  column: col
+                })}
+                onMouseLeave={() => setHoveredColumn(null)}
+                onClick={() => {
+                  console.log(`🎯 Clicked column ${col + 1}/4 in empty slot ${employee.employeeName} ${day.date} ${isAM ? 'AM' : 'PM'}`);
+                  console.log(`Column ${col + 1} represents hour ${col + 1} of this time slot`);
+                  // TODO: Handle column click for task creation with specific hour positioning
+                }}
+              />
+            ))}
+
+            {/* Hover indicator for columns - only show for empty slots */}
+            {tasksToShow.length === 0 && hoveredColumn?.employeeId === employee.employeeId &&
+             hoveredColumn?.date === day.date &&
+             hoveredColumn?.isAM === isAM && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${hoveredColumn.column * 25}%`,
+                  width: '25%',
+                  height: '100%',
+                  top: 0,
+                  backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                  border: '2px dashed #3b82f6',
+                  borderRadius: '8px',
+                  pointerEvents: 'none',
+                  zIndex: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  color: 'var(--dp-primary-600)'
+                }}
+              >
+                H{hoveredColumn.column + 1}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const getMainContainerStyle = (): React.CSSProperties => ({
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%',
+    height: 'calc(100vh - 64px)',
+    overflow: 'hidden',
+    backgroundColor: 'var(--dp-neutral-300)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+    border: '1px solid var(--dp-neutral-100)',
+    borderRadius: 'var(--dp-radius-xl)',
+    backdropFilter: 'blur(8px)',
+  });
+
+  const getHeaderStyle = (): React.CSSProperties => ({
+    display: 'flex',
+    backgroundColor: 'var(--dp-neutral-300)',
+    borderBottom: '1px solid var(--dp-neutral-200)',
+    width: '100%',
+    minWidth: '100%',
+    boxShadow: '0 8px 16px -4px rgba(0, 0, 0, 0.15), 0 4px 8px -2px rgba(0, 0, 0, 0.1)',
+    position: 'relative',
+    zIndex: 5,
+    backdropFilter: 'blur(8px)',
+  });
+
+  const getTeamHeaderStyle = (): React.CSSProperties => ({
+    width: '120px',
+    minWidth: '120px',
+    padding: 'var(--dp-space-3) var(--dp-space-2)',
+    fontSize: 'var(--dp-text-body-large)',
+    fontWeight: 'var(--dp-font-weight-bold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-800)',
+    textAlign: 'center',
+    borderRight: '2px solid var(--dp-neutral-200)',
+    backgroundColor: 'var(--dp-neutral-100)',
+    letterSpacing: '-0.01em',
+    lineHeight: 'var(--dp-line-height-tight)',
+  });
+
+  const getAmPmHeaderStyle = (): React.CSSProperties => ({
+    width: '60px',
+    minWidth: '60px',
+    padding: 'var(--dp-space-3) var(--dp-space-2)',
+    fontSize: 'var(--dp-text-body-medium)',
+    fontWeight: 'var(--dp-font-weight-bold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-700)',
+    textAlign: 'center',
+    borderRight: '2px solid var(--dp-neutral-200)',
+    backgroundColor: 'var(--dp-neutral-100)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 'var(--dp-space-1)',
+  });
+
+  const getDayHeaderStyle = (day: CalendarDayDto): React.CSSProperties => {
+    const isTodayDate = isToday(new Date(day.date));
+    const isSelected = isDaySelected(new Date(day.date));
+    const isMonday = new Date(day.date).getDay() === 1;
+    // Dynamic column width: 250px for ≤5 days (weekly), 125px for >5 days (biweekly)
+    const dynamicMinWidth = days.length <= 5 ? '250px' : '125px';
+
+    return {
+      flex: '1 1 0',
+      minWidth: dynamicMinWidth,
+      maxWidth: 'none',
+      padding: 'var(--dp-space-3) var(--dp-space-2)',
+      fontSize: 'var(--dp-text-body-large)',
+      fontWeight: 'var(--dp-font-weight-bold)',
+      fontFamily: 'var(--dp-font-family-primary)',
+      color: isSelected ? 'var(--dp-neutral-0)' : (isTodayDate ? 'var(--dp-primary-700)' : 'var(--dp-neutral-700)'),
+      textAlign: 'center',
+      borderRight: '1px solid var(--dp-neutral-200)',
+      backgroundColor: isSelected
+        ? 'var(--dp-primary-500)'
+        : (isTodayDate ? 'var(--dp-primary-50)' : (isMonday ? 'var(--dp-neutral-300)' : 'var(--dp-neutral-100)')),
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '50px',
+      cursor: isReadOnly ? 'default' : 'pointer',
+      transition: 'var(--dp-transition-fast)',
+      border: isSelected ? '2px solid var(--dp-primary-700)' : 'none',
+      boxShadow: isSelected ? 'var(--dp-shadow-md)' : 'none',
+      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+    };
+  };
+
+  const getContentStyle = (): React.CSSProperties => ({
+    display: 'flex',
+    flex: 1,
+    overflow: 'auto',
+    width: '100%',
+    minWidth: '100%',
+    transition: 'opacity 0.2s ease-in-out',
+    opacity: 1,
+    position: 'relative',
+    backgroundColor: 'var(--dp-neutral-300)',
+  });
+
+  const getEmployeeRowStyle = (): React.CSSProperties => ({
+    display: 'flex',
+    height: '130px',
+    overflow: 'hidden',
+    marginBottom: '4px',
+  });
+
+  const getEmployeeCellStyle = (): React.CSSProperties => ({
+    width: '120px',
+    minWidth: '120px',
+    borderRight: '2px solid var(--dp-neutral-300)',
+  });
+
+  const getAmPmCellStyle = (): React.CSSProperties => ({
+    width: '60px',
+    minWidth: '60px',
+    borderRight: '2px solid var(--dp-neutral-300)',
+    borderTop: '1px solid var(--dp-neutral-200)',
+    backgroundColor: 'var(--dp-neutral-100)',
+    display: 'flex',
+    flexDirection: 'column',
+  });
+
+  const getAmPmLabelStyle = (isAM: boolean = false): React.CSSProperties => {
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    let backgroundColor: string;
+    if (isDarkTheme) {
+      // Dark theme: AM should be slightly lighter than PM (same as slot colors)
+      backgroundColor = isAM ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-100)';
+    } else {
+      // Light theme: AM darker grey, PM even darker grey (matching slot colors)
+      backgroundColor = isAM ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-200)';
+    }
+
+    return {
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'var(--dp-neutral-700)',
+      fontSize: 'var(--dp-text-body-small)',
+      fontWeight: 'var(--dp-font-weight-semibold)',
+      fontFamily: 'var(--dp-font-family-primary)',
+      borderBottom: '1px solid var(--dp-neutral-300)',
+      backgroundColor,
+    };
+  };
+
+  const getDayCellStyle = (): React.CSSProperties => {
+    // Dynamic column width: 250px for ≤5 days (weekly), 125px for >5 days (biweekly)
+    const dynamicMinWidth = days.length <= 5 ? '250px' : '125px';
+    return {
+      flex: '1 1 0',
+      minWidth: dynamicMinWidth,
+      maxWidth: 'none',
+      borderRight: '1px solid var(--dp-neutral-300)',
+      borderBottom: '1px solid var(--dp-neutral-200)',
+      display: 'flex',
+      flexDirection: 'column',
+    };
+  };
+
+  const getTimeSlotStyle = (isAM: boolean, isNextToSeparator: boolean = false): React.CSSProperties => {
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    let backgroundColor: string;
+    if (isDarkTheme) {
+      // Dark theme: AM should be slightly lighter than PM
+      backgroundColor = isAM ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-100)';
+    } else {
+      // Light theme: AM darker grey, PM even darker grey
+      backgroundColor = isAM ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-200)';
+    }
+
+    return {
+      height: '65px',
+      backgroundColor,
+      // Only add bottom border for AM slots, unless this slot is next to separator
+      borderBottom: isAM ? '1px solid var(--dp-neutral-200)' : 'none',
+      display: 'flex',
+      position: 'relative',
+      overflow: 'hidden'
+    };
+  };
+
+  // Week separator helper functions for biweekly and weekly views
+  const isWeekTransition = (currentDay: CalendarDayDto, nextDay: CalendarDayDto): boolean => {
+    // Enable for both weekly (5 days) and biweekly (>5 days) views
+    if (days.length < 5) return false; // Skip for day view
+
+    const currentDate = new Date(currentDay.date);
+    const nextDate = new Date(nextDay.date);
+    const currentDayOfWeek = currentDate.getDay();
+    const nextDayOfWeek = nextDate.getDay();
+
+    // Week transition: Friday (5) followed by Monday (1)
+    return currentDayOfWeek === 5 && nextDayOfWeek === 1;
+  };
+
+  const getWeekNumber = (date: Date): number => {
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date.getTime() - startOfYear.getTime()) / 86400000;
+    return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  };
+
+  // Month separator helper functions
+  const isMonthTransition = (currentDay: CalendarDayDto, nextDay: CalendarDayDto): boolean => {
+    // Enable for both weekly (5 days) and biweekly (>5 days) views
+    if (days.length < 5) return false; // Skip for day view
+
+    const currentDate = new Date(currentDay.date);
+    const nextDate = new Date(nextDay.date);
+
+    // Check if dates are valid
+    if (isNaN(currentDate.getTime()) || isNaN(nextDate.getTime())) {
+      console.error('Invalid date in month transition check:', currentDay.date, nextDay.date);
+      return false;
+    }
+
+    // Month transition: different months
+    return currentDate.getMonth() !== nextDate.getMonth();
+  };
+
+  const getMonthName = (date: Date): string => {
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date in getMonthName:', date);
+      return 'INVALID';
+    }
+    const months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+                   'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    return months[date.getMonth()];
+  };
+
+  const getWeekSeparatorHeaderStyle = (): React.CSSProperties => ({
+    width: '40px',
+    minWidth: '40px',
+    maxWidth: '40px',
+    backgroundColor: 'var(--dp-primary-500)',
+    borderLeft: '3px solid var(--dp-primary-700)',
+    borderRight: '3px solid var(--dp-primary-700)',
+    borderTop: '2px solid var(--dp-primary-700)',
+    borderBottom: '2px solid var(--dp-primary-700)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 'var(--dp-text-body-small)',
+    fontWeight: 'var(--dp-font-weight-bold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-0)',
+    padding: 'var(--dp-space-1) var(--dp-space-1)',
+    textAlign: 'center',
+    writingMode: 'vertical-rl',
+    textOrientation: 'mixed',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+  });
+
+  const getWeekSeparatorCellStyle = (): React.CSSProperties => ({
+    width: '40px',
+    minWidth: '40px',
+    maxWidth: '40px',
+    backgroundColor: 'var(--dp-primary-100)',
+    borderLeft: '3px solid var(--dp-primary-700)',
+    borderRight: '3px solid var(--dp-primary-700)',
+    borderTop: '3px solid var(--dp-primary-700)',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    marginBottom: '1px',
+    borderBottom: '3px solid var(--dp-primary-700)',
+  });
+
+  const getWeekSeparatorSlotStyle = (): React.CSSProperties => ({
+    height: '65px',
+    backgroundColor: 'var(--dp-primary-200)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  });
+
+  const getMonthSeparatorHeaderStyle = (): React.CSSProperties => ({
+    width: '40px',
+    minWidth: '40px',
+    maxWidth: '40px',
+    backgroundColor: 'var(--dp-success-500)',
+    borderLeft: '3px solid var(--dp-success-700)',
+    borderRight: '3px solid var(--dp-success-700)',
+    borderTop: '2px solid var(--dp-success-700)',
+    borderBottom: '2px solid var(--dp-success-700)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 'var(--dp-text-body-small)',
+    fontWeight: 'var(--dp-font-weight-bold)',
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-0)',
+    padding: 'var(--dp-space-1) var(--dp-space-1)',
+    textAlign: 'center',
+    writingMode: 'vertical-rl',
+    textOrientation: 'mixed',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+  });
+
+  const getMonthSeparatorCellStyle = (): React.CSSProperties => ({
+    width: '40px',
+    minWidth: '40px',
+    maxWidth: '40px',
+    backgroundColor: 'var(--dp-success-100)',
+    borderLeft: '3px solid var(--dp-success-700)',
+    borderRight: '3px solid var(--dp-success-700)',
+    borderTop: '3px solid var(--dp-success-700)',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    marginBottom: '1px',
+    borderBottom: '3px solid var(--dp-success-700)',
+  });
+
+  const getMonthSeparatorSlotStyle = (): React.CSSProperties => ({
+    height: '65px',
+    backgroundColor: 'var(--dp-success-200)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  });
+
+  // Create array with days and separators for weekly and biweekly views
+  const createDaysWithSeparators = () => {
+    if (days.length < 5) return days; // No separators for day view
+
+    const result: Array<CalendarDayDto | { type: 'separator'; weekNumber: number } | { type: 'monthSeparator'; monthName: string }> = [];
+
+    for (let i = 0; i < days.length; i++) {
+      result.push(days[i]);
+
+      // Check if we need a separator after this day
+      if (i < days.length - 1) {
+        // Month transition takes priority over week transition
+        if (isMonthTransition(days[i], days[i + 1])) {
+          const currentDate = new Date(days[i].date);
+          const monthName = getMonthName(currentDate);
+          result.push({ type: 'monthSeparator', monthName });
+        } else if (isWeekTransition(days[i], days[i + 1])) {
+          const currentDate = new Date(days[i].date);
+          const weekNumber = getWeekNumber(currentDate);
+          result.push({ type: 'separator', weekNumber });
+        }
+      }
+    }
+
+    return result;
+  };
+
+  const daysWithSeparators = createDaysWithSeparators();
+
+  return (
+    <div style={getMainContainerStyle()}>
+      {/* Header Row */}
+      <div style={getHeaderStyle()}>
+        <div
+          style={{
+            ...getTeamHeaderStyle(),
+            cursor: isReadOnly ? 'default' : 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: teamHeaderHovered ? 'var(--dp-neutral-200)' : 'var(--dp-neutral-100)',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+          }}
+          onMouseEnter={() => !isReadOnly && setTeamHeaderHovered(true)}
+          onMouseLeave={() => setTeamHeaderHovered(false)}
+          onContextMenu={createTeamHeaderContextMenu}
+          title={isReadOnly ? 'Team' : 'Right-click for team management options'}
+        >
+          <span>Team</span>
+          {selectedTeamFilters.length > 0 && (
+            <div style={{
+              fontSize: '10px',
+              backgroundColor: 'var(--dp-primary-500)',
+              color: 'var(--dp-neutral-0)',
+              borderRadius: '50%',
+              width: '16px',
+              height: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              marginLeft: '6px'
+            }}>
+              {selectedTeamFilters.length}
+            </div>
+          )}
+          {!isReadOnly && (
+            <div style={{
+              fontSize: '0.6875rem',
+              color: 'var(--dp-neutral-400)',
+              marginLeft: 'auto',
+              position: 'absolute',
+              right: '8px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              opacity: teamHeaderHovered ? 1 : 0.5,
+              transition: 'opacity 0.2s ease',
+            }}>
+              ⋯
+            </div>
+          )}
+        </div>
+        <div style={getAmPmHeaderStyle()}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-2c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>
+          </svg>
+        </div>
+        {daysWithSeparators.map((item, index) => {
+          if (typeof item === 'object' && 'type' in item) {
+            if (item.type === 'separator') {
+              // Render week separator header (no text - text is in first employee row)
+              return (
+                <div
+                  key={`separator-${item.weekNumber}`}
+                  style={getWeekSeparatorHeaderStyle()}
+                >
+                </div>
+              );
+            } else if (item.type === 'monthSeparator') {
+              // Render month separator header (no text - text is in first employee row)
+              return (
+                <div
+                  key={`month-separator-${item.monthName}`}
+                  style={getMonthSeparatorHeaderStyle()}
+                >
+                </div>
+              );
+            }
+          }
+
+          // Render regular day header
+          const day = item as CalendarDayDto;
+          return (
+            <div
+              key={day.date}
+              style={getDayHeaderStyle(day)}
+              data-day-header="true"
+            onClick={(e) => {
+              if (!isReadOnly) {
+                console.log('Day header clicked:', day.date, 'Ctrl:', e.ctrlKey);
+                onDayClick?.(new Date(day.date), e);
+              }
+            }}
+            onMouseEnter={(e) => {
+              if (!isReadOnly) {
+                const isTodayDate = isToday(new Date(day.date));
+                const isSelected = isDaySelected(new Date(day.date));
+                const isMonday = new Date(day.date).getDay() === 1;
+                if (!isSelected) {
+                  e.currentTarget.style.backgroundColor = isTodayDate ? 'var(--dp-primary-100)' : (isMonday ? 'var(--dp-neutral-400)' : 'var(--dp-neutral-200)');
+                }
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isReadOnly) {
+                const isTodayDate = isToday(new Date(day.date));
+                const isSelected = isDaySelected(new Date(day.date));
+                const isMonday = new Date(day.date).getDay() === 1;
+                if (!isSelected) {
+                  e.currentTarget.style.backgroundColor = isTodayDate ? 'var(--dp-primary-50)' : (isMonday ? 'var(--dp-neutral-300)' : 'var(--dp-neutral-100)');
+                }
+              }
+            }}
+            onContextMenu={(e) => {
+              if (isReadOnly) return;
+              e.preventDefault();
+
+              // Remove existing context menus
+              document.querySelectorAll('[data-context-menu]').forEach(menu => {
+                if (document.body.contains(menu)) {
+                  document.body.removeChild(menu);
+                }
+              });
+
+              const contextMenu = document.createElement('div');
+              contextMenu.setAttribute('data-context-menu', 'true');
+              contextMenu.style.position = 'fixed';
+              contextMenu.style.left = e.clientX + 'px';
+              contextMenu.style.top = e.clientY + 'px';
+              contextMenu.style.backgroundColor = 'var(--dp-neutral-0)';
+              contextMenu.style.border = '1px solid var(--dp-neutral-200)';
+              contextMenu.style.borderRadius = 'var(--dp-radius-lg)';
+              contextMenu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+              contextMenu.style.zIndex = '10000';
+              contextMenu.style.padding = '4px 0';
+              contextMenu.style.fontSize = '14px';
+              contextMenu.style.minWidth = '180px';
+
+              const dayDate = new Date(day.date);
+
+              // Check if there are any blocking items on this day
+              const hasBlocking = employees.some(emp => {
+                const dayAssignment = emp.dayAssignments.find(assignment =>
+                  new Date(assignment.date).toDateString() === dayDate.toDateString()
+                );
+                return dayAssignment?.isHoliday ||
+                       dayAssignment?.leave ||
+                       dayAssignment?.morningSlot?.leave ||
+                       dayAssignment?.afternoonSlot?.leave;
+              });
+
+              // Check if this day is selected and determine count for context menu
+              const isDayCurrentlySelected = isDaySelected(dayDate);
+              let daysCount = 1; // Default to 1 (just this day)
+
+              if (selectedDays && selectedDays.length > 0) {
+                if (isDayCurrentlySelected) {
+                  // This day is part of selection - show count for all selected days
+                  daysCount = selectedDays.length;
+                } else {
+                  // This day is NOT in selection - will only process this day
+                  daysCount = 1;
+                }
+              }
+
+              const menuItems = [
+                {
+                  label: `📊 View Day Details`,
+                  action: () => onDayViewDetails?.(dayDate, day),
+                  description: 'View comprehensive statistics and breakdown for this day'
+                },
+                {
+                  label: `🏦 Set Bank Holiday${daysCount > 1 ? ` (${daysCount})` : ''}`,
+                  action: () => onSetBankHoliday?.(dayDate),
+                  description: daysCount > 1
+                    ? `Block all slots for all team members on ${daysCount} selected days`
+                    : 'Block all slots for all team members on this day'
+                },
+                {
+                  label: `✈️ Set Leave${daysCount > 1 ? ` (${daysCount})` : ''}`,
+                  action: () => onSetLeave?.(dayDate),
+                  description: daysCount > 1
+                    ? `Set leave for specific team members on ${daysCount} selected days`
+                    : 'Set leave for specific team members'
+                },
+                ...(hasBlocking ? [{
+                  label: `🧹 Clear Blocking${daysCount > 1 ? ` (${daysCount})` : ''}`,
+                  action: () => onClearBlocking?.(dayDate),
+                  description: daysCount > 1
+                    ? `Remove all leave and holidays from ${daysCount} selected days`
+                    : 'Remove all leave and holidays from this day'
+                }] : [])
+              ];
+
+              menuItems.forEach((item, index) => {
+                const menuItem = document.createElement('div');
+                menuItem.textContent = item.label;
+                menuItem.style.padding = '8px 16px';
+                menuItem.style.cursor = 'pointer';
+                menuItem.style.borderBottom = index < menuItems.length - 1 ? '1px solid var(--dp-neutral-200)' : 'none';
+                menuItem.style.whiteSpace = 'nowrap';
+                menuItem.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+                menuItem.style.color = 'var(--dp-neutral-700)';
+
+                // Add hover effects
+                menuItem.onmouseenter = () => {
+                  menuItem.style.backgroundColor = 'var(--dp-primary-50)';
+                  menuItem.style.color = 'var(--dp-primary-700)';
+                  menuItem.style.transform = 'translateX(4px)';
+                };
+                menuItem.onmouseleave = () => {
+                  menuItem.style.backgroundColor = 'var(--dp-neutral-0)';
+                  menuItem.style.color = 'var(--dp-neutral-700)';
+                  menuItem.style.transform = 'translateX(0)';
+                };
+
+                menuItem.onclick = () => {
+                  item.action();
+                  document.body.removeChild(contextMenu);
+                };
+
+                // Add tooltip on hover
+                menuItem.title = item.description;
+
+                contextMenu.appendChild(menuItem);
+              });
+
+              document.body.appendChild(contextMenu);
+
+              // Remove context menu when clicking elsewhere
+              const removeMenu = (event: MouseEvent) => {
+                if (!contextMenu.contains(event.target as Node)) {
+                  if (document.body.contains(contextMenu)) {
+                    document.body.removeChild(contextMenu);
+                  }
+                  document.removeEventListener('click', removeMenu);
+                }
+              };
+              setTimeout(() => document.addEventListener('click', removeMenu), 0);
+            }}
+          >
+            {(() => {
+              const date = new Date(day.date);
+              const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+              const dayNumber = date.getDate();
+
+              if (isToday(date)) {
+                return (
+                  <>
+                    {dayName} {dayNumber}
+                    <span style={{ fontSize: 'var(--dp-text-body-small)', fontWeight: 'var(--dp-font-weight-bold)', marginLeft: '4px' }}>
+                      (Today)
+                    </span>
+                  </>
+                );
+              }
+              return `${dayName} ${dayNumber}`;
+            })()}
+          </div>
+          );
+        })}
+      </div>
+
+      {/* Content Rows */}
+      <div style={getContentStyle()}>
+        <div style={{ flex: 1, width: '100%', minWidth: '100%' }}>
+          {employees.map((employee, employeeIndex) => (
+            <div key={employee.employeeId} style={getEmployeeRowStyle()}>
+              {/* Employee Info */}
+              <div style={getEmployeeCellStyle()}>
+                <SimplifiedEmployeeRow
+                  employee={employee}
+                  onEmployeeView={onEmployeeView}
+                  onEmployeeEdit={onEmployeeEdit}
+                  onEmployeeDelete={onEmployeeDelete}
+                />
+              </div>
+
+              {/* AM/PM Labels */}
+              <div style={getAmPmCellStyle()}>
+                <div style={getAmPmLabelStyle(true)}>AM</div>
+                <div style={getAmPmLabelStyle(false)}>PM</div>
+              </div>
+
+              {/* Day Columns */}
+              {daysWithSeparators.map((item, index) => {
+                if (typeof item === 'object' && 'type' in item) {
+                  if (item.type === 'separator') {
+                    // Render week separator body
+                    const isFirstEmployee = employeeIndex === 0;
+
+                    if (isFirstEmployee) {
+                      // First employee: render text spanning both AM and PM
+                      return (
+                        <div key={`separator-body-${item.weekNumber}`} style={{
+                          ...getWeekSeparatorCellStyle(),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <div style={{
+                            writingMode: 'vertical-rl',
+                            textOrientation: 'mixed',
+                            fontSize: '0.7rem',
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            color: 'var(--dp-primary-900)',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            END OF WEEK {item.weekNumber}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Other employees: normal AM/PM split
+                      return (
+                        <div key={`separator-body-${item.weekNumber}`} style={getWeekSeparatorCellStyle()}>
+                          <div style={getWeekSeparatorSlotStyle()}></div>
+                          <div style={getWeekSeparatorSlotStyle()}></div>
+                        </div>
+                      );
+                    }
+                  } else if (item.type === 'monthSeparator') {
+                    // Render month separator body
+                    const isFirstEmployee = employeeIndex === 0;
+
+                    if (isFirstEmployee) {
+                      // First employee: render text spanning both AM and PM
+                      return (
+                        <div key={`month-separator-body-${item.monthName}`} style={{
+                          ...getMonthSeparatorCellStyle(),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <div style={{
+                            writingMode: 'vertical-rl',
+                            textOrientation: 'mixed',
+                            fontSize: '0.65rem',
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            color: 'var(--dp-neutral-900)',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            END OF {item.monthName}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Other employees: normal AM/PM split
+                      return (
+                        <div key={`month-separator-body-${item.monthName}`} style={getMonthSeparatorCellStyle()}>
+                          <div style={getMonthSeparatorSlotStyle()}></div>
+                          <div style={getMonthSeparatorSlotStyle()}></div>
+                        </div>
+                      );
+                    }
+                  }
+                }
+
+                // Render regular day column
+                const day = item as CalendarDayDto;
+                // Check if next item is a separator
+                const nextItem = daysWithSeparators[index + 1];
+                const isNextToSeparator = nextItem && typeof nextItem === 'object' && 'type' in nextItem && nextItem.type === 'separator';
+
+                return (
+                  <div key={day.date} style={getDayCellStyle()}>
+                  {/* AM Slot */}
+                  <div style={getTimeSlotStyle(true, isNextToSeparator)}>
+                    {renderTasksInSlot(employee, day, true)}
+                  </div>
+
+                  {/* PM Slot */}
+                  <div style={getTimeSlotStyle(false, isNextToSeparator)}>
+                    {renderTasksInSlot(employee, day, false)}
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+
+      {/* Team Details Modal */}
+      {selectedTeam && (
+        <TeamDetailsModal
+          isOpen={showTeamDetailsModal}
+          onClose={() => {
+            setShowTeamDetailsModal(false);
+            setSelectedTeam(null);
+          }}
+          teamId={selectedTeam.id}
+          teamName={selectedTeam.name}
+          teamMembers={selectedTeam.members}
+        />
+      )}
+    </div>
+  );
+};
+
+export default DayBasedCalendarGrid;

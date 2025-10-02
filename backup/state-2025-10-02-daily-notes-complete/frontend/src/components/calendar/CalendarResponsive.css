@@ -1,0 +1,242 @@
+/* Calendar Responsive Styles */
+
+/* Mobile First Approach */
+
+/* Small Mobile (320px - 480px) */
+@media (max-width: 480px) {
+  /* Hide team column on very small screens */
+  .calendar-team-column {
+    display: none !important;
+  }
+
+  /* Stack day columns vertically on mobile */
+  .calendar-days-container {
+    flex-direction: column !important;
+  }
+
+  /* Full width day columns on mobile */
+  .calendar-day-column {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Reduce font sizes for mobile */
+  .calendar-day-header {
+    font-size: var(--dp-text-body-small) !important;
+    padding: var(--dp-space-2) !important;
+  }
+
+  /* Smaller task cards on mobile */
+  .task-card-mobile {
+    font-size: var(--dp-text-caption) !important;
+    padding: var(--dp-space-1) !important;
+  }
+
+  /* Hide less important elements */
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+/* Medium Mobile & Phablets (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  /* Show team column but narrower */
+  .calendar-team-column {
+    width: 80px !important;
+    min-width: 80px !important;
+  }
+
+  /* Horizontal scroll for day columns */
+  .calendar-days-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Fixed width day columns for horizontal scroll */
+  .calendar-day-column {
+    min-width: 200px !important;
+  }
+
+  /* Adjust text sizes */
+  .calendar-day-header {
+    font-size: var(--dp-text-body-medium) !important;
+  }
+
+  /* Medium task cards */
+  .task-card-tablet {
+    font-size: var(--dp-text-body-small) !important;
+    padding: var(--dp-space-1p5) var(--dp-space-2) !important;
+  }
+}
+
+/* Tablets (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Standard team column width */
+  .calendar-team-column {
+    width: 100px !important;
+    min-width: 100px !important;
+  }
+
+  /* Responsive day column widths */
+  .calendar-day-column {
+    min-width: 180px !important;
+    flex: 1 1 180px !important;
+  }
+
+  /* Adjust spacing for tablet */
+  .calendar-container {
+    padding: var(--dp-space-4) !important;
+  }
+
+  /* Standard text sizes */
+  .calendar-day-header {
+    font-size: var(--dp-text-body-medium) !important;
+  }
+}
+
+/* Small Laptops & Large Tablets (1025px - 1366px) */
+@media (min-width: 1025px) and (max-width: 1366px) {
+  /* Standard team column */
+  .calendar-team-column {
+    width: 110px !important;
+    min-width: 110px !important;
+  }
+
+  /* Flexible day columns */
+  .calendar-day-column {
+    min-width: 200px !important;
+    flex: 1 1 200px !important;
+  }
+}
+
+/* Desktop (1367px - 1920px) - Default styles */
+@media (min-width: 1367px) and (max-width: 1920px) {
+  /* Default styles apply */
+}
+
+/* Large Desktop (1921px+) */
+@media (min-width: 1921px) {
+  /* Larger day columns for big screens */
+  .calendar-day-column {
+    min-width: 280px !important;
+    flex: 1 1 280px !important;
+  }
+
+  /* Larger team column */
+  .calendar-team-column {
+    width: 140px !important;
+    min-width: 140px !important;
+  }
+
+  /* Increase font sizes for readability */
+  .calendar-day-header {
+    font-size: var(--dp-text-body-large) !important;
+  }
+
+  /* More spacing on large screens */
+  .calendar-container {
+    padding: var(--dp-space-6) !important;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .clickable-element {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  /* Remove hover effects on touch devices */
+  .hover-effect:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Larger buttons for touch */
+  button {
+    min-height: 48px !important;
+    padding: var(--dp-space-3) var(--dp-space-4) !important;
+  }
+
+  /* Improved touch scrolling */
+  .scrollable-container {
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
+  }
+}
+
+/* Orientation Changes */
+@media (orientation: landscape) and (max-width: 768px) {
+  /* Adjust layout for landscape mobile */
+  .calendar-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+  }
+
+  /* Reduce vertical spacing in landscape */
+  .calendar-day-header {
+    padding: var(--dp-space-1) var(--dp-space-2) !important;
+    min-height: 36px !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 768px) {
+  /* Stack elements vertically in portrait */
+  .calendar-controls {
+    flex-direction: column !important;
+    gap: var(--dp-space-2) !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  /* Remove shadows and animations for print */
+  * {
+    box-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Hide unnecessary elements */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure text is black for print */
+  body {
+    color: black !important;
+  }
+
+  /* Full width for print */
+  .calendar-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .calendar-container {
+    border: 2px solid currentColor !important;
+  }
+
+  .calendar-day-header {
+    border: 1px solid currentColor !important;
+  }
+
+  .task-card {
+    border: 2px solid currentColor !important;
+  }
+}

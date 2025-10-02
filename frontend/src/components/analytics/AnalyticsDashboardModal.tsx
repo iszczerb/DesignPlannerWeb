@@ -83,6 +83,8 @@ import {
 } from '../../services/analyticsService';
 import teamService from '../../services/teamService';
 import { databaseService } from '../../services/databaseService';
+import scheduleService from '../../services/scheduleService';
+import { AssignmentTaskDto } from '../../types/schedule';
 import dayjs from 'dayjs';
 
 interface AnalyticsDashboardModalProps {
@@ -135,6 +137,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
   const [allClientDistribution, setAllClientDistribution] = useState<ClientDistributionDto[]>([]); // Cache all clients without category filter
   const [categoryDistribution, setCategoryDistribution] = useState<CategoryDistributionDto[]>([]);
   const [taskTypeAnalytics, setTaskTypeAnalytics] = useState<TaskTypeAnalyticsDto[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentTaskDto[]>([]); // Raw assignments for accurate task type filtering
   const [employeeAnalytics, setEmployeeAnalytics] = useState<EmployeeAnalyticsDto[]>([]);
   const [allEmployeeAnalytics, setAllEmployeeAnalytics] = useState<EmployeeAnalyticsDto[]>([]); // Cache all employees without category filter
   const [teams, setTeams] = useState<TeamOption[]>([]);
@@ -253,6 +256,11 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
           teamIds: teamFilters // These are EMPLOYEE TEAM IDs for additional filtering
         }),
 
+        // Send employeeId when exactly ONE team member is selected (backend supports single employee filtering)
+        ...(selectedTeamMembers.length === 1 && {
+          employeeId: selectedTeamMembers[0]
+        }),
+
         // Use categoryIds for PROJECT CATEGORY filtering
         ...(selectedCategories.length > 0 && {
           categoryIds: selectedCategories // These are PROJECT CATEGORY IDs
@@ -265,20 +273,27 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         clientDistData,
         categoryDistData,
         taskTypeData,
-        employeeData
+        employeeData,
+        assignmentsData
       ] = await Promise.all([
         analyticsService.getAnalyticsSummary(filter),
         analyticsService.getProjectHours(filter),
         analyticsService.getClientDistribution(filter),
         analyticsService.getCategoryDistribution(filter),
         analyticsService.getTaskTypeAnalytics(filter),
-        analyticsService.getEmployeeAnalytics(filter)
+        analyticsService.getEmployeeAnalytics(filter),
+        scheduleService.getAssignmentsByDateRange({
+          startDate: startDate.format('YYYY-MM-DD'),
+          endDate: endDate.format('YYYY-MM-DD'),
+          ...(selectedTeamMembers.length === 1 && { employeeId: selectedTeamMembers[0] })
+        })
       ]);
 
 
       setSummary(summaryData);
       setCategoryDistribution(categoryDistData);
       setTaskTypeAnalytics(taskTypeData);
+      setAssignments(assignmentsData);
 
       // CRITICAL: Handle data for category filtering - keep all items visible
       if (selectedCategories.length > 0) {
@@ -627,67 +642,71 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
   };
 
   const getFilteredTaskTypeData = () => {
-    let filtered = [...taskTypeAnalytics];
+    // STRATEGY: Use accurate assignment data when project/client filters are active
+    // Otherwise, use backend taskTypeAnalytics (already filtered by employeeId if selected)
 
-    // Apply team member filter (approximate)
-    if (selectedTeamMembers.length > 0) {
-      const teamProportion = selectedTeamMembers.length / Math.max(employeeAnalytics.length, 1);
-      filtered = filtered.map(t => ({
-        ...t,
-        hours: Math.round(t.hours * teamProportion),
-        count: Math.round(t.count * teamProportion)
-      }));
-    }
-
-    // Apply project filter (approximate)
-    if (selectedProjects.length > 0) {
-      const selectedProjectHours = projectHours
-        .filter(p => selectedProjects.includes(p.projectCode))
-        .reduce((sum, p) => sum + p.hours, 0);
-      const totalProjectHours = projectHours.reduce((sum, p) => sum + p.hours, 0);
-      const projectProportion = totalProjectHours > 0 ? selectedProjectHours / totalProjectHours : 0;
-
-      filtered = filtered.map(t => ({
-        ...t,
-        hours: Math.round(t.hours * projectProportion),
-        count: Math.round(t.count * projectProportion)
-      }));
-    }
-
-    // Apply client filter (approximate)
-    if (selectedClients.length > 0) {
-      const selectedClientHours = clientDistribution
-        .filter(c => selectedClients.includes(c.clientCode))
-        .reduce((sum, c) => sum + c.hours, 0);
-      const totalClientHours = clientDistribution.reduce((sum, c) => sum + c.hours, 0);
-      const clientProportion = totalClientHours > 0 ? selectedClientHours / totalClientHours : 0;
-
-      filtered = filtered.map(t => ({
-        ...t,
-        hours: Math.round(t.hours * clientProportion),
-        count: Math.round(t.count * clientProportion)
-      }));
-    }
-
-    // Apply category filter - accurate based on actual project hours
-    if (selectedCategories.length > 0) {
-      const projectsInSelectedCategories = projectHours.filter(p => selectedCategories.includes(p.categoryId));
-      const totalHoursInSelectedCategories = projectsInSelectedCategories.reduce((sum, p) => sum + p.hours, 0);
-      const totalProjectHours = projectHours.reduce((sum, p) => sum + p.hours, 0);
-
-      if (totalHoursInSelectedCategories === 0 || totalProjectHours === 0) {
-        filtered = filtered.map(t => ({ ...t, hours: 0, count: 0 }));
-      } else {
-        const categoryProportion = totalHoursInSelectedCategories / totalProjectHours;
-        filtered = filtered.map(t => ({
-          ...t,
-          hours: Math.round(t.hours * categoryProportion),
-          count: Math.round(t.count * categoryProportion)
-        }));
+    // If project or client filters are active, calculate accurate data from assignments
+    if (selectedProjects.length > 0 || selectedClients.length > 0) {
+      if (assignments.length === 0) {
+        return []; // No assignments data yet
       }
+
+      // Filter assignments by project/client/category
+      let filteredAssignments = assignments;
+
+      // Filter by projects
+      if (selectedProjects.length > 0) {
+        filteredAssignments = filteredAssignments.filter(a =>
+          selectedProjects.some(projectCode => a.projectName.includes(projectCode))
+        );
+      }
+
+      // Filter by clients
+      if (selectedClients.length > 0) {
+        filteredAssignments = filteredAssignments.filter(a =>
+          selectedClients.includes(a.clientCode)
+        );
+      }
+
+      // Filter by categories (match with project categories)
+      if (selectedCategories.length > 0) {
+        const projectCodesInCategories = projectHours
+          .filter(p => selectedCategories.includes(p.categoryId))
+          .map(p => p.projectCode);
+
+        filteredAssignments = filteredAssignments.filter(a =>
+          projectCodesInCategories.some(code => a.projectName.includes(code))
+        );
+      }
+
+      // Group by task type and calculate ACCURATE hours from assignments
+      const taskTypeMap = new Map<string, { hours: number; count: number }>();
+
+      filteredAssignments.forEach(assignment => {
+        const existing = taskTypeMap.get(assignment.taskTypeName) || { hours: 0, count: 0 };
+        taskTypeMap.set(assignment.taskTypeName, {
+          hours: existing.hours + (assignment.hours || 4), // Default 4 hours if not set
+          count: existing.count + 1
+        });
+      });
+
+      // Convert to TaskTypeAnalyticsDto array
+      const result: TaskTypeAnalyticsDto[] = [];
+      taskTypeMap.forEach((value, taskTypeName) => {
+        result.push({
+          taskTypeName,
+          hours: value.hours,
+          count: value.count,
+          percentage: 0, // Will be calculated by chart
+          category: '' // Not needed for display
+        });
+      });
+
+      return result.filter(t => t.hours > 0);
     }
 
-    return filtered.filter(t => t.hours > 0); // Only show task types with hours
+    // No project/client filters - use backend data (already accurate for team member filtering)
+    return taskTypeAnalytics.filter(t => t.hours > 0);
   };
 
 
@@ -734,7 +753,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         hours: filteredHours,
         taskCount: filteredTaskCount
       };
-    });
+    }).sort((a, b) => b.hours - a.hours); // Sort by hours descending
   };
 
   const getFilteredTeamMembersForSidebar = () => {
@@ -771,7 +790,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         totalHours: filteredHours,
         taskCount: filteredTaskCount
       };
-    });
+    }).sort((a, b) => b.totalHours - a.totalHours); // Sort by hours descending
   };
 
   const getFilteredClientsForSidebar = () => {
@@ -841,7 +860,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         taskCount: filteredTaskCount,
         projectCount: filteredProjectCount
       };
-    });
+    }).sort((a, b) => b.hours - a.hours); // Sort by hours descending
   };
 
   // Calculate filtered summary data based on current filters

@@ -1,0 +1,438 @@
+/* =========================================================================
+   DESIGN PLANNER - DESIGN TOKEN SYSTEM
+   Modern, Professional Design System with Dark Mode Support
+   ========================================================================= */
+
+/* =========================================================================
+   ROOT DESIGN TOKENS - LIGHT MODE (DEFAULT)
+   ========================================================================= */
+
+:root {
+  /* =======================================================================
+     COLOR SYSTEM - PRIMARY BRAND PALETTE
+     Modern blue-based palette for professional engineering tools
+     ======================================================================= */
+
+  --dp-primary-50:  #f0f9ff;    /* Lightest accent backgrounds */
+  --dp-primary-100: #e0f2fe;    /* Light hover states */
+  --dp-primary-200: #bae6fd;    /* Soft accents and borders */
+  --dp-primary-300: #7dd3fc;    /* Subtle highlights */
+  --dp-primary-400: #38bdf8;    /* Interactive elements */
+  --dp-primary-500: #0ea5e9;    /* Primary action color */
+  --dp-primary-600: #0284c7;    /* Primary hover state */
+  --dp-primary-700: #0369a1;    /* Primary active state */
+  --dp-primary-800: #075985;    /* Strong emphasis */
+  --dp-primary-900: #0c4a6e;    /* Darkest text on light */
+
+  /* =======================================================================
+     NEUTRAL FOUNDATION PALETTE
+     Clean grays for backgrounds, text, and borders
+     ======================================================================= */
+
+  --dp-neutral-0:   #ffffff;    /* Pure white */
+  --dp-neutral-50:  #f8fafc;    /* Page backgrounds */
+  --dp-neutral-100: #f1f5f9;    /* Card backgrounds */
+  --dp-neutral-200: #e2e8f0;    /* Subtle borders */
+  --dp-neutral-300: #cbd5e1;    /* Standard borders */
+  --dp-neutral-400: #94a3b8;    /* Muted text */
+  --dp-neutral-500: #64748b;    /* Secondary text */
+  --dp-neutral-600: #475569;    /* Primary text */
+  --dp-neutral-700: #334155;    /* Strong text */
+  --dp-neutral-800: #1e293b;    /* Emphasis text */
+  --dp-neutral-900: #0f172a;    /* Darkest text */
+
+  /* =======================================================================
+     SEMANTIC COLORS
+     Status and feedback colors with professional appearance
+     ======================================================================= */
+
+  --dp-success-50:  #ecfdf5;    /* Success backgrounds */
+  --dp-success-100: #d1fae5;    /* Light success */
+  --dp-success-500: #10b981;    /* Success primary */
+  --dp-success-600: #059669;    /* Success hover */
+  --dp-success-700: #047857;    /* Success active */
+
+  --dp-warning-50:  #fffbeb;    /* Warning backgrounds */
+  --dp-warning-100: #fef3c7;    /* Light warning */
+  --dp-warning-500: #f59e0b;    /* Warning primary */
+  --dp-warning-600: #d97706;    /* Warning hover */
+  --dp-warning-700: #b45309;    /* Warning active */
+
+  --dp-error-50:    #fef2f2;    /* Error backgrounds */
+  --dp-error-100:   #fecaca;    /* Light error */
+  --dp-error-500:   #ef4444;    /* Error primary */
+  --dp-error-600:   #dc2626;    /* Error hover */
+  --dp-error-700:   #b91c1c;    /* Error active */
+
+  --dp-info-50:     #eff6ff;    /* Info backgrounds */
+  --dp-info-100:    #dbeafe;    /* Light info */
+  --dp-info-500:    #3b82f6;    /* Info primary */
+  --dp-info-600:    #2563eb;    /* Info hover */
+  --dp-info-700:    #1d4ed8;    /* Info active */
+
+  /* =======================================================================
+     TATE BRAND COLORS
+     Official Tate brand colors from brand guidelines
+     ======================================================================= */
+
+  /* Tate Oxford Blue - Primary Brand Color */
+  --dp-tate-oxford-blue: #00265C;     /* R:0, G:39, B:93 - Primary brand */
+  --dp-tate-oxford-blue-dark: #001a3f; /* Darker shade for borders/depth */
+  --dp-tate-oxford-blue-light: #1a4576; /* Lighter shade for hover states */
+
+  /* Tate Capri Blue - Secondary Brand Color */
+  --dp-tate-capri-blue: #0099FF;      /* R:0, G:153, B:255 - Secondary brand */
+  --dp-tate-capri-blue-dark: #0066cc; /* Darker shade for hover states */
+  --dp-tate-capri-blue-light: #33aaff; /* Lighter shade for backgrounds */
+
+  /* Logo Filter System - Light Mode */
+  --dp-logo-filter: none;             /* Keep original colors in light mode */
+
+  /* =======================================================================
+     TYPOGRAPHY SYSTEM
+     Material Design 3 inspired typography scale with professional fonts
+     ======================================================================= */
+
+  /* Font Families */
+  --dp-font-family-primary: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --dp-font-family-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+
+  /* Font Weights */
+  --dp-font-weight-regular: 400;
+  --dp-font-weight-medium: 500;
+  --dp-font-weight-semibold: 600;
+  --dp-font-weight-bold: 700;
+
+  /* Display Styles - For major headings and hero content */
+  --dp-text-display-large: 4rem;        /* 64px - Hero headings */
+  --dp-text-display-medium: 3.5rem;     /* 56px - Major section headers */
+  --dp-text-display-small: 3rem;        /* 48px - Large card headers */
+
+  /* Headline Styles - For section and subsection headings */
+  --dp-text-headline-large: 2rem;       /* 32px - Main page headings */
+  --dp-text-headline-medium: 1.75rem;   /* 28px - Section headings */
+  --dp-text-headline-small: 1.5rem;     /* 24px - Subsection headings */
+
+  /* Title Styles - For component and content titles */
+  --dp-text-title-large: 1.375rem;      /* 22px - Large component titles */
+  --dp-text-title-medium: 1.125rem;     /* 18px - Standard component titles */
+  --dp-text-title-small: 1rem;          /* 16px - Small component titles */
+
+  /* Body Styles - For content and paragraphs */
+  --dp-text-body-large: 1rem;           /* 16px - Standard body text */
+  --dp-text-body-medium: 0.875rem;      /* 14px - Dense content */
+  --dp-text-body-small: 0.75rem;        /* 12px - Fine print */
+
+  /* Label Styles - For form labels, buttons, and UI elements */
+  --dp-text-label-large: 0.875rem;      /* 14px - Button labels */
+  --dp-text-label-medium: 0.75rem;      /* 12px - Form labels */
+  --dp-text-label-small: 0.6875rem;     /* 11px - Small labels */
+
+  /* Line Heights */
+  --dp-line-height-tight: 1.25;         /* For headings */
+  --dp-line-height-normal: 1.5;         /* For body text */
+  --dp-line-height-relaxed: 1.75;       /* For readable content */
+
+  /* =======================================================================
+     SPACING SYSTEM
+     8px based spacing scale for consistent layouts
+     ======================================================================= */
+
+  --dp-space-0:  0;          /*   0px */
+  --dp-space-1:  0.25rem;    /*   4px */
+  --dp-space-2:  0.5rem;     /*   8px */
+  --dp-space-3:  0.75rem;    /*  12px */
+  --dp-space-4:  1rem;       /*  16px */
+  --dp-space-5:  1.25rem;    /*  20px */
+  --dp-space-6:  1.5rem;     /*  24px */
+  --dp-space-7:  1.75rem;    /*  28px */
+  --dp-space-8:  2rem;       /*  32px */
+  --dp-space-9:  2.25rem;    /*  36px */
+  --dp-space-10: 2.5rem;     /*  40px */
+  --dp-space-11: 2.75rem;    /*  44px */
+  --dp-space-12: 3rem;       /*  48px */
+  --dp-space-14: 3.5rem;     /*  56px */
+  --dp-space-16: 4rem;       /*  64px */
+  --dp-space-20: 5rem;       /*  80px */
+  --dp-space-24: 6rem;       /*  96px */
+  --dp-space-32: 8rem;       /* 128px */
+
+  /* =======================================================================
+     BORDER RADIUS SYSTEM
+     Consistent rounded corners throughout the interface
+     ======================================================================= */
+
+  --dp-radius-none: 0;
+  --dp-radius-sm: 0.25rem;    /*  4px - Small elements */
+  --dp-radius-md: 0.5rem;     /*  8px - Standard elements */
+  --dp-radius-lg: 0.75rem;    /* 12px - Cards and containers */
+  --dp-radius-xl: 1rem;       /* 16px - Large containers */
+  --dp-radius-2xl: 1.5rem;    /* 24px - Modal containers */
+  --dp-radius-full: 9999px;   /* Fully rounded */
+
+  /* =======================================================================
+     SHADOW SYSTEM
+     Elevation system for depth and hierarchy
+     ======================================================================= */
+
+  --dp-shadow-sm:  0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --dp-shadow-md:  0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --dp-shadow-lg:  0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --dp-shadow-xl:  0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --dp-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* =======================================================================
+     TRANSITION SYSTEM
+     Consistent animations and transitions
+     ======================================================================= */
+
+  --dp-transition-fast: 150ms ease;
+  --dp-transition-normal: 200ms ease;
+  --dp-transition-slow: 300ms ease;
+  --dp-transition-bounce: 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* =======================================================================
+     Z-INDEX SYSTEM
+     Layering system for overlays and modals
+     ======================================================================= */
+
+  --dp-z-dropdown: 1000;
+  --dp-z-sticky: 1020;
+  --dp-z-fixed: 1030;
+  --dp-z-modal-backdrop: 1040;
+  --dp-z-modal: 1050;
+  --dp-z-popover: 1060;
+  --dp-z-tooltip: 1070;
+  --dp-z-toast: 1080;
+}
+
+/* =========================================================================
+   DARK MODE DESIGN TOKENS
+   Professional dark theme with excellent readability
+   ========================================================================= */
+
+[data-theme="dark"] {
+  /* =======================================================================
+     DARK MODE COLOR OVERRIDES
+     ======================================================================= */
+
+  /* Primary colors remain mostly the same but with adjusted contrast */
+  --dp-primary-50:  #0c1629;    /* Dark accent backgrounds */
+  --dp-primary-100: #1e293b;    /* Dark hover states */
+  --dp-primary-200: #334155;    /* Dark borders */
+  --dp-primary-300: #475569;    /* Dark highlights */
+  --dp-primary-400: #64748b;    /* Dark interactive */
+  --dp-primary-500: #0ea5e9;    /* Primary remains bright */
+  --dp-primary-600: #38bdf8;    /* Brighter hover in dark */
+  --dp-primary-700: #7dd3fc;    /* Brighter active in dark */
+  --dp-primary-800: #bae6fd;    /* Light emphasis in dark */
+  --dp-primary-900: #e0f2fe;    /* Lightest text in dark */
+
+  /* Neutral colors inverted for dark mode */
+  --dp-neutral-0:   #0f172a;    /* Dark background */
+  --dp-neutral-50:  #1e293b;    /* Dark page backgrounds */
+  --dp-neutral-100: #334155;    /* Dark card backgrounds */
+  --dp-neutral-200: #475569;    /* Dark subtle borders */
+  --dp-neutral-300: #64748b;    /* Dark standard borders */
+  --dp-neutral-400: #94a3b8;    /* Dark muted text */
+  --dp-neutral-500: #cbd5e1;    /* Dark secondary text */
+  --dp-neutral-600: #e2e8f0;    /* Dark primary text */
+  --dp-neutral-700: #f1f5f9;    /* Dark strong text */
+  --dp-neutral-800: #f8fafc;    /* Dark emphasis text */
+  --dp-neutral-900: #ffffff;    /* Pure white text */
+
+  /* Semantic colors adjusted for dark mode */
+  --dp-success-50:  #064e3b;    /* Dark success background */
+  --dp-success-100: #065f46;    /* Dark light success */
+  --dp-success-500: #34d399;    /* Brighter success in dark */
+  --dp-success-600: #6ee7b7;    /* Brighter hover */
+  --dp-success-700: #a7f3d0;    /* Brightest active */
+
+  --dp-warning-50:  #78350f;    /* Dark warning background */
+  --dp-warning-100: #92400e;    /* Dark light warning */
+  --dp-warning-500: #fbbf24;    /* Brighter warning in dark */
+  --dp-warning-600: #fcd34d;    /* Brighter hover */
+  --dp-warning-700: #fde68a;    /* Brightest active */
+
+  --dp-error-50:    #7f1d1d;    /* Dark error background */
+  --dp-error-100:   #991b1b;    /* Dark light error */
+  --dp-error-500:   #f87171;    /* Brighter error in dark */
+  --dp-error-600:   #fca5a5;    /* Brighter hover */
+  --dp-error-700:   #fecaca;    /* Brightest active */
+
+  --dp-info-50:     #1e3a8a;    /* Dark info background */
+  --dp-info-100:    #1e40af;    /* Dark light info */
+  --dp-info-500:    #60a5fa;    /* Brighter info in dark */
+  --dp-info-600:    #93c5fd;    /* Brighter hover */
+  --dp-info-700:    #bfdbfe;    /* Brightest active */
+
+  /* Logo Filter System - Dark Mode */
+  --dp-logo-filter: brightness(0) invert(1); /* Make logos white in dark mode */
+
+  /* Shadows adjusted for dark mode */
+  --dp-shadow-sm:  0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --dp-shadow-md:  0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --dp-shadow-lg:  0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --dp-shadow-xl:  0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --dp-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* =========================================================================
+   AUTO DARK MODE - RESPECTS SYSTEM PREFERENCE
+   ========================================================================= */
+
+[data-theme="dark"] {
+    /* Same dark mode overrides when system preference is dark */
+    /* This ensures dark mode works even without data-theme attribute */
+
+    --dp-primary-50:  #0c1629;
+    --dp-primary-100: #1e293b;
+    --dp-primary-200: #334155;
+    --dp-primary-300: #475569;
+    --dp-primary-400: #64748b;
+    --dp-primary-500: #0ea5e9;
+    --dp-primary-600: #38bdf8;
+    --dp-primary-700: #7dd3fc;
+    --dp-primary-800: #bae6fd;
+    --dp-primary-900: #e0f2fe;
+
+    --dp-neutral-0:   #0f172a;
+    --dp-neutral-50:  #1e293b;
+    --dp-neutral-100: #334155;
+    --dp-neutral-200: #475569;
+    --dp-neutral-300: #64748b;
+    --dp-neutral-400: #94a3b8;
+    --dp-neutral-500: #cbd5e1;
+    --dp-neutral-600: #e2e8f0;
+    --dp-neutral-700: #f1f5f9;
+    --dp-neutral-800: #f8fafc;
+    --dp-neutral-900: #ffffff;
+
+    --dp-success-50:  #064e3b;
+    --dp-success-100: #065f46;
+    --dp-success-500: #34d399;
+    --dp-success-600: #6ee7b7;
+    --dp-success-700: #a7f3d0;
+
+    --dp-warning-50:  #78350f;
+    --dp-warning-100: #92400e;
+    --dp-warning-500: #fbbf24;
+    --dp-warning-600: #fcd34d;
+    --dp-warning-700: #fde68a;
+
+    --dp-error-50:    #7f1d1d;
+    --dp-error-100:   #991b1b;
+    --dp-error-500:   #f87171;
+    --dp-error-600:   #fca5a5;
+    --dp-error-700:   #fecaca;
+
+    --dp-info-50:     #1e3a8a;
+    --dp-info-100:    #1e40af;
+    --dp-info-500:    #60a5fa;
+    --dp-info-600:    #93c5fd;
+    --dp-info-700:    #bfdbfe;
+
+    --dp-shadow-sm:  0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --dp-shadow-md:  0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --dp-shadow-lg:  0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --dp-shadow-xl:  0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    --dp-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  }
+} */
+
+/* =========================================================================
+   FORCE LIGHT MODE - OVERRIDE SYSTEM PREFERENCE
+   ========================================================================= */
+
+[data-theme="light"] {
+  /* Restore original light mode values even if system prefers dark */
+  --dp-primary-50:  #f0f9ff;
+  --dp-primary-100: #e0f2fe;
+  --dp-primary-200: #bae6fd;
+  --dp-primary-300: #7dd3fc;
+  --dp-primary-400: #38bdf8;
+  --dp-primary-500: #0ea5e9;
+  --dp-primary-600: #0284c7;
+  --dp-primary-700: #0369a1;
+  --dp-primary-800: #075985;
+  --dp-primary-900: #0c4a6e;
+
+  --dp-neutral-0:   #ffffff;
+  --dp-neutral-50:  #f8fafc;
+  --dp-neutral-100: #f1f5f9;
+  --dp-neutral-200: #e2e8f0;
+  --dp-neutral-300: #cbd5e1;
+  --dp-neutral-400: #94a3b8;
+  --dp-neutral-500: #64748b;
+  --dp-neutral-600: #475569;
+  --dp-neutral-700: #334155;
+  --dp-neutral-800: #1e293b;
+  --dp-neutral-900: #0f172a;
+
+  --dp-success-50:  #ecfdf5;
+  --dp-success-100: #d1fae5;
+  --dp-success-500: #10b981;
+  --dp-success-600: #059669;
+  --dp-success-700: #047857;
+
+  --dp-warning-50:  #fffbeb;
+  --dp-warning-100: #fef3c7;
+  --dp-warning-500: #f59e0b;
+  --dp-warning-600: #d97706;
+  --dp-warning-700: #b45309;
+
+  --dp-error-50:    #fef2f2;
+  --dp-error-100:   #fecaca;
+  --dp-error-500:   #ef4444;
+  --dp-error-600:   #dc2626;
+  --dp-error-700:   #b91c1c;
+
+  --dp-info-50:     #eff6ff;
+  --dp-info-100:    #dbeafe;
+  --dp-info-500:    #3b82f6;
+  --dp-info-600:    #2563eb;
+  --dp-info-700:    #1d4ed8;
+
+  --dp-shadow-sm:  0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --dp-shadow-md:  0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --dp-shadow-lg:  0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --dp-shadow-xl:  0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --dp-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* =========================================================================
+   DESIGN TOKEN UTILITIES
+   Helper classes for common design token usage
+   ========================================================================= */
+
+/* Text color utilities */
+.dp-text-primary { color: var(--dp-neutral-900); }
+.dp-text-secondary { color: var(--dp-neutral-600); }
+.dp-text-muted { color: var(--dp-neutral-400); }
+.dp-text-success { color: var(--dp-success-600); }
+.dp-text-warning { color: var(--dp-warning-600); }
+.dp-text-error { color: var(--dp-error-600); }
+.dp-text-info { color: var(--dp-info-600); }
+
+/* Background color utilities */
+.dp-bg-primary { background-color: var(--dp-neutral-0); }
+.dp-bg-secondary { background-color: var(--dp-neutral-50); }
+.dp-bg-muted { background-color: var(--dp-neutral-100); }
+
+/* Border color utilities */
+.dp-border { border-color: var(--dp-neutral-200); }
+.dp-border-muted { border-color: var(--dp-neutral-100); }
+
+/* Shadow utilities */
+.dp-shadow-sm { box-shadow: var(--dp-shadow-sm); }
+.dp-shadow-md { box-shadow: var(--dp-shadow-md); }
+.dp-shadow-lg { box-shadow: var(--dp-shadow-lg); }
+
+/* Transition utilities */
+.dp-transition { transition: all var(--dp-transition-normal); }
+.dp-transition-fast { transition: all var(--dp-transition-fast); }
+.dp-transition-slow { transition: all var(--dp-transition-slow); }
+
+/* =========================================================================
+   END DESIGN PLANNER DESIGN TOKENS
+   ========================================================================= */

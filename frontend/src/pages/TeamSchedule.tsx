@@ -4961,7 +4961,7 @@ ${dateInfo}`;
                           sx={{
                             position: 'absolute',
                             top: '100%',
-                            left: 0,
+                            right: 0,
                             zIndex: 1000,
                             backgroundColor: 'var(--dp-neutral-0)',
                             border: '1px solid var(--dp-neutral-300)',
@@ -5048,7 +5048,7 @@ ${dateInfo}`;
                           sx={{
                             position: 'absolute',
                             top: '100%',
-                            left: 0,
+                            right: 0,
                             zIndex: 1000,
                             backgroundColor: 'var(--dp-neutral-0)',
                             border: '1px solid var(--dp-neutral-300)',
@@ -5133,7 +5133,7 @@ ${dateInfo}`;
                             sx={{
                               position: 'absolute',
                               top: '100%',
-                              left: 0,
+                              right: 0,
                               zIndex: 1000,
                               backgroundColor: 'var(--dp-neutral-0)',
                               border: '1px solid var(--dp-neutral-300)',
