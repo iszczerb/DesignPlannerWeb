@@ -42,7 +42,7 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (!lightsInitialized) {
-      // 35 lights spread across the entire screen - FIXED positions, only blink
+      // 50 lights spread across the entire screen - FIXED positions, only blink
       const fixedLights: ServerLight[] = [
         { id: 0, top: 8, left: 5, animationDelay: 0 },
         { id: 1, top: 15, left: 12, animationDelay: 1.3 },
@@ -79,6 +79,22 @@ const LoginPage: React.FC = () => {
         { id: 32, top: 60, left: 88, animationDelay: 3.4 },
         { id: 33, top: 20, left: 45, animationDelay: 4.8 },
         { id: 34, top: 80, left: 65, animationDelay: 1.2 },
+        // Additional 15 lights - spread out with longer delays
+        { id: 35, top: 7, left: 50, animationDelay: 6.5 },
+        { id: 36, top: 17, left: 3, animationDelay: 7.2 },
+        { id: 37, top: 27, left: 93, animationDelay: 8.1 },
+        { id: 38, top: 37, left: 60, animationDelay: 9.3 },
+        { id: 39, top: 47, left: 23, animationDelay: 6.8 },
+        { id: 40, top: 57, left: 77, animationDelay: 7.5 },
+        { id: 41, top: 67, left: 13, animationDelay: 8.4 },
+        { id: 42, top: 77, left: 53, animationDelay: 9.1 },
+        { id: 43, top: 87, left: 70, animationDelay: 6.2 },
+        { id: 44, top: 90, left: 20, animationDelay: 7.8 },
+        { id: 45, top: 23, left: 40, animationDelay: 8.7 },
+        { id: 46, top: 43, left: 7, animationDelay: 9.5 },
+        { id: 47, top: 63, left: 47, animationDelay: 6.9 },
+        { id: 48, top: 73, left: 87, animationDelay: 7.6 },
+        { id: 49, top: 83, left: 33, animationDelay: 8.3 },
       ];
 
       setServerLights(fixedLights);
@@ -177,22 +193,12 @@ const LoginPage: React.FC = () => {
         <div className="data-line line-3"></div>
       </div>
 
-      {/* Top Header */}
-      <div className="login-header">
-        <div className="login-header-content">
-          <img
-            src="/assets/logos/design-planner-logo.png"
-            alt="Design Planner"
-            className="header-logo-left"
-          />
-          <h1 className="header-title">Design Planner</h1>
-          <img
-            src="/assets/logos/tate-logo.png"
-            alt="Tate"
-            className="header-logo-right"
-          />
-        </div>
-      </div>
+      {/* Bottom Right Logo - Tate */}
+      <img
+        src="/assets/logos/tate-logo.png"
+        alt="Tate"
+        className="bottom-logo-right"
+      />
 
       {/* Main Content */}
       <div className="login-content">
@@ -203,6 +209,16 @@ const LoginPage: React.FC = () => {
               {error}
             </Alert>
           )}
+
+          {/* Form Title with Logo */}
+          <div className="form-title-container">
+            <img
+              src="/assets/logos/design-planner-logo.png"
+              alt="Design Planner"
+              className="form-title-logo"
+            />
+            <h2 className="form-title">Design Planner</h2>
+          </div>
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="login-form">

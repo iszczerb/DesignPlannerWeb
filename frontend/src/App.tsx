@@ -25,10 +25,13 @@ import Unauthorized from './pages/Unauthorized';
 // Management Components
 import EmployeeManagement from './components/management/EmployeeManagement';
 
+// Page Transition
+import PageTransition from './components/common/PageTransition';
+
 // Material Design 3 Theme Configuration with Design Tokens
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
       main: '#0ea5e9',      // dp-primary-500
       light: '#38bdf8',     // dp-primary-400
@@ -42,12 +45,12 @@ const theme = createTheme({
       contrastText: '#ffffff',
     },
     background: {
-      default: '#f8fafc',   // dp-neutral-50
-      paper: '#ffffff',     // dp-neutral-0
+      default: '#1a1a1a',   // Dark background
+      paper: '#262626',     // Dark paper
     },
     text: {
-      primary: '#1e293b',   // dp-neutral-800
-      secondary: '#64748b', // dp-neutral-500
+      primary: '#f8fafc',   // Light text
+      secondary: '#cbd5e1', // Light secondary text
     },
     error: {
       main: '#ef4444',      // dp-error-500
@@ -232,9 +235,9 @@ const theme = createTheme({
 const App: React.FC = () => {
   console.log('🎯 App.tsx: App component rendering...');
 
-  // Initialize theme on app load
+  // Initialize theme on app load - DEFAULT TO DARK
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
 
     // Set CSS custom properties based on saved theme
@@ -272,25 +275,31 @@ const App: React.FC = () => {
                     path="/dashboard"
                     element={
                       <ProtectedRoute>
-                        <Dashboard />
+                        <PageTransition>
+                          <Dashboard />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />
-                  
+
                   <Route
                     path="/schedule"
                     element={
                       <ProtectedRoute>
-                        <TeamSchedule />
+                        <PageTransition>
+                          <TeamSchedule />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />
-                  
+
                   <Route
                     path="/team-schedule"
                     element={
                       <ProtectedRoute>
-                        <TeamSchedule />
+                        <PageTransition>
+                          <TeamSchedule />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />
@@ -299,7 +308,9 @@ const App: React.FC = () => {
                     path="/analytics"
                     element={
                       <ProtectedRoute requiredRoles={[UserRole.Manager, UserRole.Admin]}>
-                        <Analytics />
+                        <PageTransition>
+                          <Analytics />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />
@@ -309,7 +320,9 @@ const App: React.FC = () => {
                     path="/management/employees"
                     element={
                       <ProtectedRoute requiredRoles={[UserRole.Manager, UserRole.Admin]}>
-                        <EmployeeManagement />
+                        <PageTransition>
+                          <EmployeeManagement />
+                        </PageTransition>
                       </ProtectedRoute>
                     }
                   />

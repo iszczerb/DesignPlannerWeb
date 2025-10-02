@@ -3,9 +3,9 @@
   line-height: var(--dp-line-height-normal);
   font-weight: var(--dp-font-weight-regular);
 
-  color-scheme: light;
-  color: var(--dp-neutral-800);
-  background-color: var(--dp-neutral-50);
+  color-scheme: dark;
+  color: var(--dp-neutral-50);
+  background-color: #1a1a1a;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -30,8 +30,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: var(--dp-font-family-primary);
-  background-color: var(--dp-neutral-50);
-  color: var(--dp-neutral-800);
+  background-color: #1a1a1a;
+  color: var(--dp-neutral-50);
 }
 
 h1 {
@@ -39,7 +39,7 @@ h1 {
   line-height: var(--dp-line-height-tight);
   font-weight: var(--dp-font-weight-bold);
   font-family: var(--dp-font-family-primary);
-  color: var(--dp-neutral-800);
+  color: var(--dp-neutral-50);
 }
 
 button {
@@ -65,10 +65,35 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+/* Dark mode (default) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    color: var(--dp-neutral-50);
+    background-color: #1a1a1a;
+  }
+  body {
+    background-color: #1a1a1a;
+    color: var(--dp-neutral-50);
+  }
+  h1 {
+    color: var(--dp-neutral-50);
+  }
+}
+
+/* Light mode (optional) */
 @media (prefers-color-scheme: light) {
   :root {
+    color-scheme: light;
     color: var(--dp-neutral-800);
     background-color: var(--dp-neutral-0);
+  }
+  body {
+    background-color: var(--dp-neutral-50);
+    color: var(--dp-neutral-800);
+  }
+  h1 {
+    color: var(--dp-neutral-800);
   }
   a:hover {
     color: var(--dp-primary-600);
