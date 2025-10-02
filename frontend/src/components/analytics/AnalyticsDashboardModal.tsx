@@ -1741,9 +1741,9 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           });
                         })()}
                         <LabelList
-                          dataKey="percentage"
+                          dataKey={chartDisplayMode === 'hours' ? 'value' : 'percentage'}
                           position="top"
-                          formatter={(value: number) => `${value}%`}
+                          formatter={(value: number) => chartDisplayMode === 'hours' ? `${value}h` : `${value}%`}
                           style={(() => {
                             const projectData = getProjectChartData() || [];
                             const projectCount = projectData.length;
@@ -1867,7 +1867,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         animationEasing="ease-out"
                         animationBegin={0}
                         activeOpacity={0.8}
-                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, value }) => {
                           const RADIAN = Math.PI / 180;
                           // For small segments (<3%), extend the label outward with enhanced callout
                           const isSmallSegment = (percent * 100) < 3;
@@ -2141,9 +2141,9 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                           ));
                         })()}
                         <LabelList
-                          dataKey="percentage"
+                          dataKey={chartDisplayMode === 'hours' ? 'value' : 'percentage'}
                           position="right"
-                          formatter={(value: number) => `${value}%`}
+                          formatter={(value: number) => chartDisplayMode === 'hours' ? `${value}h` : `${value}%`}
                           style={{
                             fontSize: '13px',
                             fontWeight: '600',
@@ -2246,7 +2246,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                         animationEasing="ease-out"
                         animationBegin={0}
                         activeOpacity={0.8}
-                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, value }) => {
                           const RADIAN = Math.PI / 180;
                           // For small segments (<3%), extend the label outward with enhanced callout
                           const isSmallSegment = (percent * 100) < 3;
