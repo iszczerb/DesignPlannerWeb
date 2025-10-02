@@ -1015,8 +1015,8 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         {/* Close button at very top right */}
         <IconButton onClick={onClose} sx={{
           position: 'absolute',
-          top: 2,
-          right: 4,
+          top: -4,
+          right: -16,
           width: '32px',
           height: '32px',
           color: 'var(--dp-neutral-600)',

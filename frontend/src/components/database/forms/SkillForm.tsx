@@ -71,9 +71,10 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
     if (!validateForm()) return;
 
     try {
+      // Don't set default category - allow empty/null value
       const submitData = {
         ...formData,
-        category: formData.category || SkillCategory.Technical
+        category: formData.category || null
       };
 
       const finalData = isCreating

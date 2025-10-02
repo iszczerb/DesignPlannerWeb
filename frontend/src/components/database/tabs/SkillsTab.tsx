@@ -152,13 +152,23 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange, onTaskCounts
     if (!deletingSkill) return;
 
     try {
+      console.log('🗑️ SKILLS TAB - Attempting to delete skill:', deletingSkill);
       await databaseService.deleteSkill(deletingSkill.id!);
+      console.log('✅ SKILLS TAB - Skill deleted successfully');
       setShowDeleteConfirm(false);
       setDeletingSkill(undefined);
+      setError(null); // Clear any previous errors
       await loadSkills();
       await loadLiveTaskCounts(); // Refresh live counts after deletion
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete skill');
+      console.error('❌ SKILLS TAB - Error deleting skill:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete skill';
+      setError(errorMessage);
+      // Keep the dialog open so user sees the error
+      setShowDeleteConfirm(false);
+      setDeletingSkill(undefined);
+      // Show error to user
+      alert(`Failed to delete skill: ${errorMessage}`);
     }
   };
 
