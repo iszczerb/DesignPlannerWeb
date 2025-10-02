@@ -388,19 +388,32 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
     fontFamily: 'var(--dp-font-family-primary)',
   });
 
-  const dateHeaderStyle = (isToday: boolean): React.CSSProperties => ({
-    padding: 'var(--dp-space-1p5) var(--dp-space-2)',
-    fontSize: 'var(--dp-text-body-medium)',
-    fontWeight: 'var(--dp-font-weight-semibold)',
-    fontFamily: 'var(--dp-font-family-primary)',
-    color: isToday ? 'var(--dp-neutral-0)' : 'var(--dp-neutral-700)',
-    borderBottom: '1px solid var(--dp-neutral-200)',
-    backgroundColor: isToday ? 'var(--dp-primary-500)' : 'var(--dp-neutral-50)',
-    textAlign: 'center',
-    flexShrink: 0,
-    position: 'relative',
-    transition: 'all 0.2s ease',
-  });
+  const dateHeaderStyle = (isToday: boolean): React.CSSProperties => {
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    let backgroundColor: string;
+    if (isToday) {
+      backgroundColor = 'var(--dp-primary-500)';
+    } else if (isDarkTheme) {
+      backgroundColor = 'var(--dp-neutral-100)'; // Lighter in dark mode
+    } else {
+      backgroundColor = 'var(--dp-neutral-100)'; // Light grey in light mode (different from PM slots)
+    }
+
+    return {
+      padding: 'var(--dp-space-1p5) var(--dp-space-2)',
+      fontSize: 'var(--dp-text-body-medium)',
+      fontWeight: 'var(--dp-font-weight-semibold)',
+      fontFamily: 'var(--dp-font-family-primary)',
+      color: isToday ? 'var(--dp-neutral-0)' : 'var(--dp-neutral-700)',
+      backgroundColor,
+      borderBottom: '1px solid var(--dp-neutral-300)',
+      textAlign: 'center',
+      flexShrink: 0,
+      position: 'relative',
+      transition: 'all 0.2s ease',
+    };
+  };
 
   const slotStyle = (slotType: 'AM' | 'PM'): React.CSSProperties => {
     const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -544,69 +557,77 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
         <div style={{
           width: '280px',
           backgroundColor: 'var(--dp-neutral-0)',
-          borderRight: '1px solid var(--dp-neutral-200)',
           padding: 'var(--dp-space-4)',
           overflow: 'auto',
-          boxShadow: 'var(--dp-shadow-md)',
           transition: 'var(--dp-transition-fast)',
         }}>
           {/* Month Header - Clickable */}
           <div
             ref={monthPickerRef}
             style={{
-              marginBottom: '20px',
+              marginBottom: 'var(--dp-space-6)',
               position: 'relative',
             }}>
             <div
               onClick={() => setShowMonthPicker(!showMonthPicker)}
               style={{
-                padding: 'var(--dp-space-4)',
-                backgroundColor: 'var(--dp-primary-500)',
-                borderRadius: 'var(--dp-radius-lg)',
-                textAlign: 'center',
+                padding: 'var(--dp-space-3)',
+                backgroundColor: 'transparent',
+                borderRadius: 'var(--dp-radius-md)',
+                textAlign: 'left',
                 cursor: 'pointer',
                 transition: 'var(--dp-transition-fast)',
-                boxShadow: 'var(--dp-shadow-sm)',
-                ':hover': {
-                  backgroundColor: 'var(--dp-primary-600)',
-                }
+                border: '1px solid var(--dp-neutral-200)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--dp-primary-600)';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = 'var(--dp-shadow-md)';
+                e.currentTarget.style.backgroundColor = 'var(--dp-neutral-50)';
+                e.currentTarget.style.borderColor = 'var(--dp-primary-400)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--dp-primary-500)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'var(--dp-shadow-sm)';
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'var(--dp-neutral-200)';
               }}
             >
-              <h2 style={{
-                fontSize: 'var(--dp-text-headline-small)',
-                fontWeight: 'var(--dp-font-weight-bold)',
-                fontFamily: 'var(--dp-font-family-primary)',
-                color: 'var(--dp-neutral-0)',
-                margin: '0',
+              <div style={{
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
                 gap: 'var(--dp-space-2)',
               }}>
-                {calendarData?.startDate ? new Date(calendarData.startDate).toLocaleDateString('en-US', {
-                  month: 'long',
-                  year: 'numeric'
-                }) : new Date().toLocaleDateString('en-US', {
-                  month: 'long',
-                  year: 'numeric'
-                })}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 'var(--dp-space-2)',
+                }}>
+                  <h2 style={{
+                    fontSize: 'var(--dp-text-title-large)',
+                    fontWeight: 'var(--dp-font-weight-bold)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    color: 'var(--dp-neutral-900)',
+                    margin: '0',
+                  }}>
+                    {calendarData?.startDate ? new Date(calendarData.startDate).toLocaleDateString('en-US', {
+                      month: 'long'
+                    }) : new Date().toLocaleDateString('en-US', {
+                      month: 'long'
+                    })}
+                  </h2>
+                  <span style={{
+                    fontSize: 'var(--dp-text-title-medium)',
+                    fontWeight: 'var(--dp-font-weight-semibold)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    color: 'var(--dp-neutral-600)',
+                  }}>
+                    {calendarData?.startDate ? new Date(calendarData.startDate).getFullYear() : new Date().getFullYear()}
+                  </span>
+                </div>
                 <span style={{
-                  fontSize: '0.8rem',
-                  opacity: 0.8,
+                  fontSize: '0.7rem',
+                  color: 'var(--dp-neutral-500)',
                 }}>
                   ▼
                 </span>
-              </h2>
+              </div>
             </div>
 
             {/* Month Picker Dropdown */}
@@ -618,43 +639,46 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                   top: '100%',
                   left: '0',
                   right: '0',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  backgroundColor: 'var(--dp-neutral-0)',
+                  border: '1px solid var(--dp-neutral-300)',
+                  borderRadius: 'var(--dp-radius-lg)',
+                  boxShadow: 'var(--dp-shadow-xl)',
                   zIndex: 1000,
-                  padding: '16px',
-                  marginTop: '4px',
+                  padding: 'var(--dp-space-4)',
+                  marginTop: 'var(--dp-space-1)',
                 }}>
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '8px',
-                    marginBottom: '16px',
+                    gap: 'var(--dp-space-2)',
+                    marginBottom: 'var(--dp-space-4)',
                   }}>
                     {months.map((month, index) => (
                       <button
                         key={month}
                         onClick={() => handleMonthChange(index, currentYear)}
                         style={{
-                          padding: '8px 4px',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '4px',
-                          backgroundColor: index === currentMonth ? '#3b82f6' : '#ffffff',
-                          color: index === currentMonth ? '#ffffff' : '#374151',
+                          padding: 'var(--dp-space-2)',
+                          border: `1px solid var(--dp-neutral-300)`,
+                          borderRadius: 'var(--dp-radius-md)',
+                          backgroundColor: index === currentMonth ? 'var(--dp-primary-500)' : 'var(--dp-neutral-0)',
+                          color: index === currentMonth ? 'var(--dp-neutral-0)' : 'var(--dp-neutral-700)',
                           cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          fontWeight: '500',
-                          transition: 'all 0.2s ease',
+                          fontSize: 'var(--dp-text-body-small)',
+                          fontWeight: 'var(--dp-font-weight-medium)',
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          transition: 'var(--dp-transition-fast)',
                         }}
                         onMouseEnter={(e) => {
                           if (index !== currentMonth) {
-                            e.currentTarget.style.backgroundColor = '#f3f4f6';
+                            e.currentTarget.style.backgroundColor = 'var(--dp-neutral-100)';
+                            e.currentTarget.style.borderColor = 'var(--dp-primary-400)';
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (index !== currentMonth) {
-                            e.currentTarget.style.backgroundColor = '#ffffff';
+                            e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+                            e.currentTarget.style.borderColor = 'var(--dp-neutral-300)';
                           }
                         }}
                       >
@@ -666,7 +690,7 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px',
+                    gap: 'var(--dp-space-2)',
                   }}>
                     {/* Previous Year Arrow */}
                     <button
@@ -674,23 +698,26 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                       style={{
                         width: '32px',
                         height: '32px',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '4px',
-                        backgroundColor: '#ffffff',
-                        color: '#374151',
+                        border: '1px solid var(--dp-neutral-300)',
+                        borderRadius: 'var(--dp-radius-md)',
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        color: 'var(--dp-neutral-700)',
                         cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        fontWeight: '600',
-                        transition: 'all 0.2s ease',
+                        fontSize: 'var(--dp-text-body-large)',
+                        fontWeight: 'var(--dp-font-weight-bold)',
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        transition: 'var(--dp-transition-fast)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        e.currentTarget.style.backgroundColor = 'var(--dp-neutral-100)';
+                        e.currentTarget.style.borderColor = 'var(--dp-primary-400)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#ffffff';
+                        e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+                        e.currentTarget.style.borderColor = 'var(--dp-neutral-300)';
                       }}
                     >
                       ‹
@@ -698,13 +725,14 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
 
                     {/* Current Year Display */}
                     <div style={{
-                      padding: '6px 16px',
-                      backgroundColor: '#3b82f6',
-                      color: '#ffffff',
-                      borderRadius: '4px',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      minWidth: '60px',
+                      padding: 'var(--dp-space-1p5) var(--dp-space-4)',
+                      backgroundColor: 'var(--dp-primary-500)',
+                      color: 'var(--dp-neutral-0)',
+                      borderRadius: 'var(--dp-radius-md)',
+                      fontSize: 'var(--dp-text-body-medium)',
+                      fontWeight: 'var(--dp-font-weight-bold)',
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      minWidth: '70px',
                       textAlign: 'center',
                     }}>
                       {currentYear}
@@ -716,23 +744,26 @@ const MonthlyCalendarGrid: React.FC<MonthlyCalendarGridProps> = ({
                       style={{
                         width: '32px',
                         height: '32px',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '4px',
-                        backgroundColor: '#ffffff',
-                        color: '#374151',
+                        border: '1px solid var(--dp-neutral-300)',
+                        borderRadius: 'var(--dp-radius-md)',
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        color: 'var(--dp-neutral-700)',
                         cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        fontWeight: '600',
-                        transition: 'all 0.2s ease',
+                        fontSize: 'var(--dp-text-body-large)',
+                        fontWeight: 'var(--dp-font-weight-bold)',
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        transition: 'var(--dp-transition-fast)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        e.currentTarget.style.backgroundColor = 'var(--dp-neutral-100)';
+                        e.currentTarget.style.borderColor = 'var(--dp-primary-400)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#ffffff';
+                        e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
+                        e.currentTarget.style.borderColor = 'var(--dp-neutral-300)';
                       }}
                     >
                       ›

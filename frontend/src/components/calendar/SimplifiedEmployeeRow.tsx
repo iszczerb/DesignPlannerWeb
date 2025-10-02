@@ -18,17 +18,6 @@ interface SimplifiedEmployeeRowProps {
 const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
   employee
 }) => {
-  // Context menu state
-  const [contextMenu, setContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-  }>({
-    visible: false,
-    x: 0,
-    y: 0
-  });
-
   // Team member details modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -205,25 +194,9 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
     fontWeight: '500',
   });
 
-  const handleEmployeeContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    setContextMenu({
-      visible: true,
-      x: event.clientX,
-      y: event.clientY
-    });
-  };
-
-  const handleCloseContextMenu = () => {
-    setContextMenu({ visible: false, x: 0, y: 0 });
-  };
-
-  const handleEmployeeViewDetails = () => {
+  const handleEmployeeClick = () => {
     console.log('🚀 Opening details modal for employee:', employee.employeeName);
     setShowDetailsModal(true);
-    handleCloseContextMenu();
   };
 
   // Split employee name into first and last name
@@ -264,8 +237,7 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
         onMouseUp={(e) => {
           e.currentTarget.style.transform = 'translateY(-1px) scale(1)';
         }}
-        onContextMenu={handleEmployeeContextMenu}
-        title="Click to view details, right-click for options"
+        title="Click to view member details"
       >
         {/* First Name */}
         <div style={getFirstNameStyle()}>
@@ -302,79 +274,6 @@ const SimplifiedEmployeeRow: React.FC<SimplifiedEmployeeRowProps> = ({
           {capacityUtilization.usedCapacity.toFixed(1)}/{capacityUtilization.totalCapacity} ({Math.round(progressPercentage)}%)
         </div>
       </div>
-
-      {/* Employee Context Menu */}
-      {contextMenu.visible && (
-        <>
-          {/* Backdrop to close menu */}
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 999998,
-            }}
-            onClick={handleCloseContextMenu}
-          />
-
-          {/* Context Menu */}
-          <div
-            style={{
-              position: 'fixed',
-              left: Math.max(10, Math.min(contextMenu.x, window.innerWidth - 200)),
-              top: Math.max(10, Math.min(contextMenu.y, window.innerHeight - 200)),
-              zIndex: 999999,
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              overflow: 'hidden',
-              minWidth: '180px',
-            }}
-          >
-            <div style={{
-              padding: '8px 16px',
-              borderBottom: '1px solid #f3f4f6',
-              backgroundColor: '#f9fafb',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              color: '#6b7280',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}>
-              {employee.employeeName}
-            </div>
-
-            <div
-              onClick={handleEmployeeViewDetails}
-              style={{
-                padding: '16px 20px',
-                fontSize: '0.875rem',
-                color: '#374151',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                transition: 'all 0.2s ease',
-                fontWeight: '500',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#3b82f6';
-                e.currentTarget.style.color = 'white';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#374151';
-              }}
-            >
-              <span style={{ fontSize: '1.1rem' }}>📊</span>
-              View Member Details
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Team Member Details Modal */}
       <TeamMemberDetailsModal

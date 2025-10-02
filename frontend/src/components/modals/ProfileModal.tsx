@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
   Box,
   Typography,
   Alert,
@@ -23,11 +20,11 @@ import {
   Person,
   Work,
   Settings as SettingsIcon,
-  Close,
   PhotoCamera,
   CalendarToday
 } from '@mui/icons-material';
 import { databaseService } from '../../services/databaseService';
+import { ModalHeader, ModalFooter, StandardButton } from '../common/modal';
 
 interface ProfileModalProps {
   open: boolean;
@@ -170,42 +167,21 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ open, onClose, currentUser 
       fullWidth
       PaperProps={{
         sx: {
-          backgroundColor: 'var(--dp-neutral-0) !important',
-          borderRadius: 'var(--dp-radius-lg)',
-          boxShadow: 'var(--dp-shadow-lg)',
+          backgroundColor: 'var(--dp-neutral-0)',
+          borderRadius: 'var(--dp-radius-xl)',
+          boxShadow: 'var(--dp-shadow-2xl)',
         }
       }}
     >
-      <DialogTitle sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: 'var(--dp-primary-600)',
-        color: 'var(--dp-neutral-0)',
-        fontFamily: 'var(--dp-font-family-primary)',
-        fontWeight: 'var(--dp-font-weight-bold)',
-        fontSize: 'var(--dp-text-headline-medium)',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-      }}>
-        Profile
-        <IconButton
-          onClick={handleClose}
-          size="small"
-          sx={{
-            color: 'var(--dp-neutral-0)',
-            transition: 'var(--dp-transition-fast)',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            }
-          }}
-        >
-          <Close />
-        </IconButton>
-      </DialogTitle>
+      <ModalHeader
+        title="Profile"
+        onClose={handleClose}
+        variant="primary"
+      />
 
       <DialogContent sx={{
-        backgroundColor: 'var(--dp-neutral-25) !important',
-        p: 3
+        backgroundColor: 'var(--dp-neutral-50)',
+        padding: 'var(--dp-space-6)',
       }}>
         {loading && (
           <Box sx={{
@@ -275,14 +251,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ open, onClose, currentUser 
                 transform: 'translateY(-2px)',
               }
             }}>
-              <CardContent>
+              <CardContent sx={{ padding: 'var(--dp-space-4) !important' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Box sx={{ position: 'relative' }}>
                     <Avatar
                       sx={{
-                        width: 80,
-                        height: 80,
-                        fontSize: '1.5rem',
+                        width: 56,
+                        height: 56,
+                        fontSize: '1.25rem',
                         bgcolor: 'var(--dp-primary-500)'
                       }}
                       src={userProfile.profilePicture}
@@ -293,29 +269,35 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ open, onClose, currentUser 
                       size="small"
                       sx={{
                         position: 'absolute',
-                        bottom: 0,
-                        right: 0,
+                        bottom: -4,
+                        right: -4,
                         bgcolor: 'var(--dp-neutral-0)',
                         boxShadow: 'var(--dp-shadow-sm)',
+                        width: 24,
+                        height: 24,
                         '&:hover': { bgcolor: 'var(--dp-neutral-100)' }
                       }}
                       disabled // Future: Enable when profile picture upload is implemented
                     >
-                      <PhotoCamera fontSize="small" />
+                      <PhotoCamera sx={{ fontSize: '14px' }} />
                     </IconButton>
                   </Box>
 
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" gutterBottom sx={{
+                    <Typography variant="h6" sx={{
                       fontFamily: 'var(--dp-font-family-primary)',
-                      fontWeight: 'var(--dp-font-weight-bold)',
-                      color: 'var(--dp-neutral-800)'
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                      color: 'var(--dp-neutral-800)',
+                      marginBottom: 'var(--dp-space-1)',
+                      fontSize: 'var(--dp-text-title-medium)'
                     }}>
                       {userProfile.name}
                     </Typography>
-                    <Typography variant="body2" gutterBottom sx={{
+                    <Typography variant="body2" sx={{
                       color: 'var(--dp-neutral-600)',
-                      fontFamily: 'var(--dp-font-family-primary)'
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      marginBottom: 'var(--dp-space-2)'
                     }}>
                       @{userProfile.username}
                     </Typography>
@@ -420,22 +402,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ open, onClose, currentUser 
                       </Box>
                     </>
                   )}
-
-                  <Divider />
-
-                  <Box>
-                    <Typography variant="subtitle2" sx={{
-                      color: 'var(--dp-neutral-600)',
-                      fontFamily: 'var(--dp-font-family-primary)',
-                      fontWeight: 'var(--dp-font-weight-medium)'
-                    }}>
-                      Member Since
-                    </Typography>
-                    <Typography sx={{
-                      fontFamily: 'var(--dp-font-family-primary)',
-                      color: 'var(--dp-neutral-800)'
-                    }}>{formatDate(userProfile.createdAt)}</Typography>
-                  </Box>
                 </Box>
               </CardContent>
             </Card>
@@ -495,30 +461,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ open, onClose, currentUser 
         )}
       </DialogContent>
 
-      <DialogActions sx={{
-        backgroundColor: 'var(--dp-neutral-50) !important',
-        borderTop: '1px solid var(--dp-neutral-200)',
-        p: 3
-      }}>
-        <Button
-          onClick={handleClose}
-          variant="contained"
-          sx={{
-            backgroundColor: 'var(--dp-primary-500)',
-            fontFamily: 'var(--dp-font-family-primary)',
-            fontWeight: 'var(--dp-font-weight-medium)',
-            transition: 'var(--dp-transition-fast)',
-            boxShadow: 'var(--dp-shadow-sm)',
-            '&:hover': {
-              backgroundColor: 'var(--dp-primary-600)',
-              boxShadow: 'var(--dp-shadow-md)',
-              transform: 'translateY(-1px)',
-            },
-          }}
-        >
-          Close
-        </Button>
-      </DialogActions>
+      {/* Footer removed - close button is in header */}
     </Dialog>
   );
 };

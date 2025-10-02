@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent, TextField, Typography, Box, Alert } from '@mui/material';
 import { AssignmentTaskDto } from '../../types/schedule';
+import { ModalHeader, ModalFooter, StandardButton } from '../common/modal';
+import SaveIcon from '@mui/icons-material/Save';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 interface QuickEditNotesProps {
   isOpen: boolean;
@@ -47,219 +51,235 @@ const QuickEditNotes: React.FC<QuickEditNotesProps> = ({
     onClose();
   };
 
-  if (!isOpen) return null;
+  const noteTemplates = [
+    'In progress...',
+    'Waiting for approval',
+    'Need more details',
+    'Ready for review'
+  ];
 
   return (
-    <AnimatePresence>
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: -20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: -20 }}
-          transition={{ duration: 0.2 }}
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            width: '500px',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          }}
-        >
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-          }}>
-            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>
-              Edit Notes
-            </h3>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                color: '#6b7280',
-                padding: '4px',
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: 'var(--dp-neutral-0)',
+          borderRadius: 'var(--dp-radius-xl)',
+          boxShadow: 'var(--dp-shadow-2xl)',
+        }
+      }}
+    >
+      <ModalHeader
+        title="Edit Notes"
+        subtitle={
+          selectedTasks.length === 1
+            ? `Editing notes for "${selectedTasks[0].taskTitle}"`
+            : `Editing notes for ${selectedTasks.length} selected tasks`
+        }
+        onClose={onClose}
+        variant="primary"
+      />
+
+      <DialogContent
+        sx={{
+          backgroundColor: 'var(--dp-neutral-50)',
+          padding: 'var(--dp-space-6)',
+          // Global MUI overrides
+          '& .MuiTypography-root': {
+            fontFamily: 'var(--dp-font-family-primary)',
+            color: 'var(--dp-neutral-800)',
+          },
+          '& .MuiOutlinedInput-root': {
+            fontFamily: 'var(--dp-font-family-primary)',
+            color: 'var(--dp-neutral-800)',
+            backgroundColor: 'var(--dp-neutral-0)',
+            '& fieldset': {
+              borderColor: 'var(--dp-neutral-300)',
+            },
+            '&:hover fieldset': {
+              borderColor: 'var(--dp-primary-500)',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: 'var(--dp-primary-500)',
+            },
+          },
+          '& .MuiInputLabel-root': {
+            fontFamily: 'var(--dp-font-family-primary)',
+            color: 'var(--dp-neutral-600)',
+          },
+          '& .MuiAlert-root': {
+            fontFamily: 'var(--dp-font-family-primary)',
+          },
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Notes Input */}
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{
+                fontFamily: 'var(--dp-font-family-primary)',
+                color: 'var(--dp-neutral-600)',
+                fontSize: 'var(--dp-text-body-small)',
+                fontWeight: 'var(--dp-font-weight-medium)',
+                marginBottom: 'var(--dp-space-2)',
               }}
             >
-              ×
-            </button>
-          </div>
-
-          <div style={{ marginBottom: '20px', color: '#6b7280', fontSize: '0.875rem' }}>
-            {selectedTasks.length === 1
-              ? `Editing notes for "${selectedTasks[0].taskTitle}"`
-              : `Editing notes for ${selectedTasks.length} selected tasks`
-            }
-          </div>
-
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontWeight: '500',
-              color: '#374151',
-              fontSize: '0.875rem',
-            }}>
               Notes
-            </label>
-            <textarea
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add notes or comments..."
-              rows={4}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontFamily: 'inherit',
-                resize: 'vertical',
-                minHeight: '100px',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s ease',
+              sx={{
+                '& .MuiInputBase-root': {
+                  minHeight: '120px',
+                  alignItems: 'flex-start',
+                  fontFamily: 'var(--dp-font-family-primary)',
+                },
+                '& .MuiInputBase-input': {
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  fontSize: 'var(--dp-text-body-medium)',
+                  color: 'var(--dp-neutral-800)',
+                },
               }}
-              onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
             />
-            <div style={{
-              fontSize: '0.75rem',
-              color: '#6b7280',
-              marginTop: '4px',
-              textAlign: 'right',
-            }}>
-              {notes.length} characters
-            </div>
-          </div>
-
-          {selectedTasks.length > 1 && (
-            <div style={{
-              backgroundColor: '#fef3c7',
-              border: '1px solid #f59e0b',
-              borderRadius: '6px',
-              padding: '12px',
-              marginBottom: '20px',
-              fontSize: '0.875rem',
-              color: '#92400e',
-            }}>
-              <strong>Note:</strong> These notes will replace the existing notes for all selected tasks.
-            </div>
-          )}
-
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            marginBottom: '20px',
-            flexWrap: 'wrap',
-          }}>
-            {['In progress...', 'Waiting for approval', 'Need more details', 'Ready for review'].map((template) => (
-              <motion.button
-                key={template}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setNotes(template)}
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: '#f3f4f6',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '4px',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                  color: '#374151',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-              >
-                {template}
-              </motion.button>
-            ))}
-          </div>
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            paddingTop: '20px',
-            borderTop: '1px solid #e5e7eb',
-          }}>
-            <button
-              onClick={handleClear}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#f3f4f6',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                color: '#6b7280',
-                transition: 'all 0.2s ease',
+            <Typography
+              variant="caption"
+              sx={{
+                fontFamily: 'var(--dp-font-family-primary)',
+                color: 'var(--dp-neutral-500)',
+                fontSize: 'var(--dp-text-body-small)',
+                marginTop: 'var(--dp-space-1)',
+                display: 'block',
+                textAlign: 'right',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
             >
-              Clear Notes
-            </button>
+              {notes.length} characters
+            </Typography>
+          </Box>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={onClose}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'white',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  color: '#374151',
-                  transition: 'all 0.2s ease',
+          {/* Note Templates */}
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{
+                fontFamily: 'var(--dp-font-family-primary)',
+                color: 'var(--dp-neutral-600)',
+                fontSize: 'var(--dp-text-body-small)',
+                fontWeight: 'var(--dp-font-weight-medium)',
+                marginBottom: 'var(--dp-space-2)',
+              }}
+            >
+              Quick Templates
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 'var(--dp-space-2)',
+                flexWrap: 'wrap',
+              }}
+            >
+              {noteTemplates.map((template) => (
+                <Box
+                  key={template}
+                  component="button"
+                  onClick={() => setNotes(template)}
+                  sx={{
+                    padding: 'var(--dp-space-1) var(--dp-space-3)',
+                    backgroundColor: 'var(--dp-neutral-0)',
+                    border: '1px solid var(--dp-neutral-300)',
+                    borderRadius: 'var(--dp-radius-md)',
+                    fontSize: 'var(--dp-text-body-small)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontWeight: 'var(--dp-font-weight-regular)',
+                    color: 'var(--dp-neutral-700)',
+                    cursor: 'pointer',
+                    transition: 'var(--dp-transition-fast)',
+                    '&:hover': {
+                      backgroundColor: 'var(--dp-neutral-100)',
+                      borderColor: 'var(--dp-primary-400)',
+                      transform: 'translateY(-1px)',
+                    },
+                    '&:active': {
+                      transform: 'translateY(0)',
+                      backgroundColor: 'var(--dp-neutral-200)',
+                    },
+                  }}
+                >
+                  {template}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {/* Multi-task Warning */}
+          {selectedTasks.length > 1 && (
+            <Alert
+              severity="warning"
+              sx={{
+                backgroundColor: 'var(--dp-warning-50)',
+                borderColor: 'var(--dp-warning-300)',
+                color: 'var(--dp-warning-900)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                '& .MuiAlert-icon': {
+                  color: 'var(--dp-warning-600)',
+                },
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  fontSize: 'var(--dp-text-body-small)',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#3b82f6',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  color: 'white',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
-              >
-                Apply Changes
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+                <strong>Note:</strong> These notes will replace the existing notes for all selected tasks.
+              </Typography>
+            </Alert>
+          )}
+        </Box>
+      </DialogContent>
+
+      <ModalFooter
+        primaryAction={
+          <StandardButton
+            variant="contained"
+            colorScheme="primary"
+            leftIcon={<SaveIcon />}
+            onClick={handleSave}
+          >
+            Save Notes
+          </StandardButton>
+        }
+        secondaryActions={[
+          <StandardButton
+            key="clear"
+            variant="outlined"
+            colorScheme="warning"
+            leftIcon={<DeleteIcon />}
+            onClick={handleClear}
+          >
+            Clear Notes
+          </StandardButton>,
+          <StandardButton
+            key="cancel"
+            variant="outlined"
+            colorScheme="neutral"
+            leftIcon={<CancelIcon />}
+            onClick={onClose}
+          >
+            Cancel
+          </StandardButton>
+        ]}
+      />
+    </Dialog>
   );
 };
 

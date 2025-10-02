@@ -975,6 +975,19 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     const isFullDay = leaveInfo.duration === LeaveDuration.FullDay;
     const slotLabel = isFullDay ? 'Full Day' : (isAM ? 'Morning' : 'Afternoon');
 
+    // Detect dark mode
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    // Create text colors that adapt to theme
+    const textColorMap: { [key: string]: { light: string; dark: string } } = {
+      '#10b981': { light: '#065f46', dark: '#d1fae5' }, // Green -> Dark green (light) / Light green (dark)
+      '#ef4444': { light: '#991b1b', dark: '#fecaca' }, // Red -> Dark red (light) / Light red (dark)
+      '#6b7280': { light: '#1f2937', dark: '#e5e7eb' }, // Gray -> Very dark gray (light) / Light gray (dark)
+      '#8b5cf6': { light: '#5b21b6', dark: '#e9d5ff' }, // Purple -> Dark purple (light) / Light purple (dark)
+    };
+    const colorSet = textColorMap[backgroundColor] || { light: '#1f2937', dark: '#e5e7eb' };
+    const textColor = isDarkTheme ? colorSet.dark : colorSet.light;
+
     return (
       <div
         style={{
@@ -983,28 +996,40 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: backgroundColor + '20', // 20% opacity for background
+          backgroundColor: backgroundColor + '40', // 40% opacity for light background
           border: `2px solid ${backgroundColor}`,
-          borderRadius: '6px',
-          color: backgroundColor,
+          borderRadius: '4px',
           fontWeight: '600',
           fontSize: '0.75rem',
-          padding: '8px',
-          margin: '2px',
-          minHeight: '56px',
-          gap: '8px'
+          padding: '4px',
+          minHeight: '100%',
+          gap: '6px'
         }}
       >
-        <div style={{ fontSize: '1.2rem', flexShrink: 0 }}>{icon}</div>
+        <div style={{ fontSize: '1rem', flexShrink: 0 }}>{icon}</div>
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '2px'
+          gap: '1px'
         }}>
-          <div style={{ fontSize: '0.75rem', lineHeight: '1.1', fontWeight: '600' }}>{label}</div>
+          <div style={{
+            fontSize: '0.75rem',
+            lineHeight: '1.1',
+            fontWeight: '700',
+            color: textColor
+          }}>
+            {label}
+          </div>
           {!isFullDay && (
-            <div style={{ fontSize: '0.65rem', opacity: 0.8 }}>({slotLabel})</div>
+            <div style={{
+              fontSize: '0.65rem',
+              fontWeight: '600',
+              color: textColor,
+              opacity: 0.85
+            }}>
+              ({slotLabel})
+            </div>
           )}
         </div>
       </div>
@@ -1020,6 +1045,10 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
 
     const holidayName = dayAssignment?.holidayName || 'Bank Holiday';
 
+    // Detect dark mode
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDarkTheme ? '#e9d5ff' : '#5b21b6'; // Light purple (dark mode) / Dark purple (light mode)
+
     return (
       <div
         style={{
@@ -1028,27 +1057,39 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'var(--dp-error-50)', // Light red background
-          border: '2px solid var(--dp-error-500)', // Red border
-          borderRadius: '6px',
-          color: 'var(--dp-error-600)',
+          backgroundColor: '#8b5cf640', // Purple with 40% opacity
+          border: '2px solid #8b5cf6', // Purple border
+          borderRadius: '4px',
           fontWeight: '600',
           fontSize: '0.75rem',
-          padding: '8px',
-          margin: '2px',
-          minHeight: '56px',
-          gap: '8px'
+          padding: '4px',
+          minHeight: '100%',
+          gap: '6px'
         }}
       >
-        <div style={{ fontSize: '1.2rem', flexShrink: 0 }}>🏛️</div>
+        <div style={{ fontSize: '1rem', flexShrink: 0 }}>🏛️</div>
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '2px'
+          gap: '1px'
         }}>
-          <div style={{ fontSize: '0.75rem', lineHeight: '1.1', fontWeight: '600' }}>{holidayName}</div>
-          <div style={{ fontSize: '0.65rem', opacity: 0.8 }}>Bank Holiday</div>
+          <div style={{
+            fontSize: '0.75rem',
+            lineHeight: '1.1',
+            fontWeight: '700',
+            color: textColor
+          }}>
+            {holidayName}
+          </div>
+          <div style={{
+            fontSize: '0.65rem',
+            fontWeight: '600',
+            color: textColor,
+            opacity: 0.85
+          }}>
+            Bank Holiday
+          </div>
         </div>
       </div>
     );
@@ -1125,11 +1166,10 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             cursor: isReadOnly ? 'default' : 'pointer',
             position: 'relative',
             transition: 'all 0.2s ease-in-out',
-            backgroundColor: isSelected ? '#dbeafe' : (isHovered ? '#fafbff' : 'transparent'),
-            border: isSelected ? '3px solid #3b82f6' : 'none',
+            backgroundColor: isSelected ? 'rgba(16, 185, 129, 0.15)' : (isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent'),
+            border: isSelected ? '2px solid rgba(16, 185, 129, 0.7)' : (isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none'),
             borderRadius: '8px',
-            boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none',
-            transform: isSelected ? 'scale(1.02)' : 'scale(1)'
+            boxShadow: isSelected ? '0 0 12px rgba(16, 185, 129, 0.5), inset 0 0 8px rgba(16, 185, 129, 0.3)' : (isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none'),
           }}
           onClick={(e) => handleSlotClick(e, employee.employeeId, dateObj, isAM)}
           onContextMenu={(e) => createSlotContextMenu(e, employee, day, isAM)}
@@ -1142,13 +1182,17 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           onDragOver={(e) => {
             if (!isReadOnly) {
               e.preventDefault();
-              e.currentTarget.style.backgroundColor = '#f0f9ff';
+              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+              e.currentTarget.style.border = '2px solid rgba(59, 130, 246, 0.7)';
+              e.currentTarget.style.boxShadow = '0 0 16px rgba(59, 130, 246, 0.5), inset 0 0 12px rgba(59, 130, 246, 0.3)';
               addColumnGuides(e.currentTarget);
             }
           }}
           onDragLeave={(e) => {
             if (!isReadOnly) {
-              e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
+              e.currentTarget.style.backgroundColor = isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+              e.currentTarget.style.border = isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none';
+              e.currentTarget.style.boxShadow = isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none';
               removeColumnGuides(e.currentTarget);
             }
           }}
@@ -1168,10 +1212,11 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               right: '4px',
               display: 'flex',
               gap: '4px',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
               borderRadius: '8px',
               padding: '2px',
-              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
             }}>
               <button
                 onClick={(e) => {
@@ -1275,11 +1320,10 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
             cursor: isReadOnly ? 'default' : 'pointer',
             position: 'relative',
             transition: 'all 0.2s ease-in-out',
-            backgroundColor: isSelected ? '#dbeafe' : (isHovered ? '#fafbff' : 'transparent'),
-            border: isSelected ? '3px solid #3b82f6' : 'none',
+            backgroundColor: isSelected ? 'rgba(16, 185, 129, 0.15)' : (isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent'),
+            border: isSelected ? '2px solid rgba(16, 185, 129, 0.7)' : (isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none'),
             borderRadius: '8px',
-            boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none',
-            transform: isSelected ? 'scale(1.02)' : 'scale(1)'
+            boxShadow: isSelected ? '0 0 12px rgba(16, 185, 129, 0.5), inset 0 0 8px rgba(16, 185, 129, 0.3)' : (isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none'),
           }}
           onClick={(e) => handleSlotClick(e, employee.employeeId, dateObj, isAM)}
           onContextMenu={(e) => createSlotContextMenu(e, employee, day, isAM)}
@@ -1292,13 +1336,17 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           onDragOver={(e) => {
             if (!isReadOnly) {
               e.preventDefault();
-              e.currentTarget.style.backgroundColor = '#f0f9ff';
+              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+              e.currentTarget.style.border = '2px solid rgba(59, 130, 246, 0.7)';
+              e.currentTarget.style.boxShadow = '0 0 16px rgba(59, 130, 246, 0.5), inset 0 0 12px rgba(59, 130, 246, 0.3)';
               addColumnGuides(e.currentTarget);
             }
           }}
           onDragLeave={(e) => {
             if (!isReadOnly) {
-              e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
+              e.currentTarget.style.backgroundColor = isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+              e.currentTarget.style.border = isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none';
+              e.currentTarget.style.boxShadow = isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none';
               removeColumnGuides(e.currentTarget);
             }
           }}
@@ -1318,10 +1366,11 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               right: '4px',
               display: 'flex',
               gap: '4px',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
               borderRadius: '8px',
               padding: '2px',
-              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
             }}>
               <button
                 onClick={(e) => {
@@ -1423,11 +1472,10 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           overflow: 'hidden',
           position: 'relative', // Essential for absolute positioned children
           transition: 'all 0.2s ease-in-out',
-          backgroundColor: isSelected ? '#dbeafe' : (isHovered ? '#fafbff' : 'transparent'),
-          border: isSelected ? '3px solid #3b82f6' : 'none',
+          backgroundColor: isSelected ? 'rgba(16, 185, 129, 0.15)' : (isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent'),
+          border: isSelected ? '2px solid rgba(16, 185, 129, 0.7)' : (isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none'),
           borderRadius: '4px',
-          boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none',
-          transform: isSelected ? 'scale(1.02)' : 'scale(1)'
+          boxShadow: isSelected ? '0 0 12px rgba(16, 185, 129, 0.5), inset 0 0 8px rgba(16, 185, 129, 0.3)' : (isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none')
         }}
         onContextMenu={(e) => createSlotContextMenu(e, employee, day, isAM)}
         onMouseEnter={() => !isReadOnly && setHoveredSlot({
@@ -1440,13 +1488,17 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
           if (!isReadOnly && !hasLeaveInSlot(employee, day, isAM)) {
             // Prevent drag over for slots with leaves - they should be blocked
             e.preventDefault();
-            e.currentTarget.style.backgroundColor = '#f0f9ff';
+            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+            e.currentTarget.style.border = '2px solid rgba(59, 130, 246, 0.7)';
+            e.currentTarget.style.boxShadow = '0 0 16px rgba(59, 130, 246, 0.5), inset 0 0 12px rgba(59, 130, 246, 0.3)';
             addColumnGuides(e.currentTarget);
           }
         }}
         onDragLeave={(e) => {
           if (!isReadOnly) {
-            e.currentTarget.style.backgroundColor = isHovered ? '#fafbff' : 'transparent';
+            e.currentTarget.style.backgroundColor = isHovered ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+            e.currentTarget.style.border = isHovered ? '2px solid rgba(59, 130, 246, 0.6)' : 'none';
+            e.currentTarget.style.boxShadow = isHovered ? '0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 8px rgba(59, 130, 246, 0.2)' : 'none';
             removeColumnGuides(e.currentTarget);
           }
         }}
@@ -1686,14 +1738,15 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                     const colorScheme = createCardColorScheme(task.clientColor || 'var(--dp-primary-500)');
                     return `2px solid ${colorScheme.border}`;
                   })(),
-              borderRadius: '12px',
+              borderRadius: '4px',
               fontSize: '0.625rem',
               fontWeight: '500',
               cursor: isReadOnly ? 'pointer' : 'grab',
               display: 'flex',
               flexDirection: 'column',
               position: 'absolute', // NEW: Absolute positioning for column system
-              top: 0, // NEW: Ensure tasks align at top of container
+              top: '50%', // Center vertically
+              transform: `translateY(-50%)${resizingTask && resizingTask.taskId === task.assignmentId ? ' scale(1.05)' : selectedTaskIds.includes(task.assignmentId) ? ' scale(1.02)' : hoveredTask === task.assignmentId ? ' scale(1.01)' : ''}`,
               width: `${finalWidth}%`, // NEW: Column-based width with bounds checking
               left: `${finalLeft}%`, // NEW: Column-based position with bounds checking
               height: '62px',
@@ -1709,13 +1762,6 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   })(),
               overflow: 'hidden', // Hidden overflow for clean task appearance
               flexShrink: 0,
-              transform: resizingTask && resizingTask.taskId === task.assignmentId
-                ? 'scale(1.05)' // Slightly larger during resize
-                : selectedTaskIds.includes(task.assignmentId)
-                  ? 'scale(1.02)'
-                  : hoveredTask === task.assignmentId
-                    ? 'scale(1.01)' // Subtle hover scale
-                    : 'scale(1)',
               opacity: resizingTask && resizingTask.taskId === task.assignmentId ? 0.9 : 1, // Slight transparency during resize
               transition: resizingTask && resizingTask.taskId === task.assignmentId
                 ? 'none' // No transition during resize for immediate feedback
@@ -1832,7 +1878,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
               })(), // Dynamic font sizing based on text length and task width
               fontWeight: '700',
               textAlign: 'center',
-              borderRadius: '0 0 10px 10px',
+              borderRadius: '0 0 4px 4px',
               marginTop: 'auto',
               display: 'flex',
               alignItems: 'center',
@@ -2234,7 +2280,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     width: '100%',
     height: 'calc(100vh - 64px)',
     overflow: 'hidden',
-    backgroundColor: 'var(--dp-neutral-0)',
+    backgroundColor: 'var(--dp-neutral-300)',
     fontFamily: 'var(--dp-font-family-primary)',
     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
     border: '1px solid var(--dp-neutral-100)',
@@ -2244,7 +2290,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
 
   const getHeaderStyle = (): React.CSSProperties => ({
     display: 'flex',
-    backgroundColor: 'var(--dp-neutral-50)',
+    backgroundColor: 'var(--dp-neutral-300)',
     borderBottom: '1px solid var(--dp-neutral-200)',
     width: '100%',
     minWidth: '100%',
@@ -2327,26 +2373,28 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     minWidth: '100%',
     transition: 'opacity 0.2s ease-in-out',
     opacity: 1,
+    position: 'relative',
+    backgroundColor: 'var(--dp-neutral-300)',
   });
 
   const getEmployeeRowStyle = (): React.CSSProperties => ({
     display: 'flex',
     height: '130px',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    marginBottom: '4px',
   });
 
   const getEmployeeCellStyle = (): React.CSSProperties => ({
     width: '120px',
     minWidth: '120px',
     borderRight: '2px solid var(--dp-neutral-300)',
-    borderBottom: '1px solid var(--dp-neutral-200)',
   });
 
   const getAmPmCellStyle = (): React.CSSProperties => ({
     width: '60px',
     minWidth: '60px',
     borderRight: '2px solid var(--dp-neutral-300)',
-    borderBottom: '1px solid var(--dp-neutral-200)',
+    borderTop: '1px solid var(--dp-neutral-200)',
     backgroundColor: 'var(--dp-neutral-100)',
     display: 'flex',
     flexDirection: 'column',
@@ -2358,7 +2406,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     let backgroundColor: string;
     if (isDarkTheme) {
       // Dark theme: AM should be slightly lighter than PM (same as slot colors)
-      backgroundColor = isAM ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-0)';
+      backgroundColor = isAM ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-100)';
     } else {
       // Light theme: AM darker grey, PM even darker grey (matching slot colors)
       backgroundColor = isAM ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-200)';
@@ -2398,7 +2446,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     let backgroundColor: string;
     if (isDarkTheme) {
       // Dark theme: AM should be slightly lighter than PM
-      backgroundColor = isAM ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-0)';
+      backgroundColor = isAM ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-100)';
     } else {
       // Light theme: AM darker grey, PM even darker grey
       backgroundColor = isAM ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-200)';
@@ -2493,9 +2541,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     backgroundColor: 'var(--dp-primary-100)',
     borderLeft: '3px solid var(--dp-primary-700)',
     borderRight: '3px solid var(--dp-primary-700)',
+    borderTop: '3px solid var(--dp-primary-700)',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    marginBottom: '1px',
+    borderBottom: '3px solid var(--dp-primary-700)',
   });
 
   const getWeekSeparatorSlotStyle = (): React.CSSProperties => ({
@@ -2536,9 +2587,12 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
     backgroundColor: 'var(--dp-success-100)',
     borderLeft: '3px solid var(--dp-success-700)',
     borderRight: '3px solid var(--dp-success-700)',
+    borderTop: '3px solid var(--dp-success-700)',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    marginBottom: '1px',
+    borderBottom: '3px solid var(--dp-success-700)',
   });
 
   const getMonthSeparatorSlotStyle = (): React.CSSProperties => ({
@@ -2641,71 +2695,21 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
         {daysWithSeparators.map((item, index) => {
           if (typeof item === 'object' && 'type' in item) {
             if (item.type === 'separator') {
-              // Render week separator header with text
+              // Render week separator header (no text - text is in first employee row)
               return (
                 <div
                   key={`separator-${item.weekNumber}`}
-                  style={{
-                    ...getWeekSeparatorHeaderStyle(),
-                    position: 'relative'
-                  }}
+                  style={getWeekSeparatorHeaderStyle()}
                 >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '0',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      writingMode: 'vertical-rl',
-                      textOrientation: 'mixed',
-                      fontSize: 'var(--dp-text-body-small)',
-                      fontWeight: 'var(--dp-font-weight-bold)',
-                      fontFamily: 'var(--dp-font-family-primary)',
-                      color: 'var(--dp-neutral-900)',
-                      whiteSpace: 'nowrap',
-                      height: `calc(${employees.length * 80}px + 100px)`, // Dynamic height based on employee count
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      zIndex: 10
-                    }}
-                  >
-                    END OF WEEK {item.weekNumber}
-                  </div>
                 </div>
               );
             } else if (item.type === 'monthSeparator') {
-              // Render month separator header with text
+              // Render month separator header (no text - text is in first employee row)
               return (
                 <div
                   key={`month-separator-${item.monthName}`}
-                  style={{
-                    ...getMonthSeparatorHeaderStyle(),
-                    position: 'relative'
-                  }}
+                  style={getMonthSeparatorHeaderStyle()}
                 >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '0',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      writingMode: 'vertical-rl',
-                      textOrientation: 'mixed',
-                      fontSize: 'var(--dp-text-body-small)',
-                      fontWeight: 'var(--dp-font-weight-bold)',
-                      fontFamily: 'var(--dp-font-family-primary)',
-                      color: 'var(--dp-neutral-900)',
-                      whiteSpace: 'nowrap',
-                      height: `calc(${employees.length * 80}px + 100px)`, // Dynamic height based on employee count
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      zIndex: 10
-                    }}
-                  >
-                    END OF {item.monthName}
-                  </div>
                 </div>
               );
             }
@@ -2897,7 +2901,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
       {/* Content Rows */}
       <div style={getContentStyle()}>
         <div style={{ flex: 1, width: '100%', minWidth: '100%' }}>
-          {employees.map((employee) => (
+          {employees.map((employee, employeeIndex) => (
             <div key={employee.employeeId} style={getEmployeeRowStyle()}>
               {/* Employee Info */}
               <div style={getEmployeeCellStyle()}>
@@ -2920,24 +2924,74 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                 if (typeof item === 'object' && 'type' in item) {
                   if (item.type === 'separator') {
                     // Render week separator body
-                    return (
-                      <div key={`separator-body-${item.weekNumber}`} style={getWeekSeparatorCellStyle()}>
-                        {/* AM Separator Slot - Clean */}
-                        <div style={getWeekSeparatorSlotStyle()}></div>
-                        {/* PM Separator Slot - Clean */}
-                        <div style={getWeekSeparatorSlotStyle()}></div>
-                      </div>
-                    );
+                    const isFirstEmployee = employeeIndex === 0;
+
+                    if (isFirstEmployee) {
+                      // First employee: render text spanning both AM and PM
+                      return (
+                        <div key={`separator-body-${item.weekNumber}`} style={{
+                          ...getWeekSeparatorCellStyle(),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <div style={{
+                            writingMode: 'vertical-rl',
+                            textOrientation: 'mixed',
+                            fontSize: '0.7rem',
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            color: 'var(--dp-primary-900)',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            END OF WEEK {item.weekNumber}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Other employees: normal AM/PM split
+                      return (
+                        <div key={`separator-body-${item.weekNumber}`} style={getWeekSeparatorCellStyle()}>
+                          <div style={getWeekSeparatorSlotStyle()}></div>
+                          <div style={getWeekSeparatorSlotStyle()}></div>
+                        </div>
+                      );
+                    }
                   } else if (item.type === 'monthSeparator') {
                     // Render month separator body
-                    return (
-                      <div key={`month-separator-body-${item.monthName}`} style={getMonthSeparatorCellStyle()}>
-                        {/* AM Separator Slot - Clean */}
-                        <div style={getMonthSeparatorSlotStyle()}></div>
-                        {/* PM Separator Slot - Clean */}
-                        <div style={getMonthSeparatorSlotStyle()}></div>
-                      </div>
-                    );
+                    const isFirstEmployee = employeeIndex === 0;
+
+                    if (isFirstEmployee) {
+                      // First employee: render text spanning both AM and PM
+                      return (
+                        <div key={`month-separator-body-${item.monthName}`} style={{
+                          ...getMonthSeparatorCellStyle(),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <div style={{
+                            writingMode: 'vertical-rl',
+                            textOrientation: 'mixed',
+                            fontSize: '0.65rem',
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            color: 'var(--dp-neutral-900)',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            END OF {item.monthName}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Other employees: normal AM/PM split
+                      return (
+                        <div key={`month-separator-body-${item.monthName}`} style={getMonthSeparatorCellStyle()}>
+                          <div style={getMonthSeparatorSlotStyle()}></div>
+                          <div style={getMonthSeparatorSlotStyle()}></div>
+                        </div>
+                      );
+                    }
                   }
                 }
 

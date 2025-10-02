@@ -12,6 +12,7 @@ import SearchBar from './SearchBar';
 import QuickFilters from './QuickFilters';
 import BulkActions from './BulkActions';
 import Pagination from './Pagination';
+import { StandardButton } from '../../common/modal';
 import './DataTable.css';
 
 interface DataTableProps<T> {
@@ -241,42 +242,37 @@ function DataTable<T>({
             {searchQuery && ` matching "${searchQuery}"`}
           </h3>
           {onCreate && (
-            <button
-              className="database-btn database-btn-primary"
+            <StandardButton
+              variant="contained"
+              colorScheme="primary"
               onClick={onCreate}
             >
               + {createButtonText}
-            </button>
+            </StandardButton>
           )}
         </div>
         <div className="data-table-header-right">
-          <button
-            className="database-btn database-btn-secondary"
-            onClick={onRefresh}
-            disabled={loading}
-          >
-            🔄 Refresh
-          </button>
+          {/* Search Bar moved to header */}
+          {searchFields.length > 0 && (
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder={`Search ${searchFields.join(', ')}...`}
+            />
+          )}
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="data-table-controls">
-        {searchFields.length > 0 && (
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder={`Search ${searchFields.join(', ')}...`}
-          />
-        )}
-        {quickFilters.length > 0 && (
+      {/* Quick Filters only */}
+      {quickFilters.length > 0 && (
+        <div className="data-table-controls">
           <QuickFilters
             filters={quickFilters}
             values={tableState.filters}
             onChange={handleFilter}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Bulk Actions */}
       <AnimatePresence>

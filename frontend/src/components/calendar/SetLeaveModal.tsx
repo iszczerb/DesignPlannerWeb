@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  Box,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  RadioGroup,
+  Radio,
+  Alert
+} from '@mui/material';
 import { EmployeeCalendarDto, CalendarDayDto } from '../../types/schedule';
+import { ModalHeader, ModalFooter, StandardButton } from '../common/modal';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 export enum LeaveType {
   AnnualLeave = 1,
@@ -42,6 +56,7 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
   const [leaveType, setLeaveType] = useState<LeaveType>(LeaveType.AnnualLeave);
   const [duration, setDuration] = useState<LeaveDuration>(LeaveDuration.FullDay);
   const [slot, setSlot] = useState<Slot>(Slot.Morning);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -50,6 +65,7 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
       setLeaveType(LeaveType.AnnualLeave);
       setDuration(LeaveDuration.FullDay);
       setSlot(Slot.Morning);
+      setError('');
     }
   }, [isOpen]);
 
@@ -61,13 +77,14 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
         ? prev.filter(id => id !== employeeId)
         : [...prev, employeeId]
     );
+    setError('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (selectedEmployeeIds.length === 0) {
-      alert('Please select at least one employee.');
+      setError('Please select at least one employee.');
       return;
     }
 
@@ -98,357 +115,449 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
 
   const getLeaveTypeColor = (type: LeaveType) => {
     switch (type) {
-      case LeaveType.AnnualLeave: return '#10b981'; // Green
-      case LeaveType.SickDay: return '#ef4444'; // Red
-      case LeaveType.OtherLeave: return '#6b7280'; // Gray
-      default: return '#10b981';
+      case LeaveType.AnnualLeave: return '--dp-success';
+      case LeaveType.SickDay: return '--dp-error';
+      case LeaveType.OtherLeave: return '--dp-neutral';
+      default: return '--dp-success';
     }
   };
 
-  return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-        width: '90%',
-        maxWidth: '500px',
-        maxHeight: '80vh',
-        overflow: 'auto'
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '20px 24px',
-          borderBottom: '1px solid #e5e7eb'
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <h2 style={{
-              fontSize: '1.5rem',
-              fontWeight: '700',
-              color: '#111827',
-              margin: 0
-            }}>
-              Set Leave
-            </h2>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                padding: '4px',
-                color: '#6b7280'
-              }}
-            >
-              ✕
-            </button>
-          </div>
-          <p style={{
-            margin: '8px 0 0 0',
-            color: '#6b7280',
-            fontSize: '0.875rem'
-          }}>
-            {formatDate}
-          </p>
-        </div>
+  const leaveTypeOptions = [
+    { value: LeaveType.AnnualLeave, label: 'Annual Leave', icon: '✈️' },
+    { value: LeaveType.SickDay, label: 'Sick Day', icon: '🤒' },
+    { value: LeaveType.OtherLeave, label: 'Other Leave', icon: '📋' }
+  ];
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
-          {/* Employee Selection */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
-              Select Employees
-            </label>
-            <div style={{
-              maxHeight: '200px',
-              overflowY: 'auto',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              padding: '8px'
-            }}>
-              {employees.map(employee => (
-                <label
-                  key={employee.employeeId}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '8px',
-                    cursor: 'pointer',
-                    borderRadius: '4px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedEmployeeIds.includes(employee.employeeId)}
-                    onChange={() => handleEmployeeToggle(employee.employeeId)}
-                    style={{
-                      marginRight: '12px',
-                      width: '16px',
-                      height: '16px'
+  return (
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: 'var(--dp-neutral-0)',
+          borderRadius: 'var(--dp-radius-xl)',
+          boxShadow: 'var(--dp-shadow-2xl)',
+        },
+      }}
+    >
+      <ModalHeader
+        title="Set Leave"
+        subtitle={formatDate}
+        onClose={onClose}
+        variant="primary"
+      />
+
+      <form onSubmit={handleSubmit}>
+        <DialogContent
+          sx={{
+            backgroundColor: 'var(--dp-neutral-50)',
+            padding: 'var(--dp-space-6)',
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'var(--dp-space-5)' }}>
+            {/* Employee Selection */}
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  fontSize: 'var(--dp-text-label-large)',
+                  fontWeight: 'var(--dp-font-weight-semibold)',
+                  color: 'var(--dp-neutral-800)',
+                  marginBottom: 'var(--dp-space-2)',
+                }}
+              >
+                Select Employees
+              </Typography>
+              <Box
+                sx={{
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  border: '1px solid var(--dp-neutral-300)',
+                  borderRadius: 'var(--dp-radius-md)',
+                  padding: 'var(--dp-space-2)',
+                  backgroundColor: 'var(--dp-neutral-0)',
+                }}
+              >
+                {employees.map(employee => (
+                  <FormControlLabel
+                    key={employee.employeeId}
+                    control={
+                      <Checkbox
+                        checked={selectedEmployeeIds.includes(employee.employeeId)}
+                        onChange={() => handleEmployeeToggle(employee.employeeId)}
+                        sx={{
+                          color: 'var(--dp-neutral-400)',
+                          '&.Mui-checked': {
+                            color: 'var(--dp-primary-600)',
+                          },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-small)',
+                          color: 'var(--dp-neutral-800)',
+                        }}
+                      >
+                        {employee.employeeName}
+                      </Typography>
+                    }
+                    sx={{
+                      width: '100%',
+                      margin: 0,
+                      padding: 'var(--dp-space-2)',
+                      borderRadius: 'var(--dp-radius-sm)',
+                      '&:hover': {
+                        backgroundColor: 'var(--dp-neutral-100)',
+                      },
                     }}
                   />
-                  <span style={{
-                    fontSize: '0.875rem',
-                    color: '#374151'
-                  }}>
-                    {employee.employeeName}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
+                ))}
+              </Box>
+            </Box>
 
-          {/* Leave Type */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
-              Leave Type
-            </label>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              {Object.values(LeaveType).filter(v => typeof v === 'number').map(type => (
-                <label
-                  key={type}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    border: `2px solid ${leaveType === type ? getLeaveTypeColor(type as LeaveType) : '#d1d5db'}`,
-                    borderRadius: '8px',
+            {/* Leave Type */}
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  fontSize: 'var(--dp-text-label-large)',
+                  fontWeight: 'var(--dp-font-weight-semibold)',
+                  color: 'var(--dp-neutral-800)',
+                  marginBottom: 'var(--dp-space-2)',
+                }}
+              >
+                Leave Type
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 'var(--dp-space-3)', flexWrap: 'wrap' }}>
+                {leaveTypeOptions.map(option => {
+                  const tokenColor = getLeaveTypeColor(option.value);
+                  const isSelected = leaveType === option.value;
+                  return (
+                    <Box
+                      key={option.value}
+                      onClick={() => setLeaveType(option.value)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 'var(--dp-space-3) var(--dp-space-4)',
+                        border: isSelected
+                          ? `2px solid var(${tokenColor}-600)`
+                          : '2px solid var(--dp-neutral-300)',
+                        borderRadius: 'var(--dp-radius-lg)',
+                        cursor: 'pointer',
+                        backgroundColor: isSelected
+                          ? `var(${tokenColor}-50)`
+                          : 'var(--dp-neutral-0)',
+                        minWidth: '130px',
+                        transition: 'var(--dp-transition-fast)',
+                        '&:hover': {
+                          borderColor: `var(${tokenColor}-400)`,
+                          backgroundColor: `var(${tokenColor}-50)`,
+                          transform: 'translateY(-1px)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                        },
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 'var(--dp-text-title-medium)', marginRight: 'var(--dp-space-2)' }}>
+                        {option.icon}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-small)',
+                          fontWeight: isSelected ? 'var(--dp-font-weight-semibold)' : 'var(--dp-font-weight-medium)',
+                          color: isSelected ? `var(${tokenColor}-700)` : 'var(--dp-neutral-700)',
+                        }}
+                      >
+                        {option.label}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+
+            {/* Duration */}
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  fontSize: 'var(--dp-text-label-large)',
+                  fontWeight: 'var(--dp-font-weight-semibold)',
+                  color: 'var(--dp-neutral-800)',
+                  marginBottom: 'var(--dp-space-2)',
+                }}
+              >
+                Duration
+              </Typography>
+              <RadioGroup
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value) as LeaveDuration)}
+                sx={{ display: 'flex', flexDirection: 'row', gap: 'var(--dp-space-3)' }}
+              >
+                <Box
+                  sx={{
+                    flex: 1,
+                    border: duration === LeaveDuration.FullDay
+                      ? '2px solid var(--dp-primary-600)'
+                      : '2px solid var(--dp-neutral-300)',
+                    borderRadius: 'var(--dp-radius-lg)',
+                    backgroundColor: duration === LeaveDuration.FullDay
+                      ? 'var(--dp-primary-50)'
+                      : 'var(--dp-neutral-0)',
                     cursor: 'pointer',
-                    backgroundColor: leaveType === type ? `${getLeaveTypeColor(type as LeaveType)}10` : 'white',
-                    minWidth: '120px',
-                    justifyContent: 'center'
+                    transition: 'var(--dp-transition-fast)',
+                    '&:hover': {
+                      borderColor: 'var(--dp-primary-400)',
+                      backgroundColor: 'var(--dp-primary-50)',
+                    },
+                  }}
+                  onClick={() => setDuration(LeaveDuration.FullDay)}
+                >
+                  <FormControlLabel
+                    value={LeaveDuration.FullDay}
+                    control={
+                      <Radio
+                        sx={{
+                          color: 'var(--dp-neutral-400)',
+                          '&.Mui-checked': {
+                            color: 'var(--dp-primary-600)',
+                          },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-small)',
+                          fontWeight: duration === LeaveDuration.FullDay ? 'var(--dp-font-weight-semibold)' : 'var(--dp-font-weight-medium)',
+                          color: duration === LeaveDuration.FullDay ? 'var(--dp-primary-700)' : 'var(--dp-neutral-700)',
+                        }}
+                      >
+                        Full Day
+                      </Typography>
+                    }
+                    sx={{ margin: 0, padding: 'var(--dp-space-3)', width: '100%' }}
+                  />
+                </Box>
+                <Box
+                  sx={{
+                    flex: 1,
+                    border: duration === LeaveDuration.HalfDay
+                      ? '2px solid var(--dp-primary-600)'
+                      : '2px solid var(--dp-neutral-300)',
+                    borderRadius: 'var(--dp-radius-lg)',
+                    backgroundColor: duration === LeaveDuration.HalfDay
+                      ? 'var(--dp-primary-50)'
+                      : 'var(--dp-neutral-0)',
+                    cursor: 'pointer',
+                    transition: 'var(--dp-transition-fast)',
+                    '&:hover': {
+                      borderColor: 'var(--dp-primary-400)',
+                      backgroundColor: 'var(--dp-primary-50)',
+                    },
+                  }}
+                  onClick={() => setDuration(LeaveDuration.HalfDay)}
+                >
+                  <FormControlLabel
+                    value={LeaveDuration.HalfDay}
+                    control={
+                      <Radio
+                        sx={{
+                          color: 'var(--dp-neutral-400)',
+                          '&.Mui-checked': {
+                            color: 'var(--dp-primary-600)',
+                          },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-small)',
+                          fontWeight: duration === LeaveDuration.HalfDay ? 'var(--dp-font-weight-semibold)' : 'var(--dp-font-weight-medium)',
+                          color: duration === LeaveDuration.HalfDay ? 'var(--dp-primary-700)' : 'var(--dp-neutral-700)',
+                        }}
+                      >
+                        Half Day
+                      </Typography>
+                    }
+                    sx={{ margin: 0, padding: 'var(--dp-space-3)', width: '100%' }}
+                  />
+                </Box>
+              </RadioGroup>
+            </Box>
+
+            {/* Half Day Slot Selection */}
+            {duration === LeaveDuration.HalfDay && (
+              <Box>
+                <Typography
+                  sx={{
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontSize: 'var(--dp-text-label-large)',
+                    fontWeight: 'var(--dp-font-weight-semibold)',
+                    color: 'var(--dp-neutral-800)',
+                    marginBottom: 'var(--dp-space-2)',
                   }}
                 >
-                  <input
-                    type="radio"
-                    name="leaveType"
-                    value={type}
-                    checked={leaveType === type}
-                    onChange={(e) => setLeaveType(Number(e.target.value) as LeaveType)}
-                    style={{ display: 'none' }}
-                  />
-                  <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>
-                    {getLeaveTypeIcon(type as LeaveType)}
-                  </span>
-                  <span style={{
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    color: leaveType === type ? getLeaveTypeColor(type as LeaveType) : '#374151'
-                  }}>
-                    {type === LeaveType.AnnualLeave ? 'Annual Leave' :
-                     type === LeaveType.SickDay ? 'Sick Day' :
-                     'Other Leave'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
+                  Time Slot
+                </Typography>
+                <RadioGroup
+                  value={slot}
+                  onChange={(e) => setSlot(Number(e.target.value) as Slot)}
+                  sx={{ display: 'flex', flexDirection: 'row', gap: 'var(--dp-space-3)' }}
+                >
+                  <Box
+                    sx={{
+                      flex: 1,
+                      border: slot === Slot.Morning
+                        ? '2px solid var(--dp-warning-600)'
+                        : '2px solid var(--dp-neutral-300)',
+                      borderRadius: 'var(--dp-radius-lg)',
+                      backgroundColor: slot === Slot.Morning
+                        ? 'var(--dp-warning-50)'
+                        : 'var(--dp-neutral-0)',
+                      cursor: 'pointer',
+                      transition: 'var(--dp-transition-fast)',
+                      '&:hover': {
+                        borderColor: 'var(--dp-warning-400)',
+                        backgroundColor: 'var(--dp-warning-50)',
+                      },
+                    }}
+                    onClick={() => setSlot(Slot.Morning)}
+                  >
+                    <FormControlLabel
+                      value={Slot.Morning}
+                      control={
+                        <Radio
+                          sx={{
+                            color: 'var(--dp-neutral-400)',
+                            '&.Mui-checked': {
+                              color: 'var(--dp-warning-600)',
+                            },
+                          }}
+                        />
+                      }
+                      label={
+                        <Typography
+                          sx={{
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            fontSize: 'var(--dp-text-body-small)',
+                            fontWeight: slot === Slot.Morning ? 'var(--dp-font-weight-semibold)' : 'var(--dp-font-weight-medium)',
+                            color: slot === Slot.Morning ? 'var(--dp-warning-700)' : 'var(--dp-neutral-700)',
+                          }}
+                        >
+                          🌅 Morning (AM)
+                        </Typography>
+                      }
+                      sx={{ margin: 0, padding: 'var(--dp-space-3)', width: '100%' }}
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      border: slot === Slot.Afternoon
+                        ? '2px solid var(--dp-info-600)'
+                        : '2px solid var(--dp-neutral-300)',
+                      borderRadius: 'var(--dp-radius-lg)',
+                      backgroundColor: slot === Slot.Afternoon
+                        ? 'var(--dp-info-50)'
+                        : 'var(--dp-neutral-0)',
+                      cursor: 'pointer',
+                      transition: 'var(--dp-transition-fast)',
+                      '&:hover': {
+                        borderColor: 'var(--dp-info-400)',
+                        backgroundColor: 'var(--dp-info-50)',
+                      },
+                    }}
+                    onClick={() => setSlot(Slot.Afternoon)}
+                  >
+                    <FormControlLabel
+                      value={Slot.Afternoon}
+                      control={
+                        <Radio
+                          sx={{
+                            color: 'var(--dp-neutral-400)',
+                            '&.Mui-checked': {
+                              color: 'var(--dp-info-600)',
+                            },
+                          }}
+                        />
+                      }
+                      label={
+                        <Typography
+                          sx={{
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            fontSize: 'var(--dp-text-body-small)',
+                            fontWeight: slot === Slot.Afternoon ? 'var(--dp-font-weight-semibold)' : 'var(--dp-font-weight-medium)',
+                            color: slot === Slot.Afternoon ? 'var(--dp-info-700)' : 'var(--dp-neutral-700)',
+                          }}
+                        >
+                          🌆 Afternoon (PM)
+                        </Typography>
+                      }
+                      sx={{ margin: 0, padding: 'var(--dp-space-3)', width: '100%' }}
+                    />
+                  </Box>
+                </RadioGroup>
+              </Box>
+            )}
 
-          {/* Duration */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
-              Duration
-            </label>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '12px 16px',
-                border: `2px solid ${duration === LeaveDuration.FullDay ? '#3b82f6' : '#d1d5db'}`,
-                borderRadius: '8px',
-                cursor: 'pointer',
-                backgroundColor: duration === LeaveDuration.FullDay ? '#eff6ff' : 'white',
-                flex: 1
-              }}>
-                <input
-                  type="radio"
-                  name="duration"
-                  value={LeaveDuration.FullDay}
-                  checked={duration === LeaveDuration.FullDay}
-                  onChange={(e) => setDuration(Number(e.target.value) as LeaveDuration)}
-                  style={{ display: 'none' }}
-                />
-                <span style={{
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: duration === LeaveDuration.FullDay ? '#3b82f6' : '#374151'
-                }}>
-                  Full Day
-                </span>
-              </label>
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '12px 16px',
-                border: `2px solid ${duration === LeaveDuration.HalfDay ? '#3b82f6' : '#d1d5db'}`,
-                borderRadius: '8px',
-                cursor: 'pointer',
-                backgroundColor: duration === LeaveDuration.HalfDay ? '#eff6ff' : 'white',
-                flex: 1
-              }}>
-                <input
-                  type="radio"
-                  name="duration"
-                  value={LeaveDuration.HalfDay}
-                  checked={duration === LeaveDuration.HalfDay}
-                  onChange={(e) => setDuration(Number(e.target.value) as LeaveDuration)}
-                  style={{ display: 'none' }}
-                />
-                <span style={{
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: duration === LeaveDuration.HalfDay ? '#3b82f6' : '#374151'
-                }}>
-                  Half Day
-                </span>
-              </label>
-            </div>
-          </div>
+            {/* Error Alert */}
+            {error && (
+              <Alert
+                severity="error"
+                sx={{
+                  backgroundColor: 'var(--dp-error-50)',
+                  color: 'var(--dp-error-900)',
+                  borderColor: 'var(--dp-error-300)',
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  '& .MuiAlert-icon': {
+                    color: 'var(--dp-error-600)',
+                  },
+                }}
+              >
+                {error}
+              </Alert>
+            )}
+          </Box>
+        </DialogContent>
 
-          {/* Half Day Slot Selection */}
-          {duration === LeaveDuration.HalfDay && (
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: '600',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Time Slot
-              </label>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  border: `2px solid ${slot === Slot.Morning ? '#f59e0b' : '#d1d5db'}`,
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  backgroundColor: slot === Slot.Morning ? '#fffbeb' : 'white',
-                  flex: 1
-                }}>
-                  <input
-                    type="radio"
-                    name="slot"
-                    value={Slot.Morning}
-                    checked={slot === Slot.Morning}
-                    onChange={(e) => setSlot(Number(e.target.value) as Slot)}
-                    style={{ display: 'none' }}
-                  />
-                  <span style={{
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    color: slot === Slot.Morning ? '#f59e0b' : '#374151'
-                  }}>
-                    🌅 Morning (AM)
-                  </span>
-                </label>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  border: `2px solid ${slot === Slot.Afternoon ? '#8b5cf6' : '#d1d5db'}`,
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  backgroundColor: slot === Slot.Afternoon ? '#faf5ff' : 'white',
-                  flex: 1
-                }}>
-                  <input
-                    type="radio"
-                    name="slot"
-                    value={Slot.Afternoon}
-                    checked={slot === Slot.Afternoon}
-                    onChange={(e) => setSlot(Number(e.target.value) as Slot)}
-                    style={{ display: 'none' }}
-                  />
-                  <span style={{
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    color: slot === Slot.Afternoon ? '#8b5cf6' : '#374151'
-                  }}>
-                    🌆 Afternoon (PM)
-                  </span>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '12px',
-            marginTop: '32px'
-          }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '12px 20px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                backgroundColor: 'white',
-                color: '#374151',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </button>
-            <button
+        <ModalFooter
+          primaryAction={
+            <StandardButton
               type="submit"
-              style={{
-                padding: '12px 20px',
-                border: 'none',
-                borderRadius: '6px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
+              variant="contained"
+              colorScheme="primary"
+              leftIcon={<SaveIcon />}
             >
               Set Leave
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            </StandardButton>
+          }
+          secondaryActions={[
+            <StandardButton
+              key="cancel"
+              variant="outlined"
+              colorScheme="neutral"
+              leftIcon={<CancelIcon />}
+              onClick={onClose}
+            >
+              Cancel
+            </StandardButton>
+          ]}
+        />
+      </form>
+    </Dialog>
   );
 };
 

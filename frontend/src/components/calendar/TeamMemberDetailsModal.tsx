@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, Tabs, Tab, Box, Typography, CircularProgress, Alert } from '@mui/material';
 import { EmployeeScheduleDto } from '../../types/schedule';
 import { teamMemberStatsService, TeamMemberStats, WeeklyStats, MonthlyStats } from '../../services/teamMemberStatsService';
+import { ModalHeader, StandardButton } from '../common/modal';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface TeamMemberDetailsModalProps {
   isOpen: boolean;
@@ -62,557 +65,762 @@ const TeamMemberDetailsModal: React.FC<TeamMemberDetailsModalProps> = ({
 
   // console.log('✅ TeamMemberDetailsModal - Rendering modal for:', employee.employeeName);
 
-  const renderTabButton = (tab: TabType, label: string, icon: string) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      style={{
-        flex: 1,
-        padding: '12px 16px',
-        border: 'none',
-        backgroundColor: activeTab === tab ? '#3b82f6' : '#f8fafc',
-        color: activeTab === tab ? 'white' : '#64748b',
-        borderRadius: '8px',
-        fontSize: '0.875rem',
-        fontWeight: '600',
-        cursor: 'pointer',
+
+  const renderStatCard = (title: string, value: string | number, icon: string, tokenColor: string) => (
+    <Box
+      sx={{
+        backgroundColor: 'var(--dp-neutral-0)',
+        padding: 'var(--dp-space-3) var(--dp-space-4)',
+        borderRadius: 'var(--dp-radius-lg)',
+        border: `1px solid var(${tokenColor}-100)`,
+        borderLeft: `3px solid var(${tokenColor}-500)`,
+        boxShadow: 'var(--dp-shadow-sm)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        transition: 'all 0.2s ease',
-        margin: '0 4px',
-      }}
-      onMouseEnter={(e) => {
-        if (activeTab !== tab) {
-          e.currentTarget.style.backgroundColor = '#e2e8f0';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (activeTab !== tab) {
-          e.currentTarget.style.backgroundColor = '#f8fafc';
-        }
+        gap: 'var(--dp-space-3)',
       }}
     >
-      <span style={{ fontSize: '1.1rem' }}>{icon}</span>
-      {label}
-    </button>
-  );
-
-  const renderStatCard = (title: string, value: string | number, icon: string, color: string) => (
-    <div style={{
-      backgroundColor: 'white',
-      padding: '12px 16px',
-      borderRadius: '8px',
-      border: `1px solid ${color}20`,
-      borderLeft: `3px solid ${color}`,
-      boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-    }}>
-      <div style={{
-        fontSize: '1.5rem',
-        backgroundColor: `${color}15`,
-        padding: '8px',
-        borderRadius: '50%',
-        width: '40px',
-        height: '40px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
+      <Box
+        sx={{
+          fontSize: 'var(--dp-text-title-medium)',
+          backgroundColor: `var(${tokenColor}-50)`,
+          padding: 'var(--dp-space-2)',
+          borderRadius: '50%',
+          width: '40px',
+          height: '40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         {icon}
-      </div>
-      <div>
-        <div style={{
-          fontSize: '0.75rem',
-          color: '#64748b',
-          fontWeight: '500',
-          marginBottom: '2px',
-        }}>
+      </Box>
+      <Box>
+        <Typography
+          sx={{
+            fontFamily: 'var(--dp-font-family-primary)',
+            fontSize: 'var(--dp-text-label-small)',
+            color: 'var(--dp-neutral-600)',
+            fontWeight: 'var(--dp-font-weight-medium)',
+            marginBottom: 'var(--dp-space-0-5)',
+          }}
+        >
           {title}
-        </div>
-        <div style={{
-          fontSize: '1.5rem',
-          fontWeight: '700',
-          color: '#1f2937',
-        }}>
+        </Typography>
+        <Typography
+          sx={{
+            fontFamily: 'var(--dp-font-family-primary)',
+            fontSize: 'var(--dp-text-title-medium)',
+            fontWeight: 'var(--dp-font-weight-bold)',
+            color: 'var(--dp-neutral-900)',
+          }}
+        >
           {value}
-        </div>
-      </div>
-    </div>
+        </Typography>
+      </Box>
+    </Box>
   );
 
   const renderGeneralTab = () => {
     if (!stats) return null;
 
     return (
-      <div style={{ padding: '20px' }}>
-
-        {/* Overall Statistics */}
-        <h3 style={{
-          margin: '0 0 20px 0',
-          fontSize: '1.125rem',
-          fontWeight: '600',
-          color: '#1f2937',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span>📊</span>
-          Overall Statistics
-        </h3>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '20px',
-          marginBottom: '24px',
-        }}>
-          {renderStatCard('Total Hours', stats.totalHours, '⏰', '#3b82f6')}
-          {renderStatCard('Total Tasks', stats.totalTasks, '📋', '#10b981')}
-          {renderStatCard('Projects Worked', stats.totalProjects, '📁', '#f59e0b')}
-          {renderStatCard('Clients Served', stats.totalClients, '🏢', '#8b5cf6')}
-          {renderStatCard('Categories Covered', stats.totalCategories, '📂', '#ef4444')}
-          {renderStatCard('Skills Used', stats.totalSkills, '🛠️', '#06b6d4')}
-        </div>
+      <Box sx={{ padding: 'var(--dp-space-5)' }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 'var(--dp-space-4)',
+            marginBottom: 'var(--dp-space-6)',
+          }}
+        >
+          {renderStatCard('Total Hours', stats.totalHours, '⏰', '--dp-primary')}
+          {renderStatCard('Total Tasks', stats.totalTasks, '📋', '--dp-success')}
+          {renderStatCard('Projects Worked', stats.totalProjects, '📁', '--dp-warning')}
+          {renderStatCard('Clients Served', stats.totalClients, '🏢', '--dp-info')}
+          {renderStatCard('Categories Covered', stats.totalCategories, '📂', '--dp-error')}
+          {renderStatCard('Skills Used', stats.totalSkills, '🛠️', '--dp-primary')}
+        </Box>
 
         {/* Quick Summary */}
-        <div style={{
-          backgroundColor: '#fefce8',
-          padding: '20px',
-          borderRadius: '12px',
-          border: '1px solid #fbbf24',
-        }}>
-          <h4 style={{
-            margin: '0 0 12px 0',
-            fontSize: '1rem',
-            fontWeight: '600',
-            color: '#92400e',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
+        <Box
+          sx={{
+            backgroundColor: 'var(--dp-warning-50)',
+            padding: 'var(--dp-space-5)',
+            borderRadius: 'var(--dp-radius-xl)',
+            border: '1px solid var(--dp-warning-300)',
+          }}
+        >
+          <Typography
+            sx={{
+              margin: '0 0 var(--dp-space-3) 0',
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-large)',
+              fontWeight: 'var(--dp-font-weight-semibold)',
+              color: 'var(--dp-neutral-900)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--dp-space-2)',
+            }}
+          >
             <span>💡</span>
             Performance Summary
-          </h4>
-          <div style={{ color: '#92400e', fontSize: '0.875rem', lineHeight: '1.6' }}>
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-900)',
+              fontSize: 'var(--dp-text-body-medium)',
+              lineHeight: 'var(--dp-line-height-relaxed)',
+            }}
+          >
             {stats.employeeName} has worked on <strong>{stats.totalTasks} tasks</strong> across{' '}
             <strong>{stats.totalProjects} projects</strong>, accumulating a total of{' '}
             <strong>{stats.totalHours} hours</strong>. They have contributed to projects for{' '}
             <strong>{stats.totalClients} different clients</strong> spanning{' '}
             <strong>{stats.totalCategories} categories</strong> and utilizing{' '}
             <strong>{stats.totalSkills} different skills</strong>.
-          </div>
-        </div>
-      </div>
+          </Typography>
+        </Box>
+      </Box>
     );
   };
 
   const renderWeeklyTab = () => {
     if (!stats || !stats.weeklyBreakdown.length) {
       return (
-        <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-          <span style={{ fontSize: '3rem', marginBottom: '16px', display: 'block' }}>📅</span>
-          No weekly data available
-        </div>
+        <Box
+          sx={{
+            padding: 'var(--dp-space-10)',
+            textAlign: 'center',
+            color: 'var(--dp-neutral-500)',
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              fontSize: 'var(--dp-text-display-small)',
+              marginBottom: 'var(--dp-space-4)',
+              display: 'block',
+            }}
+          >
+            📅
+          </Box>
+          <Typography
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+              color: 'var(--dp-neutral-500)',
+            }}
+          >
+            No weekly data available
+          </Typography>
+        </Box>
       );
     }
 
-    return (
-      <div style={{ padding: '24px' }}>
-        <h3 style={{
-          margin: '0 0 20px 0',
-          fontSize: '1.125rem',
-          fontWeight: '600',
-          color: '#1f2937',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span>📅</span>
-          Weekly Breakdown ({stats.weeklyBreakdown.length} weeks)
-        </h3>
+    // Show only the current week (most recent week)
+    const currentWeek = stats.weeklyBreakdown[0];
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          maxHeight: '500px',
-          overflowY: 'auto',
-          padding: '4px',
-        }}>
-          {stats.weeklyBreakdown.map((week, index) => (
-            <div key={`${week.year}-W${week.weekNumber}`} style={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '20px',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '16px',
-                paddingBottom: '12px',
-                borderBottom: '1px solid #f3f4f6',
-              }}>
-                <div>
-                  <h4 style={{
-                    margin: '0',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    color: '#1f2937',
-                  }}>
+    return (
+      <Box sx={{ padding: 'var(--dp-space-6)' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--dp-space-4)',
+          }}
+        >
+          {[currentWeek].map((week, index) => (
+            <Box
+              key={`${week.year}-W${week.weekNumber}`}
+              sx={{
+                backgroundColor: 'var(--dp-neutral-0)',
+                border: '1px solid var(--dp-neutral-200)',
+                borderRadius: 'var(--dp-radius-lg)',
+                padding: 'var(--dp-space-5)',
+                boxShadow: 'var(--dp-shadow-sm)',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 'var(--dp-space-4)',
+                  paddingBottom: 'var(--dp-space-3)',
+                  borderBottom: '1px solid var(--dp-neutral-100)',
+                }}
+              >
+                <Box>
+                  <Typography
+                    component="h4"
+                    sx={{
+                      margin: 0,
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-large)',
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
                     Week {week.weekNumber}, {week.year}
-                  </h4>
-                  <div style={{
-                    fontSize: '0.875rem',
-                    color: '#64748b',
-                    marginTop: '2px',
-                  }}>
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-500)',
+                      marginTop: 'var(--dp-space-0-5)',
+                    }}
+                  >
                     {new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
                     {new Date(week.weekEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </div>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  gap: '12px',
-                  alignItems: 'center',
-                }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#3b82f6' }}>
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 'var(--dp-space-3)',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-title-medium)',
+                        fontWeight: 'var(--dp-font-weight-bold)',
+                        color: 'var(--dp-primary-500)',
+                      }}
+                    >
                       {week.totalHours}h
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Hours</div>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#10b981' }}>
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-label-small)',
+                        color: 'var(--dp-neutral-500)',
+                      }}
+                    >
+                      Hours
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-title-medium)',
+                        fontWeight: 'var(--dp-font-weight-bold)',
+                        color: 'var(--dp-success-500)',
+                      }}
+                    >
                       {week.totalTasks}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Tasks</div>
-                  </div>
-                </div>
-              </div>
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-label-small)',
+                        color: 'var(--dp-neutral-500)',
+                      }}
+                    >
+                      Tasks
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                gap: '12px',
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px' }}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: 'var(--dp-space-3)',
+                }}
+              >
+                <Box>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-label-small)',
+                      color: 'var(--dp-neutral-500)',
+                      marginBottom: 'var(--dp-space-1)',
+                    }}
+                  >
                     Projects ({week.projects.length})
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#1f2937' }}>
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
                     {week.projects.slice(0, 2).join(', ')}
                     {week.projects.length > 2 && ` +${week.projects.length - 2} more`}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px' }}>
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-label-small)',
+                      color: 'var(--dp-neutral-500)',
+                      marginBottom: 'var(--dp-space-1)',
+                    }}
+                  >
                     Clients ({week.clients.length})
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#1f2937' }}>
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
                     {week.clients.slice(0, 2).join(', ')}
                     {week.clients.length > 2 && ` +${week.clients.length - 2} more`}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px' }}>
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-label-small)',
+                      color: 'var(--dp-neutral-500)',
+                      marginBottom: 'var(--dp-space-1)',
+                    }}
+                  >
                     Categories ({week.categories.length})
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#1f2937' }}>
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
                     {week.categories.slice(0, 2).join(', ')}
                     {week.categories.length > 2 && ` +${week.categories.length - 2} more`}
-                  </div>
-                </div>
-              </div>
+                  </Typography>
+                </Box>
+              </Box>
 
               {/* Daily breakdown */}
-              <div style={{
-                marginTop: '16px',
-                paddingTop: '12px',
-                borderTop: '1px solid #f3f4f6',
-              }}>
-                <div style={{
-                  fontSize: '0.75rem',
-                  color: '#64748b',
-                  marginBottom: '8px',
-                  fontWeight: '600',
-                }}>
+              <Box
+                sx={{
+                  marginTop: 'var(--dp-space-4)',
+                  paddingTop: 'var(--dp-space-3)',
+                  borderTop: '1px solid var(--dp-neutral-100)',
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontSize: 'var(--dp-text-label-small)',
+                    color: 'var(--dp-neutral-500)',
+                    marginBottom: 'var(--dp-space-2)',
+                    fontWeight: 'var(--dp-font-weight-semibold)',
+                  }}
+                >
                   Daily Breakdown
-                </div>
-                <div style={{
-                  display: 'flex',
-                  gap: '8px',
-                  flexWrap: 'wrap',
-                }}>
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 'var(--dp-space-2)',
+                    flexWrap: 'wrap',
+                  }}
+                >
                   {week.dailyBreakdown.map(day => (
-                    <div key={day.date} style={{
-                      padding: '6px 10px',
-                      backgroundColor: day.tasks > 0 ? '#dbeafe' : '#f8fafc',
-                      borderRadius: '6px',
-                      fontSize: '0.75rem',
-                      color: day.tasks > 0 ? '#1e40af' : '#64748b',
-                      fontWeight: day.tasks > 0 ? '600' : '400',
-                    }}>
+                    <Box
+                      key={day.date}
+                      sx={{
+                        padding: 'var(--dp-space-1-5) var(--dp-space-2-5)',
+                        backgroundColor: day.tasks > 0 ? 'var(--dp-primary-100)' : 'var(--dp-neutral-50)',
+                        borderRadius: 'var(--dp-radius-md)',
+                        fontSize: 'var(--dp-text-label-small)',
+                        color: day.tasks > 0 ? 'var(--dp-primary-700)' : 'var(--dp-neutral-500)',
+                        fontWeight: day.tasks > 0 ? 'var(--dp-font-weight-semibold)' : 'var(--dp-font-weight-regular)',
+                        fontFamily: 'var(--dp-font-family-primary)',
+                      }}
+                    >
                       {day.dayOfWeek.slice(0, 3)}: {day.tasks}t, {day.hours}h
-                    </div>
+                    </Box>
                   ))}
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   };
 
   const renderMonthlyTab = () => {
     if (!stats || !stats.monthlyBreakdown.length) {
       return (
-        <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-          <span style={{ fontSize: '3rem', marginBottom: '16px', display: 'block' }}>🗓️</span>
-          No monthly data available
-        </div>
+        <Box
+          sx={{
+            padding: 'var(--dp-space-10)',
+            textAlign: 'center',
+            color: 'var(--dp-neutral-500)',
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              fontSize: 'var(--dp-text-display-small)',
+              marginBottom: 'var(--dp-space-4)',
+              display: 'block',
+            }}
+          >
+            🗓️
+          </Box>
+          <Typography
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+              color: 'var(--dp-neutral-500)',
+            }}
+          >
+            No monthly data available
+          </Typography>
+        </Box>
       );
     }
 
     return (
-      <div style={{ padding: '24px' }}>
-        <h3 style={{
-          margin: '0 0 20px 0',
-          fontSize: '1.125rem',
-          fontWeight: '600',
-          color: '#1f2937',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span>🗓️</span>
-          Monthly Breakdown ({stats.monthlyBreakdown.length} months)
-        </h3>
-
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px',
-          maxHeight: '500px',
-          overflowY: 'auto',
-          padding: '4px',
-        }}>
+      <Box sx={{ padding: 'var(--dp-space-6)' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--dp-space-5)',
+          }}
+        >
           {stats.monthlyBreakdown.map((month, index) => (
-            <div key={`${month.year}-${month.month}`} style={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '24px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px',
-                paddingBottom: '16px',
-                borderBottom: '2px solid #f3f4f6',
-              }}>
-                <div>
-                  <h4 style={{
-                    margin: '0',
-                    fontSize: '1.25rem',
-                    fontWeight: '700',
-                    color: '#1f2937',
-                  }}>
-                    {month.monthName} {month.year}
-                  </h4>
-                  <div style={{
-                    fontSize: '0.875rem',
-                    color: '#64748b',
-                    marginTop: '4px',
-                  }}>
-                    {month.weeklyBreakdown.length} weeks of activity
-                  </div>
-                </div>
-                <div style={{
+            <Box
+              key={`${month.year}-${month.month}`}
+              sx={{
+                backgroundColor: 'var(--dp-neutral-0)',
+                border: '1px solid var(--dp-neutral-200)',
+                borderRadius: 'var(--dp-radius-lg)',
+                padding: 'var(--dp-space-6)',
+                boxShadow: 'var(--dp-shadow-md)',
+              }}
+            >
+              <Box
+                sx={{
                   display: 'flex',
-                  gap: '20px',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
-                }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#3b82f6' }}>
+                  marginBottom: 'var(--dp-space-5)',
+                  paddingBottom: 'var(--dp-space-4)',
+                  borderBottom: '2px solid var(--dp-neutral-100)',
+                }}
+              >
+                <Box>
+                  <Typography
+                    component="h4"
+                    sx={{
+                      margin: 0,
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-title-medium)',
+                      fontWeight: 'var(--dp-font-weight-bold)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
+                    {month.monthName} {month.year}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-500)',
+                      marginTop: 'var(--dp-space-1)',
+                    }}
+                  >
+                    {month.weeklyBreakdown.length} weeks of activity
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 'var(--dp-space-5)',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-title-large)',
+                        fontWeight: 'var(--dp-font-weight-bold)',
+                        color: 'var(--dp-primary-500)',
+                      }}
+                    >
                       {month.totalHours}h
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Total Hours</div>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#10b981' }}>
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-label-small)',
+                        color: 'var(--dp-neutral-500)',
+                      }}
+                    >
+                      Total Hours
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-title-large)',
+                        fontWeight: 'var(--dp-font-weight-bold)',
+                        color: 'var(--dp-success-500)',
+                      }}
+                    >
                       {month.totalTasks}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Total Tasks</div>
-                  </div>
-                </div>
-              </div>
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-label-small)',
+                        color: 'var(--dp-neutral-500)',
+                      }}
+                    >
+                      Total Tasks
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
 
               {/* Monthly summary */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px',
-                marginBottom: '20px',
-              }}>
-                <div style={{
-                  backgroundColor: '#fef3c7',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  border: '1px solid #fbbf24',
-                }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: 'var(--dp-space-4)',
+                  marginBottom: 'var(--dp-space-5)',
+                }}
+              >
+                <Box
+                  sx={{
+                    backgroundColor: 'var(--dp-warning-50)',
+                    padding: 'var(--dp-space-4)',
+                    borderRadius: 'var(--dp-radius-md)',
+                    border: '1px solid var(--dp-warning-300)',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                      color: 'var(--dp-neutral-900)',
+                      marginBottom: 'var(--dp-space-2)',
+                    }}
+                  >
                     📁 Projects ({month.projects.length})
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#92400e' }}>
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
                     {month.projects.slice(0, 3).join(', ')}
                     {month.projects.length > 3 && ` +${month.projects.length - 3} more`}
-                  </div>
-                </div>
-                <div style={{
-                  backgroundColor: '#ede9fe',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  border: '1px solid #8b5cf6',
-                }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#6b46c1', marginBottom: '8px' }}>
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: 'var(--dp-info-50)',
+                    padding: 'var(--dp-space-4)',
+                    borderRadius: 'var(--dp-radius-md)',
+                    border: '1px solid var(--dp-info-400)',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                      color: 'var(--dp-neutral-900)',
+                      marginBottom: 'var(--dp-space-2)',
+                    }}
+                  >
                     🏢 Clients ({month.clients.length})
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#6b46c1' }}>
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
                     {month.clients.slice(0, 3).join(', ')}
                     {month.clients.length > 3 && ` +${month.clients.length - 3} more`}
-                  </div>
-                </div>
-                <div style={{
-                  backgroundColor: '#fecaca',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  border: '1px solid #ef4444',
-                }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#dc2626', marginBottom: '8px' }}>
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: 'var(--dp-error-50)',
+                    padding: 'var(--dp-space-4)',
+                    borderRadius: 'var(--dp-radius-md)',
+                    border: '1px solid var(--dp-error-300)',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                      color: 'var(--dp-neutral-900)',
+                      marginBottom: 'var(--dp-space-2)',
+                    }}
+                  >
                     📂 Categories ({month.categories.length})
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#dc2626' }}>
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
                     {month.categories.slice(0, 3).join(', ')}
                     {month.categories.length > 3 && ` +${month.categories.length - 3} more`}
-                  </div>
-                </div>
-              </div>
+                  </Typography>
+                </Box>
+              </Box>
 
               {/* Weekly breakdown for the month */}
-              <div style={{
-                paddingTop: '16px',
-                borderTop: '1px solid #f3f4f6',
-              }}>
-                <div style={{
-                  fontSize: '0.875rem',
-                  color: '#64748b',
-                  marginBottom: '12px',
-                  fontWeight: '600',
-                }}>
+              <Box
+                sx={{
+                  paddingTop: 'var(--dp-space-4)',
+                  borderTop: '1px solid var(--dp-neutral-100)',
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontSize: 'var(--dp-text-body-small)',
+                    color: 'var(--dp-neutral-500)',
+                    marginBottom: 'var(--dp-space-3)',
+                    fontWeight: 'var(--dp-font-weight-semibold)',
+                  }}
+                >
                   Weekly Activity
-                </div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                  gap: '8px',
-                }}>
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                    gap: 'var(--dp-space-2)',
+                  }}
+                >
                   {month.weeklyBreakdown.map(week => (
-                    <div key={`${week.year}-W${week.weekNumber}`} style={{
-                      padding: '8px 12px',
-                      backgroundColor: week.totalTasks > 0 ? '#e0f2fe' : '#f8fafc',
-                      borderRadius: '8px',
-                      fontSize: '0.75rem',
-                      textAlign: 'center',
-                      border: '1px solid',
-                      borderColor: week.totalTasks > 0 ? '#0284c7' : '#e2e8f0',
-                    }}>
-                      <div style={{
-                        fontWeight: '600',
-                        color: week.totalTasks > 0 ? '#0284c7' : '#64748b',
-                        marginBottom: '2px',
-                      }}>
+                    <Box
+                      key={`${week.year}-W${week.weekNumber}`}
+                      sx={{
+                        padding: 'var(--dp-space-2) var(--dp-space-3)',
+                        backgroundColor: week.totalTasks > 0 ? 'var(--dp-primary-50)' : 'var(--dp-neutral-50)',
+                        borderRadius: 'var(--dp-radius-md)',
+                        fontSize: 'var(--dp-text-label-small)',
+                        textAlign: 'center',
+                        border: '1px solid',
+                        borderColor: week.totalTasks > 0 ? 'var(--dp-primary-500)' : 'var(--dp-neutral-200)',
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontWeight: 'var(--dp-font-weight-semibold)',
+                          color: week.totalTasks > 0 ? 'var(--dp-primary-500)' : 'var(--dp-neutral-500)',
+                          marginBottom: 'var(--dp-space-0-5)',
+                          fontSize: 'var(--dp-text-label-small)',
+                        }}
+                      >
                         Week {week.weekNumber}
-                      </div>
-                      <div style={{ color: '#64748b' }}>
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          color: 'var(--dp-neutral-500)',
+                          fontSize: 'var(--dp-text-label-small)',
+                        }}
+                      >
                         {week.totalTasks}t, {week.totalHours}h
-                      </div>
-                    </div>
+                      </Typography>
+                    </Box>
                   ))}
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   };
 
   const renderContent = () => {
     if (loading) {
       return (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '300px',
-          flexDirection: 'column',
-          gap: '16px',
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #e5e7eb',
-            borderTop: '4px solid #3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }} />
-          <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '300px',
+            flexDirection: 'column',
+            gap: 'var(--dp-space-4)',
+          }}
+        >
+          <CircularProgress sx={{ color: 'var(--dp-primary-500)' }} />
+          <Typography
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+              color: 'var(--dp-neutral-600)',
+            }}
+          >
             Loading member statistics...
-          </div>
-        </div>
+          </Typography>
+        </Box>
       );
     }
 
     if (error) {
       return (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '300px',
-          flexDirection: 'column',
-          gap: '16px',
-        }}>
-          <span style={{ fontSize: '3rem' }}>⚠️</span>
-          <div style={{ fontSize: '1rem', color: '#dc2626', textAlign: 'center' }}>
-            <div style={{ fontWeight: '600', marginBottom: '8px' }}>Failed to Load Statistics</div>
-            <div style={{ fontSize: '0.875rem' }}>{error}</div>
-          </div>
-          <button
-            onClick={loadStats}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-            }}
-          >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '300px',
+            flexDirection: 'column',
+            gap: 'var(--dp-space-4)',
+          }}
+        >
+          <Alert severity="error" sx={{ fontFamily: 'var(--dp-font-family-primary)' }}>
+            <Typography
+              sx={{
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontWeight: 'var(--dp-font-weight-semibold)',
+                marginBottom: 'var(--dp-space-2)',
+              }}
+            >
+              Failed to Load Statistics
+            </Typography>
+            <Typography sx={{ fontFamily: 'var(--dp-font-family-primary)', fontSize: 'var(--dp-text-body-small)' }}>
+              {error}
+            </Typography>
+          </Alert>
+          <StandardButton variant="contained" colorScheme="primary" leftIcon={<RefreshIcon />} onClick={loadStats}>
             Try Again
-          </button>
-        </div>
+          </StandardButton>
+        </Box>
       );
     }
 
@@ -629,132 +837,86 @@ const TeamMemberDetailsModal: React.FC<TeamMemberDetailsModalProps> = ({
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 999998,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
+    <Dialog
+      open={isOpen}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: 'var(--dp-neutral-0)',
+          borderRadius: 'var(--dp-radius-xl)',
+          boxShadow: 'var(--dp-shadow-2xl)',
+          maxWidth: '900px',
+        },
+      }}
+    >
+      <ModalHeader
+        title={
+          employee.firstName && employee.lastName
+            ? `${employee.firstName} ${employee.lastName}`
+            : employee.employeeName
+        }
+        subtitle={`${employee.role} • ${employee.team}`}
+        onClose={handleClose}
+        variant="primary"
+      />
+
+      {/* Tabs */}
+      <Box
+        sx={{
+          padding: 'var(--dp-space-4) var(--dp-space-6) 0',
+          backgroundColor: 'var(--dp-neutral-50)',
+          borderBottom: '1px solid var(--dp-neutral-200)',
         }}
-        onClick={handleClose}
       >
-        {/* Modal */}
-        <div
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            width: '100%',
-            maxWidth: '900px',
-            maxHeight: '90vh',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          sx={{
+            minHeight: '44px',
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'var(--dp-primary-500)',
+              height: '3px',
+              borderRadius: '3px 3px 0 0',
+            },
+            '& .MuiTab-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+              fontWeight: 'var(--dp-font-weight-medium)',
+              color: 'var(--dp-neutral-600)',
+              textTransform: 'none',
+              minHeight: '44px',
+              padding: 'var(--dp-space-2) var(--dp-space-4)',
+              '&.Mui-selected': {
+                color: 'var(--dp-primary-600)',
+                fontWeight: 'var(--dp-font-weight-semibold)',
+              },
+              '&:hover': {
+                color: 'var(--dp-primary-500)',
+                backgroundColor: 'var(--dp-primary-50)',
+              },
+            },
           }}
-          onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div style={{
-            padding: '24px 24px 16px 24px',
-            borderBottom: '1px solid #e5e7eb',
-            backgroundColor: '#f8fafc',
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '16px',
-            }}>
-              <div>
-                <h2 style={{
-                  margin: '0',
-                  fontSize: '1.5rem',
-                  fontWeight: '700',
-                  color: '#1f2937',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                }}>
-                  <span style={{ fontSize: '1.75rem' }}>👤</span>
-                  {employee.firstName && employee.lastName
-                    ? `${employee.firstName} ${employee.lastName}`
-                    : employee.employeeName}
-                </h2>
-                <div style={{
-                  fontSize: '0.875rem',
-                  color: '#64748b',
-                  marginTop: '4px',
-                }}>
-                  {employee.role} • {employee.team}
-                </div>
-              </div>
-              <button
-                onClick={handleClose}
-                style={{
-                  padding: '8px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: '#6b7280',
-                  cursor: 'pointer',
-                  borderRadius: '6px',
-                  fontSize: '1.25rem',
-                  width: '36px',
-                  height: '36px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                ✕
-              </button>
-            </div>
+          <Tab label="📊 General" value="general" />
+          <Tab label="📅 Weekly" value="weekly" />
+          <Tab label="🗓️ Monthly" value="monthly" />
+        </Tabs>
+      </Box>
 
-            {/* Tab buttons */}
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              padding: '8px',
-              backgroundColor: '#e2e8f0',
-              borderRadius: '12px',
-            }}>
-              {renderTabButton('general', 'General', '📊')}
-              {renderTabButton('weekly', 'Weekly', '📅')}
-              {renderTabButton('monthly', 'Monthly', '🗓️')}
-            </div>
-          </div>
-
-          {/* Content */}
-          <div style={{
-            flex: 1,
-            overflow: 'auto',
-            backgroundColor: '#fafbfc',
-          }}>
-            {renderContent()}
-          </div>
-        </div>
-      </div>
-
-      {/* Add spinning animation styles */}
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
-    </>
+      {/* Content */}
+      <DialogContent
+        sx={{
+          backgroundColor: 'var(--dp-neutral-50)',
+          padding: 0,
+          maxHeight: '70vh',
+          overflow: 'auto',
+        }}
+      >
+        {renderContent()}
+      </DialogContent>
+    </Dialog>
   );
 };
 

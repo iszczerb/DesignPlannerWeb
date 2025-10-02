@@ -95,39 +95,87 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
       elevation={8}
       sx={{
         position: 'fixed',
-        left: Math.max(10, Math.min(position.x, window.innerWidth - 200)), // Keep on screen
-        top: Math.max(10, Math.min(position.y, window.innerHeight - 200)), // Keep on screen
-        zIndex: 999999, // Very high z-index
+        left: Math.max(10, Math.min(position.x, window.innerWidth - 200)),
+        top: Math.max(10, Math.min(position.y, window.innerHeight - 200)),
+        zIndex: 999999,
         minWidth: 180,
         py: 1,
-        backgroundColor: 'white',
+        backgroundColor: 'var(--dp-neutral-0)',
+        borderRadius: 'var(--dp-radius-lg)',
+        border: '1px solid var(--dp-neutral-200)',
+        boxShadow: 'var(--dp-shadow-2xl)',
       }}
     >
       <MenuList dense>
         {/* Single View/Edit option */}
-        <MenuItem onClick={handleViewEdit}>
+        <MenuItem
+          onClick={handleViewEdit}
+          sx={{
+            fontFamily: 'var(--dp-font-family-primary)',
+            color: 'var(--dp-neutral-800)',
+            '&:hover': {
+              backgroundColor: 'var(--dp-neutral-100)',
+            },
+          }}
+        >
           <ListItemIcon>
-            <InfoIcon fontSize="small" />
+            <InfoIcon fontSize="small" sx={{ color: 'var(--dp-primary-500)' }} />
           </ListItemIcon>
-          <ListItemText primary="View/Edit Task" />
+          <ListItemText
+            primary="View/Edit Task"
+            primaryTypographyProps={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+            }}
+          />
         </MenuItem>
 
         {/* Copy Task */}
-        <MenuItem onClick={handleCopy}>
+        <MenuItem
+          onClick={handleCopy}
+          sx={{
+            fontFamily: 'var(--dp-font-family-primary)',
+            color: 'var(--dp-neutral-800)',
+            '&:hover': {
+              backgroundColor: 'var(--dp-neutral-100)',
+            },
+          }}
+        >
           <ListItemIcon>
-            <ContentCopyIcon fontSize="small" />
+            <ContentCopyIcon fontSize="small" sx={{ color: 'var(--dp-neutral-600)' }} />
           </ListItemIcon>
-          <ListItemText primary="Copy Task" />
+          <ListItemText
+            primary="Copy Task"
+            primaryTypographyProps={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+            }}
+          />
         </MenuItem>
 
-        <Divider />
+        <Divider sx={{ borderColor: 'var(--dp-neutral-200)', my: 1 }} />
 
         {/* Delete Task */}
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+        <MenuItem
+          onClick={handleDelete}
+          sx={{
+            color: 'var(--dp-error-600)',
+            fontFamily: 'var(--dp-font-family-primary)',
+            '&:hover': {
+              backgroundColor: 'var(--dp-error-50)',
+            },
+          }}
+        >
           <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
+            <DeleteIcon fontSize="small" sx={{ color: 'var(--dp-error-600)' }} />
           </ListItemIcon>
-          <ListItemText primary="Delete Task" />
+          <ListItemText
+            primary="Delete Task"
+            primaryTypographyProps={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+            }}
+          />
         </MenuItem>
       </MenuList>
     </Paper>

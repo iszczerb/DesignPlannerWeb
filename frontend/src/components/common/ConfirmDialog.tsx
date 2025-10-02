@@ -1,4 +1,9 @@
 import React from 'react';
+import { Dialog, DialogContent, Box, Typography } from '@mui/material';
+import { ModalHeader, ModalFooter, StandardButton } from './modal';
+import WarningIcon from '@mui/icons-material/Warning';
+import InfoIcon from '@mui/icons-material/Info';
+import ErrorIcon from '@mui/icons-material/Error';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -23,141 +28,115 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const getTypeStyles = () => {
+  const getTypeConfig = () => {
     switch (type) {
       case 'danger':
         return {
-          icon: '⚠️',
-          confirmBg: '#ef4444',
-          confirmHover: '#dc2626'
+          icon: <ErrorIcon />,
+          colorScheme: 'error' as const,
+          iconColor: 'var(--dp-error-600)',
         };
       case 'info':
         return {
-          icon: 'ℹ️',
-          confirmBg: '#3b82f6',
-          confirmHover: '#2563eb'
+          icon: <InfoIcon />,
+          colorScheme: 'primary' as const,
+          iconColor: 'var(--dp-info-600)',
         };
       default:
         return {
-          icon: '⚠️',
-          confirmBg: '#f59e0b',
-          confirmHover: '#d97706'
+          icon: <WarningIcon />,
+          colorScheme: 'warning' as const,
+          iconColor: 'var(--dp-warning-600)',
         };
     }
   };
 
-  const styles = getTypeStyles();
+  const config = getTypeConfig();
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10000
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        width: '90%',
-        maxWidth: '500px',
-        padding: '0'
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '20px 24px 16px 24px',
-          borderBottom: '1px solid #e5e7eb'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
-            <div style={{ fontSize: '1.5rem' }}>{styles.icon}</div>
-            <h2 style={{
-              fontSize: '1.25rem',
-              fontWeight: '700',
-              color: '#111827',
-              margin: 0
-            }}>
-              {title}
-            </h2>
-          </div>
-        </div>
+    <Dialog
+      open={isOpen}
+      onClose={onCancel}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: 'var(--dp-neutral-0)',
+          borderRadius: 'var(--dp-radius-xl)',
+          boxShadow: 'var(--dp-shadow-2xl)',
+          maxWidth: '500px',
+        },
+      }}
+    >
+      <ModalHeader
+        title={title}
+        onClose={onCancel}
+        variant="primary"
+      />
 
-        {/* Content */}
-        <div style={{
-          padding: '16px 24px 24px 24px'
-        }}>
-          <div style={{
-            color: '#374151',
-            fontSize: '0.875rem',
-            lineHeight: '1.6',
-            whiteSpace: 'pre-line',
-            marginBottom: '24px'
-          }}>
+      <DialogContent
+        sx={{
+          backgroundColor: 'var(--dp-neutral-50)',
+          padding: 'var(--dp-space-6)',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 'var(--dp-space-4)',
+            alignItems: 'flex-start',
+          }}
+        >
+          {/* Icon */}
+          <Box
+            sx={{
+              color: config.iconColor,
+              fontSize: 'var(--dp-text-display-small)',
+              flexShrink: 0,
+              marginTop: 'var(--dp-space-1)',
+            }}
+          >
+            {config.icon}
+          </Box>
+
+          {/* Message */}
+          <Typography
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+              color: 'var(--dp-neutral-800)',
+              lineHeight: 'var(--dp-line-height-relaxed)',
+              whiteSpace: 'pre-line',
+              flex: 1,
+            }}
+          >
             {message}
-          </div>
+          </Typography>
+        </Box>
+      </DialogContent>
 
-          {/* Actions */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '12px'
-          }}>
-            <button
-              onClick={onCancel}
-              style={{
-                padding: '10px 20px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                backgroundColor: 'white',
-                color: '#374151',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9fafb';
-                e.currentTarget.style.borderColor = '#9ca3af';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.borderColor = '#d1d5db';
-              }}
-            >
-              {cancelText}
-            </button>
-            <button
-              onClick={onConfirm}
-              style={{
-                padding: '10px 20px',
-                border: 'none',
-                borderRadius: '6px',
-                backgroundColor: styles.confirmBg,
-                color: 'white',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = styles.confirmHover;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = styles.confirmBg;
-              }}
-            >
-              {confirmText}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <ModalFooter
+        primaryAction={
+          <StandardButton
+            variant="contained"
+            colorScheme={config.colorScheme}
+            onClick={onConfirm}
+          >
+            {confirmText}
+          </StandardButton>
+        }
+        secondaryActions={[
+          <StandardButton
+            key="cancel"
+            variant="outlined"
+            colorScheme="neutral"
+            onClick={onCancel}
+          >
+            {cancelText}
+          </StandardButton>
+        ]}
+      />
+    </Dialog>
   );
 };
 

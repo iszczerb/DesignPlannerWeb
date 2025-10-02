@@ -97,23 +97,56 @@ const SlotContextMenu: React.FC<SlotContextMenuProps> = ({
         zIndex: 999999,
         minWidth: 180,
         py: 1,
-        backgroundColor: 'white',
+        backgroundColor: 'var(--dp-neutral-0)',
+        borderRadius: 'var(--dp-radius-lg)',
+        border: '1px solid var(--dp-neutral-200)',
+        boxShadow: 'var(--dp-shadow-2xl)',
       }}
     >
       <MenuList dense>
-        <MenuItem onClick={handleCreateTask}>
+        <MenuItem
+          onClick={handleCreateTask}
+          sx={{
+            fontFamily: 'var(--dp-font-family-primary)',
+            color: 'var(--dp-neutral-800)',
+            '&:hover': {
+              backgroundColor: 'var(--dp-neutral-100)',
+            },
+          }}
+        >
           <ListItemIcon>
-            <AddIcon fontSize="small" />
+            <AddIcon fontSize="small" sx={{ color: 'var(--dp-primary-500)' }} />
           </ListItemIcon>
-          <ListItemText primary={`Create Task (${slotLabel})`} />
+          <ListItemText
+            primary={`Create Task (${slotLabel})`}
+            primaryTypographyProps={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+            }}
+          />
         </MenuItem>
-        
+
         {hasCopiedTask && (
-          <MenuItem onClick={handlePasteTask}>
+          <MenuItem
+            onClick={handlePasteTask}
+            sx={{
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+              '&:hover': {
+                backgroundColor: 'var(--dp-neutral-100)',
+              },
+            }}
+          >
             <ListItemIcon>
-              <CallReceivedIcon fontSize="small" />
+              <CallReceivedIcon fontSize="small" sx={{ color: 'var(--dp-neutral-600)' }} />
             </ListItemIcon>
-            <ListItemText primary="Paste Task Here" />
+            <ListItemText
+              primary="Paste Task Here"
+              primaryTypographyProps={{
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontSize: 'var(--dp-text-body-medium)',
+              }}
+            />
           </MenuItem>
         )}
       </MenuList>

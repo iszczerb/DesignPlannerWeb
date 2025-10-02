@@ -1,4 +1,17 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Menu, MenuItem, Divider, Dialog, DialogContent, Box, Typography, TextField, IconButton, Tooltip } from '@mui/material';
+import { ModalHeader, ModalFooter, StandardButton } from '../components/common/modal';
+import FormatBoldIcon from '@mui/icons-material/FormatBold';
+import FormatItalicIcon from '@mui/icons-material/FormatItalic';
+import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
+import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
+import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight';
+import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
+import FormatColorFillIcon from '@mui/icons-material/FormatColorFill';
+import FormatSizeIcon from '@mui/icons-material/FormatSize';
 import AppHeader from '../components/layout/AppHeader';
 import DayBasedCalendarGrid from '../components/calendar/DayBasedCalendarGrid';
 // TODO: DELETE MonthlyView later - it's old incomplete code that only shows headers
@@ -486,11 +499,37 @@ const TeamScheduleContent: React.FC<{
     text: string;
     completed: boolean;
     createdAt: Date;
+    clientId?: number;
+    projectId?: number;
+    priority?: TaskPriority;
+    notes?: string;
   }
 
   // Day-specific todo lists - each day has its own todo list
   const [dailyTodosMap, setDailyTodosMap] = useState<Map<string, TodoItem[]>>(new Map());
   const [newTodoText, setNewTodoText] = useState('');
+  const [showCompletedTodos, setShowCompletedTodos] = useState(false);
+
+  // Day-specific notes - each day has its own notes
+  const [dailyNotesMap, setDailyNotesMap] = useState<Map<string, string>>(new Map());
+  const notesEditorRef = useRef<HTMLDivElement>(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [selectedColor, setSelectedColor] = useState('#000000');
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+  const [selectedHighlight, setSelectedHighlight] = useState('transparent');
+  const [showFontSizePicker, setShowFontSizePicker] = useState(false);
+  const savedSelectionRef = useRef<Range | null>(null);
+  const [todoSectionHeight, setTodoSectionHeight] = useState(50); // Percentage
+
+  // Todo context menu and modals state
+  const [todoContextMenu, setTodoContextMenu] = useState<{ mouseX: number; mouseY: number; todo: TodoItem } | null>(null);
+  const [todoClientProjectModalOpen, setTodoClientProjectModalOpen] = useState(false);
+  const [todoPriorityModalOpen, setTodoPriorityModalOpen] = useState(false);
+  const [todoNotesModalOpen, setTodoNotesModalOpen] = useState(false);
+  const [selectedTodoForEdit, setSelectedTodoForEdit] = useState<TodoItem | null>(null);
+  const [clients, setClients] = useState<{ id: number; code: string; name: string }[]>([]);
+  const [projectsByClient, setProjectsByClient] = useState<{ id: number; code: string; name: string; clientId: number }[]>([]);
+  const [allProjects, setAllProjects] = useState<{ id: number; code: string; name: string; clientId: number }[]>([]);
 
   // Helper function to get current day's date key
   const getCurrentDateKey = useCallback(() => {
@@ -512,9 +551,121 @@ const TeamScheduleContent: React.FC<{
     setDailyTodosMap(prev => {
       const newMap = new Map(prev);
       newMap.set(dateKey, todos);
+
+      // Save to localStorage
+      const todosObject: Record<string, TodoItem[]> = {};
+      newMap.forEach((value, key) => {
+        todosObject[key] = value;
+      });
+      localStorage.setItem('dailyTodos', JSON.stringify(todosObject));
+      console.log('💾 Saved todos to localStorage:', todosObject);
+
       return newMap;
     });
   }, [getCurrentDateKey]);
+
+  // Load todos from localStorage on mount
+  useEffect(() => {
+    const loadTodosFromStorage = () => {
+      try {
+        const stored = localStorage.getItem('dailyTodos');
+        if (stored) {
+          const todosObject: Record<string, TodoItem[]> = JSON.parse(stored);
+          const todosMap = new Map<string, TodoItem[]>();
+          Object.entries(todosObject).forEach(([key, value]) => {
+            todosMap.set(key, value);
+          });
+          setDailyTodosMap(todosMap);
+          console.log('📂 Loaded todos from localStorage:', todosObject);
+        }
+      } catch (error) {
+        console.error('Failed to load todos from localStorage:', error);
+      }
+    };
+    loadTodosFromStorage();
+  }, []);
+
+  // Load daily notes from localStorage on mount
+  useEffect(() => {
+    const loadNotesFromStorage = () => {
+      try {
+        const stored = localStorage.getItem('dailyNotes');
+        if (stored) {
+          const notesObject: Record<string, string> = JSON.parse(stored);
+          const notesMap = new Map<string, string>();
+          Object.entries(notesObject).forEach(([key, value]) => {
+            notesMap.set(key, value);
+          });
+          setDailyNotesMap(notesMap);
+          console.log('📂 Loaded notes from localStorage:', notesObject);
+        }
+      } catch (error) {
+        console.error('Failed to load notes from localStorage:', error);
+      }
+    };
+    loadNotesFromStorage();
+  }, []);
+
+  // Helper function to get current day's notes
+  const getCurrentDayNotes = useCallback(() => {
+    const dateKey = getCurrentDateKey();
+    return dailyNotesMap.get(dateKey) || '';
+  }, [dailyNotesMap, getCurrentDateKey]);
+
+  // Helper function to update current day's notes
+  const setCurrentDayNotes = useCallback((notes: string) => {
+    const dateKey = getCurrentDateKey();
+    setDailyNotesMap(prev => {
+      const newMap = new Map(prev);
+      newMap.set(dateKey, notes);
+
+      // Save to localStorage
+      const notesObject: Record<string, string> = {};
+      newMap.forEach((value, key) => {
+        notesObject[key] = value;
+      });
+      localStorage.setItem('dailyNotes', JSON.stringify(notesObject));
+
+      return newMap;
+    });
+  }, [getCurrentDateKey]);
+
+  // Initialize editor content when day changes
+  useEffect(() => {
+    if (notesEditorRef.current) {
+      const currentContent = getCurrentDayNotes();
+      // Only update if content is different to prevent cursor jumping
+      if (notesEditorRef.current.innerHTML !== currentContent) {
+        notesEditorRef.current.innerHTML = currentContent;
+      }
+
+      // Set default font size to Normal (3) if editor is empty
+      if (!currentContent || currentContent.trim() === '') {
+        notesEditorRef.current.focus();
+        document.execCommand('fontSize', false, '3');
+        notesEditorRef.current.blur();
+      }
+    }
+  }, [currentDate, getCurrentDayNotes]);
+
+  // Helper functions to save and restore text selection
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      savedSelectionRef.current = selection.getRangeAt(0);
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedSelectionRef.current && notesEditorRef.current) {
+      notesEditorRef.current.focus();
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(savedSelectionRef.current);
+      }
+    }
+  };
 
   // Todo management functions
   const addTodo = useCallback(() => {
@@ -544,6 +695,113 @@ const TeamScheduleContent: React.FC<{
     const updatedTodos = currentTodos.filter(todo => todo.id !== id);
     setCurrentDayTodos(updatedTodos);
   }, [getCurrentDayTodos, setCurrentDayTodos]);
+
+  // Fetch clients and all projects on component mount
+  useEffect(() => {
+    const fetchClientsAndProjects = async () => {
+      try {
+        const clientsData = await projectService.getClients();
+        setClients(clientsData);
+
+        // Fetch all projects for all clients
+        const allProjectsData: { id: number; code: string; name: string; clientId: number }[] = [];
+        for (const client of clientsData) {
+          const projects = await projectService.getProjectsByClient(client.id);
+          allProjectsData.push(...projects);
+        }
+        setAllProjects(allProjectsData);
+      } catch (error) {
+        console.error('Failed to fetch clients and projects:', error);
+      }
+    };
+    fetchClientsAndProjects();
+  }, []);
+
+  // Handle todo context menu
+  const handleTodoContextMenu = useCallback((event: React.MouseEvent, todo: TodoItem) => {
+    event.preventDefault();
+    setTodoContextMenu({
+      mouseX: event.clientX - 2,
+      mouseY: event.clientY - 4,
+      todo,
+    });
+  }, []);
+
+  const handleCloseTodoContextMenu = useCallback(() => {
+    setTodoContextMenu(null);
+  }, []);
+
+  const handleOpenTodoClientProjectModal = useCallback(() => {
+    if (!todoContextMenu) return;
+    setSelectedTodoForEdit(todoContextMenu.todo);
+    setTodoClientProjectModalOpen(true);
+    handleCloseTodoContextMenu();
+  }, [todoContextMenu, handleCloseTodoContextMenu]);
+
+  const handleOpenTodoPriorityModal = useCallback(() => {
+    if (!todoContextMenu) return;
+    setSelectedTodoForEdit(todoContextMenu.todo);
+    setTodoPriorityModalOpen(true);
+    handleCloseTodoContextMenu();
+  }, [todoContextMenu, handleCloseTodoContextMenu]);
+
+  const handleOpenTodoNotesModal = useCallback(() => {
+    if (!todoContextMenu) return;
+    setSelectedTodoForEdit(todoContextMenu.todo);
+    setTodoNotesModalOpen(true);
+    handleCloseTodoContextMenu();
+  }, [todoContextMenu, handleCloseTodoContextMenu]);
+
+  const handleTodoClientProjectSave = useCallback((clientId: number, projectId: number) => {
+    if (!selectedTodoForEdit) return;
+
+    console.log('💾 Saving client/project:', { clientId, projectId, todoId: selectedTodoForEdit.id });
+
+    const currentTodos = getCurrentDayTodos();
+    const updatedTodos = currentTodos.map(todo =>
+      todo.id === selectedTodoForEdit.id
+        ? {
+            ...todo,
+            clientId,
+            projectId: projectId === 0 ? undefined : projectId  // Allow client-only selection
+          }
+        : todo
+    );
+
+    console.log('✅ Updated todos:', updatedTodos);
+
+    setCurrentDayTodos(updatedTodos);
+    setTodoClientProjectModalOpen(false);
+    setSelectedTodoForEdit(null);
+  }, [selectedTodoForEdit, getCurrentDayTodos, setCurrentDayTodos]);
+
+  const handleTodoPrioritySave = useCallback((priority: TaskPriority) => {
+    if (!selectedTodoForEdit) return;
+
+    const currentTodos = getCurrentDayTodos();
+    const updatedTodos = currentTodos.map(todo =>
+      todo.id === selectedTodoForEdit.id
+        ? { ...todo, priority }
+        : todo
+    );
+    setCurrentDayTodos(updatedTodos);
+    setTodoPriorityModalOpen(false);
+    setSelectedTodoForEdit(null);
+  }, [selectedTodoForEdit, getCurrentDayTodos, setCurrentDayTodos]);
+
+  const handleTodoNotesSave = useCallback((notes: string) => {
+    if (!selectedTodoForEdit) return;
+
+    const currentTodos = getCurrentDayTodos();
+    const updatedTodos = currentTodos.map(todo =>
+      todo.id === selectedTodoForEdit.id
+        ? { ...todo, notes }
+        : todo
+    );
+    setCurrentDayTodos(updatedTodos);
+    setTodoNotesModalOpen(false);
+    setSelectedTodoForEdit(null);
+  }, [selectedTodoForEdit, getCurrentDayTodos, setCurrentDayTodos]);
 
   // Captured days for multi-day actions (to preserve selection when modal opens)
   const [capturedMultiDays, setCapturedMultiDays] = useState<Date[]>([]);
@@ -3671,7 +3929,7 @@ ${dateInfo}`;
         height: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: 'var(--dp-neutral-0)',
       }}
       onClick={handleGlobalClick}
     >
@@ -3943,41 +4201,37 @@ ${dateInfo}`;
 
               {/* Todo Sidebar */}
               <div style={{
-                width: '300px',
+                width: '500px',
                 backgroundColor: 'var(--dp-neutral-0)',
-                borderLeft: '1px solid var(--dp-neutral-200)',
-                padding: '16px',
-                overflow: 'auto',
-                boxShadow: '-2px 0 4px rgba(0, 0, 0, 0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
               }}>
+                {/* Todo Section - Resizable */}
+                <div style={{
+                  flex: `0 0 ${todoSectionHeight}%`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: 'var(--dp-space-4)',
+                  overflow: 'auto',
+                }}>
                 {/* Todo Header */}
                 <div style={{
-                  marginBottom: '20px',
-                  padding: '16px',
-                  backgroundColor: 'var(--dp-primary-500)',
-                  borderRadius: '8px',
-                  textAlign: 'center',
+                  marginBottom: 'var(--dp-space-3)',
+                  padding: 'var(--dp-space-2)',
+                  backgroundColor: 'transparent',
+                  borderRadius: 'var(--dp-radius-md)',
+                  textAlign: 'left',
                 }}>
                   <h2 style={{
-                    fontSize: '1.25rem',
-                    fontWeight: '700',
-                    color: 'var(--dp-neutral-0)',
+                    fontSize: 'var(--dp-text-title-large)',
+                    fontWeight: 'var(--dp-font-weight-bold)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    color: 'var(--dp-neutral-900)',
                     margin: '0',
                   }}>
-                    Daily Tasks
+                    Daily To-Do List
                   </h2>
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: 'var(--dp-primary-100)',
-                    margin: '4px 0 0 0',
-                  }}>
-                    {new Intl.DateTimeFormat('en-US', {
-                      weekday: 'long',
-                      month: 'short',
-                      day: 'numeric',
-                      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                    }).format(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()))}
-                  </p>
                 </div>
 
                 {/* Add Todo Input */}
@@ -3995,7 +4249,7 @@ ${dateInfo}`;
                         addTodo();
                       }
                     }}
-                    placeholder="Add a new task..."
+                    placeholder="Add new to-do item..."
                     style={{
                       flex: 1,
                       padding: '8px 12px',
@@ -4045,28 +4299,32 @@ ${dateInfo}`;
                       padding: '20px',
                       fontSize: '0.875rem',
                     }}>
-                      No tasks yet. Add one above!
+                      No to-dos yet. Add one above!
                     </div>
                   ) : (
-                    currentDayTodos.map((todo) => (
+                    <>
+                      {/* Active Todos */}
+                      {currentDayTodos.filter(t => !t.completed).map((todo) => (
                       <div
                         key={todo.id}
+                        onContextMenu={(e) => handleTodoContextMenu(e, todo)}
                         style={{
                           display: 'flex',
                           alignItems: 'flex-start',
                           gap: '12px',
                           padding: '12px',
                           marginBottom: '8px',
-                          backgroundColor: todo.completed ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-0)',
+                          backgroundColor: 'var(--dp-neutral-0)',
                           border: '1px solid var(--dp-neutral-200)',
                           borderRadius: '6px',
                           transition: 'all 0.2s ease',
+                          cursor: 'context-menu',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = todo.completed ? 'var(--dp-neutral-100)' : 'var(--dp-neutral-50)';
+                          e.currentTarget.style.backgroundColor = 'var(--dp-neutral-50)';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = todo.completed ? 'var(--dp-neutral-50)' : 'var(--dp-neutral-0)';
+                          e.currentTarget.style.backgroundColor = 'var(--dp-neutral-0)';
                         }}
                       >
                         {/* Checkbox */}
@@ -4082,15 +4340,140 @@ ${dateInfo}`;
                           }}
                         />
 
-                        {/* Todo Text */}
+                        {/* Todo Text and Metadata */}
                         <div style={{
                           flex: 1,
-                          fontSize: '0.875rem',
-                          lineHeight: '1.4',
-                          color: todo.completed ? 'var(--dp-neutral-500)' : 'var(--dp-neutral-700)',
-                          textDecoration: todo.completed ? 'line-through' : 'none',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
                         }}>
-                          {todo.text}
+                          {/* Todo Text */}
+                          <div style={{
+                            fontSize: '0.875rem',
+                            lineHeight: '1.4',
+                            color: todo.completed ? 'var(--dp-neutral-500)' : 'var(--dp-neutral-700)',
+                            textDecoration: todo.completed ? 'line-through' : 'none',
+                          }}>
+                            {todo.text}
+                          </div>
+
+                          {/* Metadata Row */}
+                          {(todo.priority || todo.clientId || todo.projectId || todo.notes) && (
+                            <div style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: '6px',
+                              alignItems: 'center',
+                              fontSize: '0.75rem',
+                            }}>
+                              {/* Priority Badge */}
+                              {todo.priority && (() => {
+                                let bgColor: string;
+                                let textColor: string;
+                                let icon: string;
+                                let label: string;
+
+                                if (todo.priority === 1) {
+                                  // Low - success green
+                                  bgColor = 'var(--dp-success-50)';
+                                  textColor = 'var(--dp-success-600)';
+                                  icon = '○';
+                                  label = 'Low';
+                                } else if (todo.priority === 2) {
+                                  // Medium - warning orange
+                                  bgColor = 'var(--dp-warning-50)';
+                                  textColor = 'var(--dp-warning-600)';
+                                  icon = '◐';
+                                  label = 'Medium';
+                                } else if (todo.priority === 3) {
+                                  // High - error red
+                                  bgColor = 'var(--dp-error-50)';
+                                  textColor = 'var(--dp-error-600)';
+                                  icon = '●';
+                                  label = 'High';
+                                } else {
+                                  // Critical - darker error red
+                                  bgColor = 'var(--dp-error-100)';
+                                  textColor = 'var(--dp-error-700)';
+                                  icon = '🔥';
+                                  label = 'Critical';
+                                }
+
+                                return (
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '2px 6px',
+                                    backgroundColor: bgColor,
+                                    color: textColor,
+                                    borderRadius: '4px',
+                                    fontWeight: 500,
+                                  }}>
+                                    <span style={{ fontSize: '0.875rem' }}>{icon}</span>
+                                    <span>{label}</span>
+                                  </span>
+                                );
+                              })()}
+
+                              {/* Client/Project Badge */}
+                              {(todo.clientId || todo.projectId) && (() => {
+                                const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+                                const client = clients.find(c => c.id === todo.clientId);
+                                const project = allProjects.find(p => p.id === todo.projectId);
+
+                                console.log('🔍 Todo card render:', {
+                                  todoId: todo.id,
+                                  clientId: todo.clientId,
+                                  projectId: todo.projectId,
+                                  client,
+                                  project,
+                                  allProjectsCount: allProjects.length
+                                });
+
+                                let displayText = '';
+                                if (project && client) {
+                                  displayText = `${client.name} / ${project.name}`;
+                                } else if (client) {
+                                  displayText = client.name;
+                                } else if (project) {
+                                  displayText = project.name;
+                                } else {
+                                  displayText = 'Project';
+                                }
+
+                                return (
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '2px 6px',
+                                    backgroundColor: isDarkTheme ? 'var(--dp-primary-900)' : 'var(--dp-primary-100)',
+                                    color: isDarkTheme ? 'var(--dp-primary-200)' : 'var(--dp-primary-800)',
+                                    borderRadius: '4px',
+                                    fontWeight: 500,
+                                  }}>
+                                    {displayText}
+                                  </span>
+                                );
+                              })()}
+
+                              {/* Notes Icon */}
+                              {todo.notes && (
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '2px 6px',
+                                  backgroundColor: 'var(--dp-info-100)',
+                                  color: 'var(--dp-info-700)',
+                                  borderRadius: '4px',
+                                  fontSize: '0.875rem',
+                                }}>
+                                  📝
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Delete Button */}
@@ -4122,25 +4505,1367 @@ ${dateInfo}`;
                           ×
                         </button>
                       </div>
-                    ))
+                    ))}
+
+                      {/* Completed Todos Section */}
+                      {currentDayTodos.filter(t => t.completed).length > 0 && (
+                        <div style={{ marginTop: 'var(--dp-space-4)' }}>
+                          {/* Completed Header */}
+                          <div
+                            onClick={() => setShowCompletedTodos(!showCompletedTodos)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: 'var(--dp-space-3)',
+                              backgroundColor: 'var(--dp-neutral-100)',
+                              borderRadius: 'var(--dp-radius-md)',
+                              cursor: 'pointer',
+                              marginBottom: showCompletedTodos ? 'var(--dp-space-3)' : '0',
+                              transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--dp-neutral-200)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--dp-neutral-100)';
+                            }}
+                          >
+                            <span style={{
+                              fontFamily: 'var(--dp-font-family-primary)',
+                              fontSize: 'var(--dp-text-body-medium)',
+                              fontWeight: 'var(--dp-font-weight-semibold)',
+                              color: 'var(--dp-neutral-700)',
+                            }}>
+                              Completed ({currentDayTodos.filter(t => t.completed).length})
+                            </span>
+                            <span style={{
+                              fontSize: '0.7rem',
+                              color: 'var(--dp-neutral-500)',
+                              transform: showCompletedTodos ? 'rotate(180deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.2s ease',
+                            }}>
+                              ▼
+                            </span>
+                          </div>
+
+                          {/* Completed Todos List */}
+                          {showCompletedTodos && currentDayTodos.filter(t => t.completed).map((todo) => (
+                            <div
+                              key={todo.id}
+                              onContextMenu={(e) => handleTodoContextMenu(e, todo)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '12px',
+                                padding: '12px',
+                                marginBottom: '8px',
+                                backgroundColor: 'var(--dp-success-50)',
+                                border: '1px solid var(--dp-success-200)',
+                                borderRadius: '6px',
+                                transition: 'all 0.2s ease',
+                                cursor: 'context-menu',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--dp-success-100)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--dp-success-50)';
+                              }}
+                            >
+                              {/* Checkbox */}
+                              <input
+                                type="checkbox"
+                                checked={todo.completed}
+                                onChange={() => toggleTodo(todo.id)}
+                                style={{
+                                  width: '16px',
+                                  height: '16px',
+                                  marginTop: '2px',
+                                  cursor: 'pointer',
+                                }}
+                              />
+
+                              {/* Todo Text and Metadata */}
+                              <div style={{
+                                flex: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                              }}>
+                                {/* Todo Text */}
+                                <div style={{
+                                  fontSize: '0.875rem',
+                                  lineHeight: '1.4',
+                                  color: 'var(--dp-neutral-500)',
+                                  textDecoration: 'line-through',
+                                }}>
+                                  {todo.text}
+                                </div>
+
+                                {/* Metadata Row */}
+                                {(todo.priority || todo.clientId || todo.projectId || todo.notes) && (
+                                  <div style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: '6px',
+                                    alignItems: 'center',
+                                    fontSize: '0.75rem',
+                                    opacity: 0.7,
+                                  }}>
+                                    {/* Same metadata badges as active todos */}
+                                    {todo.priority && (() => {
+                                      let bgColor: string;
+                                      let textColor: string;
+                                      let icon: string;
+                                      let label: string;
+
+                                      if (todo.priority === 1) {
+                                        bgColor = 'var(--dp-success-50)';
+                                        textColor = 'var(--dp-success-600)';
+                                        icon = '○';
+                                        label = 'Low';
+                                      } else if (todo.priority === 2) {
+                                        bgColor = 'var(--dp-warning-50)';
+                                        textColor = 'var(--dp-warning-600)';
+                                        icon = '◐';
+                                        label = 'Medium';
+                                      } else if (todo.priority === 3) {
+                                        bgColor = 'var(--dp-error-50)';
+                                        textColor = 'var(--dp-error-600)';
+                                        icon = '●';
+                                        label = 'High';
+                                      } else {
+                                        bgColor = 'var(--dp-error-100)';
+                                        textColor = 'var(--dp-error-700)';
+                                        icon = '🔥';
+                                        label = 'Critical';
+                                      }
+
+                                      return (
+                                        <span style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          padding: '2px 6px',
+                                          backgroundColor: bgColor,
+                                          color: textColor,
+                                          borderRadius: '4px',
+                                          fontWeight: 500,
+                                        }}>
+                                          <span style={{ fontSize: '0.875rem' }}>{icon}</span>
+                                          <span>{label}</span>
+                                        </span>
+                                      );
+                                    })()}
+
+                                    {(todo.clientId || todo.projectId) && (() => {
+                                      const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+                                      const client = clients.find(c => c.id === todo.clientId);
+                                      const project = allProjects.find(p => p.id === todo.projectId);
+
+                                      let displayText = '';
+                                      if (project && client) {
+                                        displayText = `${client.name} / ${project.name}`;
+                                      } else if (client) {
+                                        displayText = client.name;
+                                      } else if (project) {
+                                        displayText = project.name;
+                                      } else {
+                                        displayText = 'Project';
+                                      }
+
+                                      return (
+                                        <span style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          padding: '2px 6px',
+                                          backgroundColor: isDarkTheme ? 'var(--dp-primary-900)' : 'var(--dp-primary-100)',
+                                          color: isDarkTheme ? 'var(--dp-primary-200)' : 'var(--dp-primary-800)',
+                                          borderRadius: '4px',
+                                          fontWeight: 500,
+                                        }}>
+                                          {displayText}
+                                        </span>
+                                      );
+                                    })()}
+
+                                    {todo.notes && (
+                                      <span style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        padding: '2px 6px',
+                                        backgroundColor: 'var(--dp-info-100)',
+                                        color: 'var(--dp-info-700)',
+                                        borderRadius: '4px',
+                                        fontSize: '0.875rem',
+                                      }}>
+                                        📝
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => deleteTodo(todo.id)}
+                                style={{
+                                  width: '20px',
+                                  height: '20px',
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem',
+                                  color: 'var(--dp-neutral-500)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.2s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'var(--dp-error-50)';
+                                  e.currentTarget.style.color = 'var(--dp-error-600)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                  e.currentTarget.style.color = 'var(--dp-neutral-500)';
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
-                {/* Todo Statistics */}
-                {currentDayTodos.length > 0 && (
+                </div>
+
+                {/* Resizer Handle */}
+                <div
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startY = e.clientY;
+                    const startHeight = todoSectionHeight;
+                    const sidebarHeight = e.currentTarget.parentElement?.clientHeight || 1;
+
+                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                      const deltaY = moveEvent.clientY - startY;
+                      const deltaPercent = (deltaY / sidebarHeight) * 100;
+                      const newHeight = Math.min(Math.max(startHeight + deltaPercent, 20), 80);
+                      setTodoSectionHeight(newHeight);
+                    };
+
+                    const handleMouseUp = () => {
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }}
+                  style={{
+                    height: '4px',
+                    backgroundColor: 'var(--dp-neutral-200)',
+                    cursor: 'ns-resize',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--dp-primary-500)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--dp-neutral-200)';
+                  }}
+                />
+
+                {/* Daily Notes Section - Resizable */}
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: 'var(--dp-space-4)',
+                  backgroundColor: 'var(--dp-neutral-25)',
+                  overflow: 'hidden',
+                }}>
+                  {/* Notes Header */}
                   <div style={{
-                    marginTop: '16px',
-                    padding: '12px',
-                    backgroundColor: 'var(--dp-neutral-50)',
-                    borderRadius: '6px',
-                    fontSize: '0.75rem',
-                    color: 'var(--dp-neutral-500)',
-                    textAlign: 'center',
+                    marginBottom: 'var(--dp-space-2)',
+                    padding: '0 var(--dp-space-2)',
                   }}>
-                    {currentDayTodos.filter(t => t.completed).length} of {currentDayTodos.length} completed
+                    <h3 style={{
+                      fontSize: 'var(--dp-text-title-medium)',
+                      fontWeight: 'var(--dp-font-weight-bold)',
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      color: 'var(--dp-neutral-900)',
+                      margin: '0',
+                    }}>
+                      Daily Notes
+                    </h3>
                   </div>
-                )}
+
+                  {/* Rich Text Editor Toolbar */}
+                  <Box sx={{
+                    display: 'flex',
+                    flexWrap: 'nowrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-evenly',
+                    padding: 'var(--dp-space-2)',
+                    backgroundColor: 'var(--dp-neutral-0)',
+                    borderRadius: 'var(--dp-radius-md)',
+                    marginBottom: 'var(--dp-space-2)',
+                    border: '1px solid var(--dp-neutral-300)',
+                  }}>
+                    <Tooltip title="Bold">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (notesEditorRef.current) {
+                            notesEditorRef.current.focus();
+                            document.execCommand('bold', false);
+                          }
+                        }}
+                        sx={{ color: 'var(--dp-neutral-700)' }}
+                      >
+                        <FormatBoldIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Italic">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (notesEditorRef.current) {
+                            notesEditorRef.current.focus();
+                            document.execCommand('italic', false);
+                          }
+                        }}
+                        sx={{ color: 'var(--dp-neutral-700)' }}
+                      >
+                        <FormatItalicIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Underline">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (notesEditorRef.current) {
+                            notesEditorRef.current.focus();
+                            document.execCommand('underline', false);
+                          }
+                        }}
+                        sx={{ color: 'var(--dp-neutral-700)' }}
+                      >
+                        <FormatUnderlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Box sx={{ width: '1px', height: '24px', backgroundColor: 'var(--dp-neutral-300)', margin: '0 var(--dp-space-1)' }} />
+                    <Tooltip title="Bullet List">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (notesEditorRef.current) {
+                            notesEditorRef.current.focus();
+                            document.execCommand('insertUnorderedList', false);
+                          }
+                        }}
+                        sx={{ color: 'var(--dp-neutral-700)' }}
+                      >
+                        <FormatListBulletedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Numbered List">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (notesEditorRef.current) {
+                            notesEditorRef.current.focus();
+                            document.execCommand('insertOrderedList', false);
+                          }
+                        }}
+                        sx={{ color: 'var(--dp-neutral-700)' }}
+                      >
+                        <FormatListNumberedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Box sx={{ width: '1px', height: '24px', backgroundColor: 'var(--dp-neutral-300)', margin: '0 var(--dp-space-1)' }} />
+                    <Tooltip title="Align Left">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (notesEditorRef.current) {
+                            notesEditorRef.current.focus();
+                            document.execCommand('justifyLeft', false);
+                          }
+                        }}
+                        sx={{ color: 'var(--dp-neutral-700)' }}
+                      >
+                        <FormatAlignLeftIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Align Center">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (notesEditorRef.current) {
+                            notesEditorRef.current.focus();
+                            document.execCommand('justifyCenter', false);
+                          }
+                        }}
+                        sx={{ color: 'var(--dp-neutral-700)' }}
+                      >
+                        <FormatAlignCenterIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Align Right">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (notesEditorRef.current) {
+                            notesEditorRef.current.focus();
+                            document.execCommand('justifyRight', false);
+                          }
+                        }}
+                        sx={{ color: 'var(--dp-neutral-700)' }}
+                      >
+                        <FormatAlignRightIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Box sx={{ width: '1px', height: '24px', backgroundColor: 'var(--dp-neutral-300)', margin: '0 var(--dp-space-1)' }} />
+                    <Box sx={{ position: 'relative' }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (!showColorPicker) {
+                            saveSelection();
+                            setShowHighlightPicker(false);
+                            setShowFontSizePicker(false);
+                          }
+                          setShowColorPicker(!showColorPicker);
+                        }}
+                        sx={{
+                          color: 'var(--dp-neutral-700)',
+                          backgroundColor: showColorPicker ? 'var(--dp-neutral-200)' : 'transparent',
+                          borderBottom: `3px solid ${selectedColor}`,
+                          borderRadius: '4px 4px 0 0',
+                        }}
+                      >
+                        <FormatColorTextIcon fontSize="small" />
+                      </IconButton>
+                      {showColorPicker && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            zIndex: 1000,
+                            backgroundColor: 'var(--dp-neutral-0)',
+                            border: '1px solid var(--dp-neutral-300)',
+                            borderRadius: 'var(--dp-radius-md)',
+                            padding: 'var(--dp-space-2)',
+                            boxShadow: 'var(--dp-shadow-lg)',
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(4, 1fr)',
+                            gap: 'var(--dp-space-1)',
+                            marginTop: 'var(--dp-space-1)',
+                          }}
+                        >
+                          {(() => {
+                            const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+                            const defaultTextColor = isDarkTheme ? '#FFFFFF' : '#000000';
+                            const colors = [
+                              { value: 'removeFormat', display: 'transparent', label: 'None' },
+                              { value: '#E53935', display: '#E53935', label: 'Red' },
+                              { value: '#1E88E5', display: '#1E88E5', label: 'Blue' },
+                              { value: '#43A047', display: '#43A047', label: 'Green' },
+                              { value: '#FB8C00', display: '#FB8C00', label: 'Orange' },
+                              { value: '#8E24AA', display: '#8E24AA', label: 'Purple' },
+                              { value: '#FFB300', display: '#FFB300', label: 'Yellow' },
+                              { value: '#00ACC1', display: '#00ACC1', label: 'Cyan' }
+                            ];
+
+                            return colors.map((item) => (
+                              <Box
+                                key={item.value}
+                                onClick={() => {
+                                  if (item.value === 'removeFormat') {
+                                    restoreSelection();
+                                    document.execCommand('removeFormat', false);
+                                    setSelectedColor(defaultTextColor);
+                                  } else {
+                                    setSelectedColor(item.value);
+                                    restoreSelection();
+                                    document.execCommand('foreColor', false, item.value);
+                                  }
+                                  setShowColorPicker(false);
+                                  setShowHighlightPicker(false);
+                                  setShowFontSizePicker(false);
+                                }}
+                                sx={{
+                                  width: '24px',
+                                  height: '24px',
+                                  backgroundColor: item.display,
+                                  borderRadius: '50%',
+                                  cursor: 'pointer',
+                                  border: item.display === 'transparent' ? '1px solid var(--dp-neutral-400)' : '1px solid var(--dp-neutral-300)',
+                                  '&:hover': {
+                                    transform: 'scale(1.15)',
+                                    boxShadow: 'var(--dp-shadow-md)',
+                                  },
+                                }}
+                              />
+                            ));
+                          })()}
+                        </Box>
+                      )}
+                    </Box>
+                    <Box sx={{ position: 'relative' }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (!showHighlightPicker) {
+                            saveSelection();
+                            setShowColorPicker(false);
+                            setShowFontSizePicker(false);
+                          }
+                          setShowHighlightPicker(!showHighlightPicker);
+                        }}
+                        sx={{
+                          color: 'var(--dp-neutral-700)',
+                          backgroundColor: showHighlightPicker ? 'var(--dp-neutral-200)' : 'transparent',
+                          borderBottom: `3px solid ${selectedHighlight}`,
+                          borderRadius: '4px 4px 0 0',
+                        }}
+                      >
+                        <FormatColorFillIcon fontSize="small" />
+                      </IconButton>
+                      {showHighlightPicker && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            zIndex: 1000,
+                            backgroundColor: 'var(--dp-neutral-0)',
+                            border: '1px solid var(--dp-neutral-300)',
+                            borderRadius: 'var(--dp-radius-md)',
+                            padding: 'var(--dp-space-2)',
+                            boxShadow: 'var(--dp-shadow-lg)',
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(4, 1fr)',
+                            gap: 'var(--dp-space-1)',
+                            marginTop: 'var(--dp-space-1)',
+                          }}
+                        >
+                          {[
+                            { color: 'transparent', display: 'transparent' },
+                            { color: '#E5393550', display: '#E53935' },
+                            { color: '#1E88E550', display: '#1E88E5' },
+                            { color: '#43A04750', display: '#43A047' },
+                            { color: '#FB8C0050', display: '#FB8C00' },
+                            { color: '#8E24AA50', display: '#8E24AA' },
+                            { color: '#FFB30050', display: '#FFB300' },
+                            { color: '#00ACC150', display: '#00ACC1' }
+                          ].map((item) => (
+                            <Box
+                              key={item.color}
+                              onClick={() => {
+                                setSelectedHighlight(item.color);
+                                restoreSelection();
+                                document.execCommand('backColor', false, item.color);
+                                setShowHighlightPicker(false);
+                                setShowColorPicker(false);
+                                setShowFontSizePicker(false);
+                              }}
+                              sx={{
+                                width: '24px',
+                                height: '24px',
+                                backgroundColor: item.color,
+                                borderRadius: '50%',
+                                cursor: 'pointer',
+                                border: selectedHighlight === item.color ? '3px solid var(--dp-primary-600)' : item.color === 'transparent' ? '1px solid var(--dp-neutral-400)' : '1px solid var(--dp-neutral-300)',
+                                position: 'relative',
+                                '&:hover': {
+                                  transform: 'scale(1.15)',
+                                  boxShadow: 'var(--dp-shadow-md)',
+                                },
+                                '&::after': item.color === 'transparent' ? {
+                                  content: '""',
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  transform: 'translate(-50%, -50%) rotate(45deg)',
+                                  width: '18px',
+                                  height: '1px',
+                                  backgroundColor: 'var(--dp-error-600)',
+                                } : {},
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </Box>
+                    <Tooltip title="Font Size" open={showFontSizePicker ? false : undefined}>
+                      <Box sx={{ position: 'relative' }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            if (!showFontSizePicker) {
+                              saveSelection();
+                              setShowColorPicker(false);
+                              setShowHighlightPicker(false);
+                            }
+                            setShowFontSizePicker(!showFontSizePicker);
+                          }}
+                          sx={{
+                            color: 'var(--dp-neutral-700)',
+                            backgroundColor: showFontSizePicker ? 'var(--dp-neutral-200)' : 'transparent',
+                          }}
+                        >
+                          <FormatSizeIcon fontSize="small" />
+                        </IconButton>
+                        {showFontSizePicker && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              zIndex: 1000,
+                              backgroundColor: 'var(--dp-neutral-0)',
+                              border: '1px solid var(--dp-neutral-300)',
+                              borderRadius: 'var(--dp-radius-md)',
+                              padding: 'var(--dp-space-2)',
+                              boxShadow: 'var(--dp-shadow-lg)',
+                              marginTop: 'var(--dp-space-1)',
+                              minWidth: '120px',
+                            }}
+                          >
+                            {[
+                              { label: 'Small', value: '1' },
+                              { label: 'Normal', value: '3' },
+                              { label: 'Medium', value: '4' },
+                              { label: 'Large', value: '5' },
+                              { label: 'Huge', value: '7' }
+                            ].map((size) => (
+                              <Box
+                                key={size.value}
+                                onClick={() => {
+                                  restoreSelection();
+                                  document.execCommand('fontSize', false, size.value);
+                                  setShowFontSizePicker(false);
+                                  setShowColorPicker(false);
+                                  setShowHighlightPicker(false);
+                                }}
+                                sx={{
+                                  padding: 'var(--dp-space-2)',
+                                  cursor: 'pointer',
+                                  borderRadius: 'var(--dp-radius-sm)',
+                                  fontFamily: 'var(--dp-font-family-primary)',
+                                  color: 'var(--dp-neutral-800)',
+                                  fontWeight: 'var(--dp-font-weight-medium)',
+                                  '&:hover': {
+                                    backgroundColor: 'var(--dp-primary-50)',
+                                    color: 'var(--dp-primary-700)',
+                                  },
+                                }}
+                              >
+                                {size.label}
+                              </Box>
+                            ))}
+                          </Box>
+                        )}
+                      </Box>
+                    </Tooltip>
+                  </Box>
+
+                  {/* Rich Text Editor */}
+                  <div
+                    ref={notesEditorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onInput={(e) => {
+                      const content = e.currentTarget.innerHTML;
+                      setCurrentDayNotes(content);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: 'var(--dp-space-3)',
+                      backgroundColor: 'var(--dp-neutral-0)',
+                      border: '1px solid var(--dp-neutral-300)',
+                      borderRadius: 'var(--dp-radius-md)',
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-medium)',
+                      color: 'var(--dp-neutral-900)',
+                      overflowY: 'auto',
+                      outline: 'none',
+                      minHeight: '150px',
+                    }}
+                  />
+                </div>
               </div>
+
+              {/* Todo Context Menu */}
+              <Menu
+                open={todoContextMenu !== null}
+                onClose={handleCloseTodoContextMenu}
+                anchorReference="anchorPosition"
+                anchorPosition={
+                  todoContextMenu !== null
+                    ? { top: todoContextMenu.mouseY, left: todoContextMenu.mouseX }
+                    : undefined
+                }
+                PaperProps={{
+                  sx: {
+                    backgroundColor: 'var(--dp-neutral-0)',
+                    borderRadius: 'var(--dp-radius-lg)',
+                    boxShadow: 'var(--dp-shadow-xl)',
+                    border: '1px solid var(--dp-neutral-300)',
+                    minWidth: '200px',
+                  },
+                }}
+              >
+                <MenuItem
+                  onClick={handleOpenTodoPriorityModal}
+                  sx={{
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontSize: 'var(--dp-text-body-medium)',
+                    color: 'var(--dp-neutral-900)',
+                    '&:hover': { backgroundColor: 'var(--dp-neutral-100)' },
+                  }}
+                >
+                  View/Edit Priority
+                </MenuItem>
+                <MenuItem
+                  onClick={handleOpenTodoClientProjectModal}
+                  sx={{
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontSize: 'var(--dp-text-body-medium)',
+                    color: 'var(--dp-neutral-900)',
+                    '&:hover': { backgroundColor: 'var(--dp-neutral-100)' },
+                  }}
+                >
+                  View/Edit Client/Project
+                </MenuItem>
+                <MenuItem
+                  onClick={handleOpenTodoNotesModal}
+                  sx={{
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontSize: 'var(--dp-text-body-medium)',
+                    color: 'var(--dp-neutral-900)',
+                    '&:hover': { backgroundColor: 'var(--dp-neutral-100)' },
+                  }}
+                >
+                  View/Edit Notes
+                </MenuItem>
+              </Menu>
+
+              {/* Priority Selection Modal */}
+              <Dialog
+                open={todoPriorityModalOpen}
+                onClose={() => setTodoPriorityModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                  sx: {
+                    backgroundColor: 'var(--dp-neutral-0)',
+                    borderRadius: 'var(--dp-radius-xl)',
+                    boxShadow: 'var(--dp-shadow-2xl)',
+                    maxWidth: '480px',
+                  },
+                }}
+              >
+                <ModalHeader
+                  title="Set Priority"
+                  onClose={() => setTodoPriorityModalOpen(false)}
+                  variant="primary"
+                />
+                <DialogContent
+                  sx={{
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    padding: 'var(--dp-space-6)',
+                    minHeight: '320px',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'var(--dp-space-3)' }}>
+                    {/* Low Priority */}
+                    <Box
+                      onClick={() => handleTodoPrioritySave(1)}
+                      sx={{
+                        padding: 'var(--dp-space-4)',
+                        border: '2px solid var(--dp-success-600)',
+                        borderRadius: 'var(--dp-radius-lg)',
+                        cursor: 'pointer',
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        transition: 'var(--dp-transition-fast)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--dp-space-3)',
+                        '&:hover': {
+                          borderColor: 'var(--dp-success-600)',
+                          backgroundColor: 'var(--dp-success-50)',
+                          transform: 'translateY(-1px)',
+                          boxShadow: 'var(--dp-shadow-sm)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                          boxShadow: 'none',
+                        },
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: 'var(--dp-text-title-medium)',
+                          color: 'var(--dp-success-600)',
+                        }}
+                      >
+                        ○
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-large)',
+                          fontWeight: 'var(--dp-font-weight-medium)',
+                          color: 'var(--dp-neutral-800)',
+                        }}
+                      >
+                        Low
+                      </Typography>
+                    </Box>
+
+                    {/* Medium Priority */}
+                    <Box
+                      onClick={() => handleTodoPrioritySave(2)}
+                      sx={{
+                        padding: 'var(--dp-space-4)',
+                        border: '2px solid var(--dp-warning-600)',
+                        borderRadius: 'var(--dp-radius-lg)',
+                        cursor: 'pointer',
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        transition: 'var(--dp-transition-fast)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--dp-space-3)',
+                        '&:hover': {
+                          borderColor: 'var(--dp-warning-600)',
+                          backgroundColor: 'var(--dp-warning-50)',
+                          transform: 'translateY(-1px)',
+                          boxShadow: 'var(--dp-shadow-sm)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                          boxShadow: 'none',
+                        },
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: 'var(--dp-text-title-medium)',
+                          color: 'var(--dp-warning-600)',
+                        }}
+                      >
+                        ◐
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-large)',
+                          fontWeight: 'var(--dp-font-weight-medium)',
+                          color: 'var(--dp-neutral-800)',
+                        }}
+                      >
+                        Medium
+                      </Typography>
+                    </Box>
+
+                    {/* High Priority */}
+                    <Box
+                      onClick={() => handleTodoPrioritySave(3)}
+                      sx={{
+                        padding: 'var(--dp-space-4)',
+                        border: '2px solid var(--dp-error-600)',
+                        borderRadius: 'var(--dp-radius-lg)',
+                        cursor: 'pointer',
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        transition: 'var(--dp-transition-fast)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--dp-space-3)',
+                        '&:hover': {
+                          borderColor: 'var(--dp-error-600)',
+                          backgroundColor: 'var(--dp-error-50)',
+                          transform: 'translateY(-1px)',
+                          boxShadow: 'var(--dp-shadow-sm)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                          boxShadow: 'none',
+                        },
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: 'var(--dp-text-title-medium)',
+                          color: 'var(--dp-error-600)',
+                        }}
+                      >
+                        ●
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-large)',
+                          fontWeight: 'var(--dp-font-weight-medium)',
+                          color: 'var(--dp-neutral-800)',
+                        }}
+                      >
+                        High
+                      </Typography>
+                    </Box>
+
+                    {/* Critical Priority */}
+                    <Box
+                      onClick={() => handleTodoPrioritySave(4)}
+                      sx={{
+                        padding: 'var(--dp-space-4)',
+                        border: '2px solid var(--dp-error-700)',
+                        borderRadius: 'var(--dp-radius-lg)',
+                        cursor: 'pointer',
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        transition: 'var(--dp-transition-fast)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--dp-space-3)',
+                        '&:hover': {
+                          borderColor: 'var(--dp-error-700)',
+                          backgroundColor: 'var(--dp-error-100)',
+                          transform: 'translateY(-1px)',
+                          boxShadow: 'var(--dp-shadow-sm)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                          boxShadow: 'none',
+                        },
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: 'var(--dp-text-title-medium)',
+                          color: 'var(--dp-error-700)',
+                        }}
+                      >
+                        🔥
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-large)',
+                          fontWeight: 'var(--dp-font-weight-medium)',
+                          color: 'var(--dp-neutral-800)',
+                        }}
+                      >
+                        Critical
+                      </Typography>
+                    </Box>
+                  </Box>
+                </DialogContent>
+                <ModalFooter
+                  primaryAction={
+                    <StandardButton
+                      key="clear"
+                      variant="outlined"
+                      colorScheme="error"
+                      onClick={() => {
+                        if (selectedTodoForEdit) {
+                          const currentTodos = getCurrentDayTodos();
+                          const updatedTodos = currentTodos.map(todo =>
+                            todo.id === selectedTodoForEdit.id
+                              ? { ...todo, priority: undefined }
+                              : todo
+                          );
+                          setCurrentDayTodos(updatedTodos);
+                          setTodoPriorityModalOpen(false);
+                          setSelectedTodoForEdit(null);
+                        }
+                      }}
+                    >
+                      Clear Priority
+                    </StandardButton>
+                  }
+                  secondaryActions={[
+                    <StandardButton
+                      key="cancel"
+                      variant="outlined"
+                      colorScheme="neutral"
+                      onClick={() => setTodoPriorityModalOpen(false)}
+                    >
+                      Cancel
+                    </StandardButton>,
+                  ]}
+                />
+              </Dialog>
+
+              {/* Client/Project Selection Modal */}
+              <Dialog
+                open={todoClientProjectModalOpen}
+                onClose={() => setTodoClientProjectModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                  sx: {
+                    backgroundColor: 'var(--dp-neutral-0)',
+                    borderRadius: 'var(--dp-radius-xl)',
+                    boxShadow: 'var(--dp-shadow-2xl)',
+                  },
+                }}
+              >
+                <ModalHeader
+                  title="Select Client & Project"
+                  onClose={() => setTodoClientProjectModalOpen(false)}
+                  variant="primary"
+                />
+                <DialogContent
+                  sx={{
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    padding: 'var(--dp-space-6)',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'var(--dp-space-4)' }}>
+                    {/* Client Selection */}
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-medium)',
+                          fontWeight: 'var(--dp-font-weight-semibold)',
+                          color: 'var(--dp-neutral-900)',
+                          marginBottom: 'var(--dp-space-2)',
+                        }}
+                      >
+                        Client
+                      </Typography>
+                      <TextField
+                        select
+                        fullWidth
+                        value={selectedTodoForEdit?.clientId || ''}
+                        onChange={async (e) => {
+                          const clientId = Number(e.target.value);
+                          if (selectedTodoForEdit) {
+                            setSelectedTodoForEdit({
+                              ...selectedTodoForEdit,
+                              clientId,
+                              projectId: undefined, // Reset project when client changes
+                            });
+                            // Fetch projects for this client
+                            try {
+                              const projects = await projectService.getProjectsByClient(clientId);
+                              setProjectsByClient(projects);
+                            } catch (error) {
+                              console.error('Failed to fetch projects:', error);
+                            }
+                          }
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: 'var(--dp-neutral-0)',
+                            borderRadius: 'var(--dp-radius-lg)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            fontSize: 'var(--dp-text-body-medium)',
+                            color: 'var(--dp-neutral-900)',
+                            '& fieldset': {
+                              borderColor: 'var(--dp-neutral-300)',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: 'var(--dp-neutral-400)',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: 'var(--dp-primary-500)',
+                            },
+                          },
+                        }}
+                        SelectProps={{
+                          MenuProps: {
+                            PaperProps: {
+                              sx: {
+                                backgroundColor: 'var(--dp-neutral-0)',
+                                borderRadius: 'var(--dp-radius-lg)',
+                                boxShadow: 'var(--dp-shadow-xl)',
+                                border: '1px solid var(--dp-neutral-300)',
+                                '& .MuiMenuItem-root': {
+                                  fontFamily: 'var(--dp-font-family-primary)',
+                                  fontSize: 'var(--dp-text-body-medium)',
+                                  color: 'var(--dp-neutral-900)',
+                                  '&:hover': {
+                                    backgroundColor: 'var(--dp-neutral-100)',
+                                  },
+                                  '&.Mui-selected': {
+                                    backgroundColor: 'var(--dp-primary-100)',
+                                    '&:hover': {
+                                      backgroundColor: 'var(--dp-primary-200)',
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        }}
+                      >
+                        <MenuItem value="">
+                          <em>Select Client</em>
+                        </MenuItem>
+                        {clients.map((client) => (
+                          <MenuItem key={client.id} value={client.id}>
+                            {client.code} - {client.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Box>
+
+                    {/* Project Selection */}
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          fontSize: 'var(--dp-text-body-medium)',
+                          fontWeight: 'var(--dp-font-weight-semibold)',
+                          color: 'var(--dp-neutral-900)',
+                          marginBottom: 'var(--dp-space-2)',
+                        }}
+                      >
+                        Project
+                      </Typography>
+                      <TextField
+                        select
+                        fullWidth
+                        disabled={!selectedTodoForEdit?.clientId}
+                        value={selectedTodoForEdit?.projectId || ''}
+                        onChange={(e) => {
+                          const projectId = Number(e.target.value);
+                          if (selectedTodoForEdit) {
+                            setSelectedTodoForEdit({
+                              ...selectedTodoForEdit,
+                              projectId,
+                            });
+                          }
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: 'var(--dp-neutral-0)',
+                            borderRadius: 'var(--dp-radius-lg)',
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            fontSize: 'var(--dp-text-body-medium)',
+                            color: 'var(--dp-neutral-900)',
+                            '& fieldset': {
+                              borderColor: 'var(--dp-neutral-300)',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: 'var(--dp-neutral-400)',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: 'var(--dp-primary-500)',
+                            },
+                          },
+                        }}
+                        SelectProps={{
+                          MenuProps: {
+                            PaperProps: {
+                              sx: {
+                                backgroundColor: 'var(--dp-neutral-0)',
+                                borderRadius: 'var(--dp-radius-lg)',
+                                boxShadow: 'var(--dp-shadow-xl)',
+                                border: '1px solid var(--dp-neutral-300)',
+                                '& .MuiMenuItem-root': {
+                                  fontFamily: 'var(--dp-font-family-primary)',
+                                  fontSize: 'var(--dp-text-body-medium)',
+                                  color: 'var(--dp-neutral-900)',
+                                  '&:hover': {
+                                    backgroundColor: 'var(--dp-neutral-100)',
+                                  },
+                                  '&.Mui-selected': {
+                                    backgroundColor: 'var(--dp-primary-100)',
+                                    '&:hover': {
+                                      backgroundColor: 'var(--dp-primary-200)',
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        }}
+                      >
+                        <MenuItem value="">
+                          <em>Select Project</em>
+                        </MenuItem>
+                        {projectsByClient.map((project) => (
+                          <MenuItem key={project.id} value={project.id}>
+                            {project.code} - {project.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Box>
+                  </Box>
+                </DialogContent>
+                <ModalFooter
+                  primaryAction={
+                    <Box sx={{ display: 'flex', gap: 'var(--dp-space-2)' }}>
+                      <StandardButton
+                        variant="contained"
+                        colorScheme="primary"
+                        onClick={() => {
+                          if (selectedTodoForEdit?.clientId) {
+                            handleTodoClientProjectSave(
+                              selectedTodoForEdit.clientId,
+                              selectedTodoForEdit.projectId || 0
+                            );
+                          }
+                        }}
+                        disabled={!selectedTodoForEdit?.clientId}
+                      >
+                        Save
+                      </StandardButton>
+                      <StandardButton
+                        variant="outlined"
+                        colorScheme="error"
+                        onClick={() => {
+                          if (selectedTodoForEdit) {
+                            const currentTodos = getCurrentDayTodos();
+                            const updatedTodos = currentTodos.map(todo =>
+                              todo.id === selectedTodoForEdit.id
+                                ? { ...todo, clientId: undefined, projectId: undefined }
+                                : todo
+                            );
+                            setCurrentDayTodos(updatedTodos);
+                            setTodoClientProjectModalOpen(false);
+                            setSelectedTodoForEdit(null);
+                          }
+                        }}
+                      >
+                        Clear
+                      </StandardButton>
+                    </Box>
+                  }
+                  secondaryActions={[
+                    <StandardButton
+                      key="cancel"
+                      variant="outlined"
+                      colorScheme="neutral"
+                      onClick={() => setTodoClientProjectModalOpen(false)}
+                    >
+                      Cancel
+                    </StandardButton>,
+                  ]}
+                />
+              </Dialog>
+
+              {/* Notes Modal */}
+              <Dialog
+                open={todoNotesModalOpen}
+                onClose={() => setTodoNotesModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                  sx: {
+                    backgroundColor: 'var(--dp-neutral-0)',
+                    borderRadius: 'var(--dp-radius-xl)',
+                    boxShadow: 'var(--dp-shadow-2xl)',
+                  },
+                }}
+              >
+                <ModalHeader
+                  title="Add Notes"
+                  onClose={() => setTodoNotesModalOpen(false)}
+                  variant="primary"
+                />
+                <DialogContent
+                  sx={{
+                    backgroundColor: 'var(--dp-neutral-50)',
+                    padding: 'var(--dp-space-6)',
+                  }}
+                >
+                  <TextField
+                    multiline
+                    rows={6}
+                    fullWidth
+                    placeholder="Enter your notes here..."
+                    value={selectedTodoForEdit?.notes || ''}
+                    onChange={(e) => {
+                      if (selectedTodoForEdit) {
+                        setSelectedTodoForEdit({
+                          ...selectedTodoForEdit,
+                          notes: e.target.value,
+                        });
+                      }
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        borderRadius: 'var(--dp-radius-lg)',
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-medium)',
+                        color: 'var(--dp-neutral-900)',
+                        '& fieldset': {
+                          borderColor: 'var(--dp-neutral-300)',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'var(--dp-neutral-400)',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'var(--dp-primary-500)',
+                        },
+                      },
+                    }}
+                  />
+                </DialogContent>
+                <ModalFooter
+                  primaryAction={
+                    <Box sx={{ display: 'flex', gap: 'var(--dp-space-2)' }}>
+                      <StandardButton
+                        variant="contained"
+                        colorScheme="primary"
+                        onClick={() => {
+                          if (selectedTodoForEdit) {
+                            handleTodoNotesSave(selectedTodoForEdit.notes || '');
+                          }
+                        }}
+                      >
+                        Save
+                      </StandardButton>
+                      <StandardButton
+                        variant="outlined"
+                        colorScheme="error"
+                        onClick={() => {
+                          if (selectedTodoForEdit) {
+                            const currentTodos = getCurrentDayTodos();
+                            const updatedTodos = currentTodos.map(todo =>
+                              todo.id === selectedTodoForEdit.id
+                                ? { ...todo, notes: undefined }
+                                : todo
+                            );
+                            setCurrentDayTodos(updatedTodos);
+                            setTodoNotesModalOpen(false);
+                            setSelectedTodoForEdit(null);
+                          }
+                        }}
+                      >
+                        Clear
+                      </StandardButton>
+                    </Box>
+                  }
+                  secondaryActions={[
+                    <StandardButton
+                      key="cancel"
+                      variant="outlined"
+                      colorScheme="neutral"
+                      onClick={() => setTodoNotesModalOpen(false)}
+                    >
+                      Cancel
+                    </StandardButton>,
+                  ]}
+                />
+              </Dialog>
                 </div>
               );
             })()

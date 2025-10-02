@@ -565,31 +565,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{
-        px: 3,
-        pb: 2,
-        backgroundColor: 'var(--dp-neutral-50) !important',
-        borderTop: '1px solid var(--dp-neutral-200)',
-      }}>
-        <Button
-          onClick={handleClose}
-          variant="contained"
-          sx={{
-            backgroundColor: 'var(--dp-primary-500)',
-            fontFamily: 'var(--dp-font-family-primary)',
-            fontWeight: 'var(--dp-font-weight-medium)',
-            transition: 'var(--dp-transition-fast)',
-            boxShadow: 'var(--dp-shadow-sm)',
-            '&:hover': {
-              backgroundColor: 'var(--dp-primary-600)',
-              boxShadow: 'var(--dp-shadow-md)',
-              transform: 'translateY(-1px)',
-            },
-          }}
-        >
-          Close
-        </Button>
-      </DialogActions>
+      {/* Footer removed - close button is in header */}
     </Dialog>
   );
 };

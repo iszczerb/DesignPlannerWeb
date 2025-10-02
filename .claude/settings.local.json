@@ -51,7 +51,11 @@
       "Bash(netsh advfirewall firewall add rule:*)",
       "WebFetch(domain:pageflows.com)",
       "Bash(git checkout:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Read(//c/Users/igor/source/repos/**)",
+      "Bash(robocopy:*)",
+      "Bash(xcopy:*)",
+      "Read(//c/c/Users/igor/source/repos/**)"
     ],
     "deny": [],
     "ask": []

@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
   Box,
   Typography,
   Alert,
@@ -27,7 +24,8 @@ import {
   Paper,
   CircularProgress,
   Tooltip,
-  LinearProgress
+  LinearProgress,
+  Button
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import {
@@ -42,6 +40,7 @@ import {
   TrendingUp as StatsIcon,
   Info as InfoIcon
 } from '@mui/icons-material';
+import { ModalHeader, ModalFooter, StandardButton, ModalTabs } from '../common/modal';
 import { format } from 'date-fns';
 import {
   absenceService,
@@ -911,25 +910,31 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
         }
       }}
     >
-      <DialogTitle sx={{
-        backgroundColor: 'var(--dp-primary-600)',
-        color: 'var(--dp-neutral-0)',
-        fontFamily: 'var(--dp-font-family-primary)',
-        fontWeight: 'var(--dp-font-weight-bold)',
-        fontSize: 'var(--dp-text-headline-medium)',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-      }}>
-        Absence Management
-      </DialogTitle>
+      <ModalHeader
+        title="Absence Management"
+        onClose={onClose}
+        variant="primary"
+      />
+
+      <ModalTabs
+        tabs={[
+          { key: 0, label: 'Annual Leave', icon: <AbsenceIcon /> },
+          { key: 1, label: 'Sick Days', icon: <PeopleIcon /> },
+          { key: 2, label: 'Other Leave', icon: <CalendarIcon /> }
+        ]}
+        activeTab={activeTab.toString()}
+        onChange={(key) => setActiveTab(Number(key))}
+      />
 
       <DialogContent sx={{
         p: 3,
-        backgroundColor: 'var(--dp-neutral-25) !important',
+        backgroundColor: 'var(--dp-neutral-50)',
       }}>
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
           sx={{
+            display: 'none', // Hidden - using ModalTabs instead
             mb: 2,
             '& .MuiTab-root': {
               fontFamily: 'var(--dp-font-family-primary)',
@@ -992,31 +997,7 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
         {renderOtherLeaveTab()}
       </DialogContent>
 
-      <DialogActions sx={{
-        p: 3,
-        backgroundColor: 'var(--dp-neutral-50) !important',
-        borderTop: '1px solid var(--dp-neutral-200)',
-      }}>
-        <Button
-          onClick={onClose}
-          disabled={loading}
-          variant="contained"
-          sx={{
-            backgroundColor: 'var(--dp-primary-500)',
-            fontFamily: 'var(--dp-font-family-primary)',
-            fontWeight: 'var(--dp-font-weight-medium)',
-            transition: 'var(--dp-transition-fast)',
-            boxShadow: 'var(--dp-shadow-sm)',
-            '&:hover': {
-              backgroundColor: 'var(--dp-primary-600)',
-              boxShadow: 'var(--dp-shadow-md)',
-              transform: 'translateY(-1px)',
-            },
-          }}
-        >
-          Close
-        </Button>
-      </DialogActions>
+      {/* Footer removed - close button is in header */}
     </Dialog>
   );
 };

@@ -22,6 +22,9 @@ import {
   DialogActions,
   TextField
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import {
   Dashboard as DashboardIcon,
   Storage as DatabaseIcon,
@@ -192,7 +195,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
   const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const userMenuOpen = Boolean(userMenuAnchor);
   const mobileMenuOpen = Boolean(mobileMenuAnchor);
   const viewMenuOpen = Boolean(viewMenuAnchor);
@@ -461,11 +464,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             onClick={onLogoClick}
             onContextMenu={(e) => {
               e.preventDefault();
-              const today = new Date();
-              const todayStr = today.getFullYear() + '-' +
-                String(today.getMonth() + 1).padStart(2, '0') + '-' +
-                String(today.getDate()).padStart(2, '0');
-              setSelectedDate(todayStr);
+              setSelectedDate(new Date());
               setDatePickerOpen(true);
             }}
             title="Left-click: Go to today | Right-click: Pick date"
@@ -847,114 +846,202 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           onClose={() => setDatePickerOpen(false)}
           PaperProps={{
             sx: {
-              borderRadius: '12px',
-              padding: '8px'
+              borderRadius: 'var(--dp-radius-xl)',
+              padding: 'var(--dp-space-2)',
+              backgroundColor: 'var(--dp-neutral-0)',
+              boxShadow: 'var(--dp-shadow-2xl)',
             }
           }}
         >
           <DialogTitle sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
-            color: 'var(--dp-neutral-800)',
-            fontSize: '18px',
-            fontWeight: 600
+            gap: 'var(--dp-space-2)',
+            color: 'var(--dp-neutral-900)',
+            fontSize: 'var(--dp-text-title-large)',
+            fontWeight: 'var(--dp-font-weight-bold)',
+            fontFamily: 'var(--dp-font-family-primary)',
           }}>
             <DateRangeIcon sx={{ color: 'var(--dp-primary-500)' }} />
             Go to Date
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" sx={{ color: '#6c757d', mb: 2 }}>
+            <Typography variant="body2" sx={{
+              color: 'var(--dp-neutral-600)',
+              mb: 'var(--dp-space-3)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-body-medium)',
+            }}>
               Select a business day (Monday - Friday) to navigate to:
             </Typography>
-            <TextField
-              autoFocus
-              margin="dense"
-              id="date-picker"
-              label="Select Date"
-              type="date"
-              fullWidth
-              variant="outlined"
-              value={selectedDate}
-              onChange={(e) => {
-                setSelectedDate(e.target.value);
-              }}
-              sx={{
-                mt: 1,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--dp-primary-500)',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--dp-primary-500)',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: 'var(--dp-primary-500)',
-                },
-                // Disable weekends in calendar picker
-                '& input[type="date"]::-webkit-calendar-picker-indicator': {
-                  cursor: 'pointer',
-                },
-              }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              inputProps={{
-                // Custom validation to prevent weekend selection
-                onInput: (e: React.FormEvent<HTMLInputElement>) => {
-                  const input = e.target as HTMLInputElement;
-                  const selectedDate = new Date(input.value + 'T12:00:00');
-                  const dayOfWeek = selectedDate.getDay();
-
-                  // If weekend is selected, find the nearest Monday
-                  if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    const nearestMonday = new Date(selectedDate);
-                    if (dayOfWeek === 0) { // Sunday
-                      nearestMonday.setDate(nearestMonday.getDate() + 1);
-                    } else if (dayOfWeek === 6) { // Saturday
-                      nearestMonday.setDate(nearestMonday.getDate() + 2);
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Select Date"
+                value={selectedDate}
+                onChange={(newValue) => {
+                  if (newValue) {
+                    const dayOfWeek = newValue.getDay();
+                    // If weekend is selected, find the nearest Monday
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                      const nearestMonday = new Date(newValue);
+                      if (dayOfWeek === 0) { // Sunday
+                        nearestMonday.setDate(nearestMonday.getDate() + 1);
+                      } else if (dayOfWeek === 6) { // Saturday
+                        nearestMonday.setDate(nearestMonday.getDate() + 2);
+                      }
+                      setSelectedDate(nearestMonday);
+                    } else {
+                      setSelectedDate(newValue);
                     }
-                    const mondayStr = nearestMonday.getFullYear() + '-' +
-                      String(nearestMonday.getMonth() + 1).padStart(2, '0') + '-' +
-                      String(nearestMonday.getDate()).padStart(2, '0');
-                    input.value = mondayStr;
-                    setSelectedDate(mondayStr);
+                  } else {
+                    setSelectedDate(null);
                   }
-                },
-              }}
-            />
+                }}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    variant: 'outlined',
+                    InputProps: {
+                      sx: {
+                        color: 'var(--dp-neutral-900)',
+                      },
+                    },
+                    sx: {
+                      mt: 'var(--dp-space-2)',
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 'var(--dp-radius-lg)',
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-medium)',
+                        color: 'var(--dp-neutral-900)',
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        '& fieldset': {
+                          borderColor: 'var(--dp-neutral-300)',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'var(--dp-primary-500)',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'var(--dp-primary-500)',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-medium)',
+                        color: 'var(--dp-neutral-600)',
+                        '&.Mui-focused': {
+                          color: 'var(--dp-primary-500)',
+                        },
+                      },
+                      '& .MuiIconButton-root': {
+                        color: 'var(--dp-primary-500)',
+                      },
+                      '& input': {
+                        color: 'var(--dp-neutral-900)',
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-medium)',
+                      },
+                    },
+                  },
+                  popper: {
+                    sx: {
+                      '& .MuiPaper-root': {
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        borderRadius: 'var(--dp-radius-xl)',
+                        boxShadow: 'var(--dp-shadow-2xl)',
+                        border: '1px solid var(--dp-neutral-300)',
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        '& .MuiPickersCalendarHeader-root': {
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          color: 'var(--dp-neutral-900)',
+                          '& .MuiPickersCalendarHeader-label': {
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            fontSize: 'var(--dp-text-body-large)',
+                          },
+                          '& .MuiIconButton-root': {
+                            color: 'var(--dp-neutral-700)',
+                          },
+                        },
+                        '& .MuiDayCalendar-header': {
+                          '& .MuiTypography-root': {
+                            fontFamily: 'var(--dp-font-family-primary)',
+                            fontWeight: 'var(--dp-font-weight-semibold)',
+                            color: 'var(--dp-neutral-600)',
+                          },
+                        },
+                        '& .MuiPickersDay-root': {
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          color: 'var(--dp-neutral-800)',
+                          '&:hover': {
+                            backgroundColor: 'var(--dp-primary-100)',
+                          },
+                          '&.Mui-selected': {
+                            backgroundColor: 'var(--dp-primary-500)',
+                            color: 'var(--dp-neutral-0)',
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            '&:hover': {
+                              backgroundColor: 'var(--dp-primary-600)',
+                            },
+                          },
+                          '&.MuiPickersDay-today': {
+                            border: '2px solid var(--dp-primary-500)',
+                            fontWeight: 'var(--dp-font-weight-semibold)',
+                          },
+                        },
+                        '& .MuiPickersYear-yearButton': {
+                          fontFamily: 'var(--dp-font-family-primary)',
+                          color: 'var(--dp-neutral-800)',
+                          '&:hover': {
+                            backgroundColor: 'var(--dp-primary-100)',
+                          },
+                          '&.Mui-selected': {
+                            backgroundColor: 'var(--dp-primary-500)',
+                            color: 'var(--dp-neutral-0)',
+                            fontWeight: 'var(--dp-font-weight-bold)',
+                            '&:hover': {
+                              backgroundColor: 'var(--dp-primary-600)',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </LocalizationProvider>
             {selectedDate && (() => {
-              const date = new Date(selectedDate + 'T12:00:00');
-              const dayOfWeek = date.getDay();
+              const dayOfWeek = selectedDate.getDay();
               const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
               return (
                 <Typography
                   variant="caption"
                   sx={{
-                    color: isWeekend ? '#dc3545' : '#6c757d',
-                    mt: 1,
+                    color: isWeekend ? 'var(--dp-error-600)' : 'var(--dp-neutral-600)',
+                    mt: 'var(--dp-space-2)',
                     display: 'block',
-                    fontWeight: isWeekend ? 600 : 400
+                    fontWeight: isWeekend ? 'var(--dp-font-weight-semibold)' : 'var(--dp-font-weight-regular)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontSize: 'var(--dp-text-body-small)',
                   }}
                 >
-                  {isWeekend ? '⚠️ Weekend selected - will navigate to nearest Monday' : 'Selected:'} {date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {isWeekend ? '⚠️ Weekend selected - will navigate to nearest Monday' : 'Selected:'} {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </Typography>
               );
             })()}
           </DialogContent>
-          <DialogActions sx={{ padding: '16px 24px' }}>
+          <DialogActions sx={{ padding: 'var(--dp-space-4) var(--dp-space-6)' }}>
             <Button
               onClick={() => setDatePickerOpen(false)}
               sx={{
-                color: '#6c757d',
+                color: 'var(--dp-neutral-700)',
                 textTransform: 'none',
-                borderRadius: '8px',
-                padding: '8px 16px',
+                borderRadius: 'var(--dp-radius-lg)',
+                padding: 'var(--dp-space-2) var(--dp-space-4)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontSize: 'var(--dp-text-body-medium)',
+                fontWeight: 'var(--dp-font-weight-medium)',
                 '&:hover': {
-                  backgroundColor: alpha('#6c757d', 0.1),
+                  backgroundColor: 'var(--dp-neutral-100)',
                 },
               }}
             >
@@ -963,46 +1050,32 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             <Button
               onClick={() => {
                 if (selectedDate && onDirectDateNavigation) {
-                  const selectedDateObj = new Date(selectedDate + 'T12:00:00');
+                  console.log('📅 Go to Date: Navigating to selected date:', selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
 
-                  // Ensure we're navigating to a business day
-                  const getBusinessDay = (date: Date): Date => {
-                    const targetDate = new Date(date);
-
-                    // If weekend, move to next Monday
-                    if (targetDate.getDay() === 0) { // Sunday
-                      targetDate.setDate(targetDate.getDate() + 1);
-                    } else if (targetDate.getDay() === 6) { // Saturday
-                      targetDate.setDate(targetDate.getDate() + 2);
-                    }
-
-                    return targetDate;
-                  };
-
-                  // Get the proper business day
-                  const businessDay = getBusinessDay(selectedDateObj);
-
-                  console.log('📅 Go to Date: Navigating to selected date:', businessDay.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
-
-                  // Use direct navigation for all view types (Daily, Weekly, BiWeekly, Monthly)
-                  onDirectDateNavigation(businessDay);
+                  // Use direct navigation for all view types (already a business day due to onChange validation)
+                  onDirectDateNavigation(selectedDate);
                 }
                 setDatePickerOpen(false);
               }}
               disabled={!selectedDate || !onDirectDateNavigation}
               sx={{
                 backgroundColor: 'var(--dp-primary-500)',
-                color: 'white',
+                color: 'var(--dp-neutral-0)',
                 textTransform: 'none',
-                borderRadius: '8px',
-                padding: '8px 24px',
-                fontWeight: 600,
+                borderRadius: 'var(--dp-radius-lg)',
+                padding: 'var(--dp-space-2) var(--dp-space-6)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                fontSize: 'var(--dp-text-body-medium)',
+                fontWeight: 'var(--dp-font-weight-semibold)',
+                boxShadow: 'var(--dp-shadow-sm)',
                 '&:hover': {
                   backgroundColor: 'var(--dp-primary-600)',
+                  boxShadow: 'var(--dp-shadow-md)',
                 },
                 '&:disabled': {
-                  backgroundColor: '#bdc3c7',
-                  color: '#7f8c8d',
+                  backgroundColor: 'var(--dp-neutral-300)',
+                  color: 'var(--dp-neutral-500)',
+                  boxShadow: 'none',
                 },
               }}
             >

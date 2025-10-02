@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   TextField,
   Button,
   Box,
@@ -32,6 +30,7 @@ import scheduleService from '../../services/scheduleService';
 import { formatHours, calculateTaskHours } from '../../utils/hoursCalculator';
 import { calculateActualHours } from '../../utils/taskLayoutHelpers';
 import projectService, { ClientOption, ProjectOption, ProjectTaskOption } from '../../services/projectService';
+import { ModalHeader, ModalFooter, StandardButton } from '../common/modal';
 
 interface TaskDetailsModalProps {
   open: boolean;
@@ -65,7 +64,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   const [editedTask, setEditedTask] = useState<Partial<AssignmentTaskDto & { taskStatus?: TaskStatus }>>({});
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   // Options for dropdowns
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -74,6 +73,43 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [preserveTaskTypeName, setPreserveTaskTypeName] = useState<string | null>(null);
+
+  // Design token styles for form components
+  const formFieldStyles = {
+    '& .MuiOutlinedInput-root': {
+      fontFamily: 'var(--dp-font-family-primary)',
+      color: 'var(--dp-neutral-800)',
+      backgroundColor: 'var(--dp-neutral-0)',
+      '& fieldset': {
+        borderColor: 'var(--dp-neutral-300)',
+      },
+      '&:hover fieldset': {
+        borderColor: 'var(--dp-primary-500)',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: 'var(--dp-primary-500)',
+      },
+    },
+    '& .MuiInputLabel-root': {
+      fontFamily: 'var(--dp-font-family-primary)',
+      color: 'var(--dp-neutral-600)',
+    },
+    '& .MuiSelect-select': {
+      fontFamily: 'var(--dp-font-family-primary)',
+      color: 'var(--dp-neutral-800)',
+    },
+  };
+
+  const typographyStyles = {
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-800)',
+  };
+
+  const labelStyles = {
+    fontFamily: 'var(--dp-font-family-primary)',
+    color: 'var(--dp-neutral-600)',
+    fontSize: 'var(--dp-text-body-small)',
+  };
 
   // Load dropdown data
   useEffect(() => {
@@ -276,30 +312,88 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Dialog 
-        open={open} 
-        onClose={onClose} 
-        maxWidth="md" 
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { minHeight: '600px' }
+          sx: {
+            minHeight: '600px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            borderRadius: 'var(--dp-radius-xl)',
+            boxShadow: 'var(--dp-shadow-2xl)',
+          }
         }}
       >
-        <DialogTitle>
-          <Typography variant="h6" component="div">
-            {mode === 'edit' ? '✏️ Edit Task' : '👁️ Task Details'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Assignment ID: {task.assignmentId} {mode === 'edit' && '• Editing Mode'}
-          </Typography>
-        </DialogTitle>
+        <ModalHeader
+          title={mode === 'edit' ? 'Edit Task' : 'Task Details'}
+          onClose={onClose}
+          variant="primary"
+        />
 
-        <DialogContent dividers>
+        <DialogContent
+          dividers
+          sx={{
+            backgroundColor: 'var(--dp-neutral-50)',
+            padding: 'var(--dp-space-6)',
+            // Global overrides for all MUI components in this modal
+            '& .MuiTypography-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+            },
+            '& .MuiOutlinedInput-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+              backgroundColor: 'var(--dp-neutral-0)',
+              '& fieldset': {
+                borderColor: 'var(--dp-neutral-300)',
+              },
+              '&:hover fieldset': {
+                borderColor: 'var(--dp-primary-500)',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'var(--dp-primary-500)',
+              },
+            },
+            '& .MuiInputLabel-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-600)',
+            },
+            '& .MuiSelect-select': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+            },
+            '& .MuiChip-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+            },
+            '& .MuiMenuItem-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+            },
+          }}
+        >
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Task Overview Card */}
-            <Card elevation={1}>
+            <Card
+              elevation={1}
+              sx={{
+                backgroundColor: 'var(--dp-neutral-0)',
+                border: '1px solid var(--dp-neutral-200)',
+                borderRadius: 'var(--dp-radius-lg)',
+                boxShadow: 'var(--dp-shadow-sm)',
+              }}
+            >
               <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    color: 'var(--dp-primary-600)',
+                    fontFamily: 'var(--dp-font-family-primary)',
+                    fontWeight: 'var(--dp-font-weight-semibold)',
+                  }}
+                >
                   {selectedProjectId ?
                     (projects.find(p => p.id === selectedProjectId)?.name || task.projectName)
                     : task.projectName
@@ -336,11 +430,11 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                   <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={labelStyles}>
                       Client
                     </Typography>
                     {mode === 'edit' ? (
-                      <FormControl fullWidth size="small">
+                      <FormControl fullWidth size="small" sx={formFieldStyles}>
                         <Select
                           value={selectedClientId || ''}
                           onChange={(e) => {
@@ -362,8 +456,8 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                         </Select>
                       </FormControl>
                     ) : (
-                      <Typography variant="body1" fontWeight="medium">
-                        {selectedClientId ? 
+                      <Typography variant="body1" fontWeight="medium" sx={typographyStyles}>
+                        {selectedClientId ?
                           clients.find(c => c.id === selectedClientId)?.name || task.clientName
                           : task.clientName
                         }
@@ -541,9 +635,25 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
             {/* Task Description Section */}
             {task.description && (
-              <Card elevation={1}>
+              <Card
+                elevation={1}
+                sx={{
+                  backgroundColor: 'var(--dp-neutral-0)',
+                  border: '1px solid var(--dp-neutral-200)',
+                  borderRadius: 'var(--dp-radius-lg)',
+                  boxShadow: 'var(--dp-shadow-sm)',
+                }}
+              >
                 <CardContent>
-                  <Typography variant="h6" gutterBottom color="primary">
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{
+                      color: 'var(--dp-primary-600)',
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                    }}
+                  >
                     📋 Task Description
                   </Typography>
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
@@ -678,33 +788,45 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 1 }}>
-          {mode === 'view' ? (
-            <>
-              <Button onClick={onClose}>
-                Close
-              </Button>
-              <Button onClick={handleEdit} variant="contained" startIcon={<EditIcon />}>
-                Edit Task
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button onClick={handleCancel} startIcon={<CancelIcon />} disabled={loading}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
+        <ModalFooter
+          primaryAction={
+            mode === 'view' ? (
+              <StandardButton
                 variant="contained"
-                startIcon={<SaveIcon />}
+                colorScheme="primary"
+                leftIcon={<EditIcon />}
+                onClick={handleEdit}
+              >
+                Edit Task
+              </StandardButton>
+            ) : (
+              <StandardButton
+                variant="contained"
+                colorScheme="primary"
+                leftIcon={<SaveIcon />}
+                onClick={handleSave}
                 disabled={loading}
-                sx={{ minWidth: 120 }}
+                loading={loading}
               >
                 {loading ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </>
-          )}
-        </DialogActions>
+              </StandardButton>
+            )
+          }
+          secondaryActions={
+            mode === 'edit' ? [
+              <StandardButton
+                key="cancel"
+                variant="outlined"
+                colorScheme="neutral"
+                leftIcon={<CancelIcon />}
+                onClick={handleCancel}
+                disabled={loading}
+              >
+                Cancel
+              </StandardButton>
+            ] : undefined
+          }
+        />
       </Dialog>
     </LocalizationProvider>
   );

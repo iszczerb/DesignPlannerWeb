@@ -19,6 +19,7 @@ import TeamsTab from './tabs/TeamsTab';
 import SkillsTab from './tabs/SkillsTab';
 import TaskTypesTab from './tabs/TaskTypesTab';
 import CategoriesTab from './tabs/CategoriesTab';
+import { ModalHeader } from '../common/modal';
 import './DatabaseManagementModal.css';
 
 interface Tab {
@@ -250,20 +251,12 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
           transition={{ duration: 0.2 }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Modal Header */}
-          <div className="database-modal-header">
-            <div className="database-modal-title">
-              <h2>Database Management</h2>
-              <p>Manage all application data and configurations</p>
-            </div>
-            <button
-              className="database-modal-close"
-              onClick={handleClose}
-              aria-label="Close modal"
-            >
-              ✕
-            </button>
-          </div>
+          {/* Modal Header - Standard */}
+          <ModalHeader
+            title="Database Management"
+            onClose={handleClose}
+            variant="primary"
+          />
 
           {/* Tab Navigation */}
           <div className="database-modal-tabs">
@@ -313,14 +306,7 @@ const DatabaseManagementModal: React.FC<DatabaseManagementModalProps> = ({
                 Press <kbd>Esc</kbd> to close • Use <kbd>Tab</kbd> for navigation
               </span>
             </div>
-            <div className="database-modal-actions">
-              <button
-                className="database-btn database-btn-secondary"
-                onClick={handleClose}
-              >
-                Close
-              </button>
-            </div>
+            {/* Footer actions removed - close button is in header (✕) */}
           </div>
         </motion.div>
       </div>

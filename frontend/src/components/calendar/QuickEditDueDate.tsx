@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent, Box, Typography } from '@mui/material';
 import { AssignmentTaskDto } from '../../types/schedule';
+import { ModalHeader } from '../common/modal/ModalHeader';
+import { ModalFooter } from '../common/modal/ModalFooter';
+import { StandardButton } from '../common/modal/StandardButton';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import EventIcon from '@mui/icons-material/Event';
 
 interface QuickEditDueDateProps {
   isOpen: boolean;
@@ -61,213 +66,199 @@ const QuickEditDueDate: React.FC<QuickEditDueDateProps> = ({
     setDueDate(nextWeek.toISOString().split('T')[0]);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <AnimatePresence>
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: -20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: -20 }}
-          transition={{ duration: 0.2 }}
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            width: '400px',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 'var(--dp-radius-xl)',
+          boxShadow: 'var(--dp-shadow-2xl)',
+          backgroundColor: 'var(--dp-neutral-0)',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Modal Header */}
+      <ModalHeader
+        title="Change Due Date"
+        subtitle={
+          selectedTasks.length === 1
+            ? `Setting due date for "${selectedTasks[0].taskTitle}"`
+            : `Setting due date for ${selectedTasks.length} selected tasks`
+        }
+        onClose={onClose}
+        variant="primary"
+        icon={<EventIcon />}
+      />
+
+      {/* Modal Content */}
+      <DialogContent
+        sx={{
+          backgroundColor: 'var(--dp-neutral-50)',
+          padding: 'var(--dp-space-6)',
+
+          // Global MUI overrides for form fields with design tokens
+          '& input[type="date"]': {
+            width: '100%',
+            padding: 'var(--dp-space-3)',
+            border: '2px solid var(--dp-neutral-300)',
+            borderRadius: 'var(--dp-radius-md)',
+            fontSize: 'var(--dp-text-body-large)',
+            fontFamily: 'var(--dp-font-family-primary)',
+            color: 'var(--dp-neutral-900)',
+            backgroundColor: 'var(--dp-neutral-0)',
+            transition: 'var(--dp-transition-fast)',
+            outline: 'none',
+            boxSizing: 'border-box',
+
+            '&:hover': {
+              borderColor: 'var(--dp-primary-400)',
+            },
+
+            '&:focus': {
+              borderColor: 'var(--dp-primary-600)',
+              boxShadow: '0 0 0 3px var(--dp-primary-100)',
+            },
+
+            '&:disabled': {
+              backgroundColor: 'var(--dp-neutral-100)',
+              color: 'var(--dp-neutral-500)',
+              cursor: 'not-allowed',
+            },
+
+            // Dark mode support
+            '@media (prefers-color-scheme: dark)': {
+              backgroundColor: 'var(--dp-neutral-800)',
+              color: 'var(--dp-neutral-100)',
+              borderColor: 'var(--dp-neutral-600)',
+
+              '&:hover': {
+                borderColor: 'var(--dp-primary-500)',
+              },
+
+              '&:focus': {
+                borderColor: 'var(--dp-primary-500)',
+                boxShadow: '0 0 0 3px var(--dp-primary-900)',
+              },
+            },
+          },
+
+          // Calendar icon color in date input
+          '& input[type="date"]::-webkit-calendar-picker-indicator': {
+            cursor: 'pointer',
+            filter: 'var(--dp-neutral-600)',
+
+            '@media (prefers-color-scheme: dark)': {
+              filter: 'invert(0.8)',
+            },
+          },
+        }}
+      >
+        {/* Due Date Input Section */}
+        <Box sx={{ marginBottom: 'var(--dp-space-5)' }}>
+          <Typography
+            component="label"
+            htmlFor="due-date-input"
+            sx={{
+              display: 'block',
+              marginBottom: 'var(--dp-space-2)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: 'var(--dp-text-label-large)',
+              fontWeight: 'var(--dp-font-weight-semibold)',
+              color: 'var(--dp-neutral-800)',
+              lineHeight: 'var(--dp-line-height-tight)',
+
+              '@media (prefers-color-scheme: dark)': {
+                color: 'var(--dp-neutral-200)',
+              },
+            }}
+          >
+            Due Date
+          </Typography>
+          <input
+            id="due-date-input"
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            aria-label="Select due date"
+          />
+        </Box>
+
+        {/* Quick Date Selection Buttons */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 'var(--dp-space-3)',
+            flexWrap: 'wrap',
           }}
         >
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-          }}>
-            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>
-              Set Due Date
-            </h3>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                color: '#6b7280',
-                padding: '4px',
-              }}
-            >
-              ×
-            </button>
-          </div>
+          <StandardButton
+            variant="outlined"
+            colorScheme="primary"
+            size="small"
+            onClick={handleToday}
+            leftIcon={<CalendarTodayIcon fontSize="small" />}
+            sx={{
+              flex: '1 1 auto',
+              minWidth: '140px',
+            }}
+          >
+            Today
+          </StandardButton>
+          <StandardButton
+            variant="outlined"
+            colorScheme="primary"
+            size="small"
+            onClick={handleNextWeek}
+            leftIcon={<EventIcon fontSize="small" />}
+            sx={{
+              flex: '1 1 auto',
+              minWidth: '140px',
+            }}
+          >
+            Next Week
+          </StandardButton>
+        </Box>
+      </DialogContent>
 
-          <div style={{ marginBottom: '20px', color: '#6b7280', fontSize: '0.875rem' }}>
-            {selectedTasks.length === 1
-              ? `Setting due date for "${selectedTasks[0].taskTitle}"`
-              : `Setting due date for ${selectedTasks.length} selected tasks`
-            }
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontWeight: '500',
-              color: '#374151',
-              fontSize: '0.875rem',
-            }}>
-              Due Date
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s ease',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-            />
-          </div>
-
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              flexWrap: 'wrap',
-            }}>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleToday}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: '#f3f4f6',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  color: '#374151',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-              >
-                📅 Today
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleNextWeek}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: '#f3f4f6',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  color: '#374151',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-              >
-                📆 Next Week
-              </motion.button>
-            </div>
-          </div>
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            paddingTop: '20px',
-            borderTop: '1px solid #e5e7eb',
-          }}>
-            <button
-              onClick={handleClear}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#f3f4f6',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                color: '#6b7280',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-            >
-              Clear Due Date
-            </button>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={onClose}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'white',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  color: '#374151',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#3b82f6',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  color: 'white',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
-              >
-                Apply Changes
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+      {/* Modal Footer */}
+      <ModalFooter
+        primaryAction={
+          <StandardButton
+            variant="contained"
+            colorScheme="primary"
+            onClick={handleSave}
+            size="medium"
+          >
+            Apply Changes
+          </StandardButton>
+        }
+        secondaryActions={[
+          <StandardButton
+            key="clear"
+            variant="outlined"
+            colorScheme="warning"
+            onClick={handleClear}
+            size="medium"
+          >
+            Clear Due Date
+          </StandardButton>,
+          <StandardButton
+            key="cancel"
+            variant="outlined"
+            colorScheme="neutral"
+            onClick={onClose}
+            size="medium"
+          >
+            Cancel
+          </StandardButton>,
+        ]}
+        align="space-between"
+      />
+    </Dialog>
   );
 };
 

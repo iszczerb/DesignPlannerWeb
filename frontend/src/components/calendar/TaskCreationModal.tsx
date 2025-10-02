@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   TextField,
   Button,
   FormControl,
@@ -28,6 +26,7 @@ import {
   calculateOptimalPlacement,
   getMaxAvailableDuration
 } from '../../utils/taskLayoutHelpers';
+import { ModalHeader, ModalFooter, StandardButton } from '../common/modal';
 
 interface TaskCreationModalProps {
   open: boolean;
@@ -273,25 +272,70 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Dialog 
-        open={open} 
-        onClose={onClose} 
-        maxWidth="md" 
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { minHeight: '500px' }
+          sx: {
+            minHeight: '500px',
+            backgroundColor: 'var(--dp-neutral-0)',
+            borderRadius: 'var(--dp-radius-xl)',
+            boxShadow: 'var(--dp-shadow-2xl)',
+          }
         }}
       >
-        <DialogTitle>
-          <Typography variant="h6" component="div">
-            Create New Task Assignment
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {employeeName} • {initialDate.toLocaleDateString()} • {slotLabel}
-          </Typography>
-        </DialogTitle>
+        <ModalHeader
+          title="Create New Task Assignment"
+          onClose={onClose}
+          variant="primary"
+        />
 
-        <DialogContent dividers>
+        <DialogContent
+          dividers
+          sx={{
+            backgroundColor: 'var(--dp-neutral-50)',
+            padding: 'var(--dp-space-6)',
+            // Global overrides for all MUI components in this modal
+            '& .MuiTypography-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+            },
+            '& .MuiOutlinedInput-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+              backgroundColor: 'var(--dp-neutral-0)',
+              '& fieldset': {
+                borderColor: 'var(--dp-neutral-300)',
+              },
+              '&:hover fieldset': {
+                borderColor: 'var(--dp-primary-500)',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'var(--dp-primary-500)',
+              },
+            },
+            '& .MuiInputLabel-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-600)',
+            },
+            '& .MuiSelect-select': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+            },
+            '& .MuiAutocomplete-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+            },
+            '& .MuiChip-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+            },
+            '& .MuiMenuItem-root': {
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-800)',
+            },
+          }}
+        >
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
             {/* Client Selection */}
             <Autocomplete
@@ -490,19 +534,30 @@ const TaskCreationModal: React.FC<TaskCreationModalProps> = ({
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 1 }}>
-          <Button onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={loading}
-            sx={{ minWidth: 120 }}
-          >
-            {loading ? 'Creating...' : 'Create Task'}
-          </Button>
-        </DialogActions>
+        <ModalFooter
+          primaryAction={
+            <StandardButton
+              variant="contained"
+              colorScheme="primary"
+              onClick={handleSubmit}
+              disabled={loading}
+              loading={loading}
+            >
+              {loading ? 'Creating...' : 'Create Task'}
+            </StandardButton>
+          }
+          secondaryActions={[
+            <StandardButton
+              key="cancel"
+              variant="outlined"
+              colorScheme="neutral"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </StandardButton>
+          ]}
+        />
       </Dialog>
     </LocalizationProvider>
   );

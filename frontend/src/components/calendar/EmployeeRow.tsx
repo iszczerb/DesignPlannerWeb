@@ -457,21 +457,22 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
               left: Math.max(10, Math.min(contextMenu.x, window.innerWidth - 200)),
               top: Math.max(10, Math.min(contextMenu.y, window.innerHeight - 200)),
               zIndex: 999999,
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              backgroundColor: 'var(--dp-neutral-0)',
+              border: '1px solid var(--dp-neutral-200)',
+              borderRadius: 'var(--dp-radius-lg)',
+              boxShadow: 'var(--dp-shadow-2xl)',
               overflow: 'hidden',
               minWidth: '180px',
             }}
           >
             <div style={{
-              padding: '8px 16px',
-              borderBottom: '1px solid #f3f4f6',
-              backgroundColor: '#f9fafb',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              color: '#6b7280',
+              padding: 'var(--dp-space-2) var(--dp-space-4)',
+              borderBottom: '1px solid var(--dp-neutral-200)',
+              backgroundColor: 'var(--dp-neutral-50)',
+              fontSize: 'var(--dp-text-label-small)',
+              fontWeight: 'var(--dp-font-weight-semibold)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              color: 'var(--dp-neutral-600)',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}>
@@ -481,23 +482,24 @@ const EmployeeRow: React.FC<ExtendedEmployeeRowProps> = ({
             <div
               onClick={handleEmployeeView}
               style={{
-                padding: '16px 20px',
-                fontSize: '0.875rem',
-                color: '#374151',
+                padding: 'var(--dp-space-4) var(--dp-space-5)',
+                fontSize: 'var(--dp-text-body-medium)',
+                fontFamily: 'var(--dp-font-family-primary)',
+                color: 'var(--dp-neutral-800)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
-                transition: 'all 0.2s ease',
-                fontWeight: '500',
+                gap: 'var(--dp-space-2)',
+                transition: 'var(--dp-transition-fast)',
+                fontWeight: 'var(--dp-font-weight-medium)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#3b82f6';
-                e.currentTarget.style.color = 'white';
+                e.currentTarget.style.backgroundColor = 'var(--dp-primary-500)';
+                e.currentTarget.style.color = 'var(--dp-neutral-0)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#374151';
+                e.currentTarget.style.color = 'var(--dp-neutral-800)';
               }}
             >
               <span style={{ fontSize: '1.1rem' }}>📊</span>

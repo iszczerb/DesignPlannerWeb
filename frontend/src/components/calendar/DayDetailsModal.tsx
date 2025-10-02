@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent, Box, Typography, Divider } from '@mui/material';
 import {
   CalendarDayDto,
   EmployeeScheduleDto,
@@ -10,6 +10,8 @@ import {
   Slot
 } from '../../types/schedule';
 import { calculateActualHours } from '../../utils/taskLayoutHelpers';
+import { ModalHeader, ModalFooter, StandardButton } from '../common/modal';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface DayDetailsModalProps {
   isOpen: boolean;
@@ -210,316 +212,352 @@ const DayDetailsModal: React.FC<DayDetailsModalProps> = ({
     ? Math.round((dayStats.usedCapacity / dayStats.totalCapacity) * 100)
     : 0;
 
-  return (
-    <AnimatePresence>
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  const renderStatCard = (title: string, value: string | number, icon: string, tokenColor: string, isAlert?: boolean) => (
+    <Box
+      sx={{
+        backgroundColor: isAlert ? 'var(--dp-error-50)' : 'var(--dp-neutral-0)',
+        padding: 'var(--dp-space-4)',
+        borderRadius: 'var(--dp-radius-lg)',
+        border: isAlert ? '1px solid var(--dp-error-300)' : `1px solid var(${tokenColor}-100)`,
+        borderLeft: isAlert ? '3px solid var(--dp-error-600)' : `3px solid var(${tokenColor}-500)`,
+        boxShadow: 'var(--dp-shadow-sm)',
+        textAlign: 'center',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 999999
-      }} onClick={onClose}>
-        <motion.div
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '24px',
-            maxWidth: '800px',
-            maxHeight: '90vh',
-            width: '90%',
-            overflowY: 'auto',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        flexDirection: 'column',
+        gap: 'var(--dp-space-2)',
+      }}
+    >
+      <Typography
+        sx={{
+          fontSize: 'var(--dp-text-title-large)',
+          color: isAlert ? 'var(--dp-error-600)' : `var(${tokenColor}-500)`,
+        }}
+      >
+        {icon}
+      </Typography>
+      <Typography
+        sx={{
+          fontFamily: 'var(--dp-font-family-primary)',
+          fontSize: 'var(--dp-text-title-large)',
+          fontWeight: 'var(--dp-font-weight-bold)',
+          color: isAlert ? 'var(--dp-error-700)' : 'var(--dp-neutral-900)',
+        }}
+      >
+        {value}
+      </Typography>
+      <Typography
+        sx={{
+          fontFamily: 'var(--dp-font-family-primary)',
+          fontSize: 'var(--dp-text-label-small)',
+          color: isAlert ? 'var(--dp-error-600)' : 'var(--dp-neutral-600)',
+          fontWeight: 'var(--dp-font-weight-medium)',
+        }}
+      >
+        {title}
+      </Typography>
+    </Box>
+  );
+
+  const renderBreakdownCard = (title: string, icon: string, children: React.ReactNode) => (
+    <Box>
+      <Typography
+        sx={{
+          fontFamily: 'var(--dp-font-family-primary)',
+          fontSize: 'var(--dp-text-body-large)',
+          fontWeight: 'var(--dp-font-weight-semibold)',
+          color: 'var(--dp-neutral-900)',
+          marginBottom: 'var(--dp-space-3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--dp-space-2)',
+        }}
+      >
+        <span>{icon}</span>
+        {title}
+      </Typography>
+      <Box
+        sx={{
+          backgroundColor: 'var(--dp-neutral-50)',
+          padding: 'var(--dp-space-4)',
+          borderRadius: 'var(--dp-radius-md)',
+          border: '1px solid var(--dp-neutral-200)',
+        }}
+      >
+        {children}
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: 'var(--dp-neutral-0)',
+          borderRadius: 'var(--dp-radius-xl)',
+          boxShadow: 'var(--dp-shadow-2xl)',
+          maxWidth: '900px',
+        },
+      }}
+    >
+      <ModalHeader
+        title="Day Overview"
+        subtitle={formatDate(day.date)}
+        onClose={onClose}
+        variant="primary"
+      />
+
+      <DialogContent
+        sx={{
+          backgroundColor: 'var(--dp-neutral-50)',
+          padding: 'var(--dp-space-6)',
+        }}
+      >
+        {/* Summary Stats */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: 'var(--dp-space-4)',
+            marginBottom: 'var(--dp-space-6)',
           }}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.2 }}
-          onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '24px',
-            borderBottom: '1px solid #e5e7eb',
-            paddingBottom: '16px'
-          }}>
-            <div>
-              <h2 style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                margin: 0,
-                color: '#1f2937'
-              }}>
-                📅 Day Overview
-              </h2>
-              <p style={{
-                fontSize: '16px',
-                color: '#6b7280',
-                margin: '4px 0 0 0'
-              }}>
-                {formatDate(day.date)}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                color: '#6b7280',
-                padding: '8px'
-              }}
-            >
-              ×
-            </button>
-          </div>
+          {renderStatCard('Total Tasks', dayStats.totalTasks, '📋', '--dp-primary')}
+          {renderStatCard('Total Hours', `${dayStats.totalHours}h`, '⏰', '--dp-success')}
+          {renderStatCard('Active Employees', dayStats.totalActiveEmployees, '👥', '--dp-info')}
+          {renderStatCard('Capacity Used', `${capacityPercentage}%`, '📊', '--dp-warning')}
+          {renderStatCard('On Leave', dayStats.onLeave, '🏖️', '--dp-neutral')}
+          {dayStats.overbooked > 0 && renderStatCard('Overbooked', dayStats.overbooked, '⚠️', '--dp-error', true)}
+        </Box>
 
-          {/* Summary Cards */}
-          <div style={{
+        <Divider sx={{ marginY: 'var(--dp-space-5)', borderColor: 'var(--dp-neutral-200)' }} />
+
+        {/* Breakdown Sections */}
+        <Box
+          sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-            gap: '16px',
-            marginBottom: '24px'
-          }}>
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
-                {dayStats.totalTasks}
-              </div>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>Total Tasks</div>
-            </div>
-
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
-                {dayStats.totalHours}h
-              </div>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>Total Hours</div>
-            </div>
-
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
-                {dayStats.totalActiveEmployees}
-              </div>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>Active Employees</div>
-            </div>
-
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
-                {capacityPercentage}%
-              </div>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>Capacity Used</div>
-            </div>
-
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
-                {dayStats.onLeave}
-              </div>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>On Leave</div>
-            </div>
-
-            {dayStats.overbooked > 0 && (
-              <div style={{
-                padding: '16px',
-                backgroundColor: '#fef2f2',
-                borderRadius: '6px',
-                textAlign: 'center',
-                border: '1px solid #fecaca'
-              }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626' }}>
-                  {dayStats.overbooked}
-                </div>
-                <div style={{ fontSize: '12px', color: '#dc2626' }}>Overbooked</div>
-              </div>
-            )}
-          </div>
-
-          {/* Content Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '24px'
-          }}>
-            {/* Task Status Breakdown */}
-            <div>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#1f2937' }}>
-                📊 Task Status
-              </h3>
-              <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '6px' }}>
-                {Object.entries(dayStats.tasksByStatus).map(([status, count]) => {
-                  if (count === 0) return null;
-                  return (
-                    <div key={status} style={{
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 'var(--dp-space-5)',
+          }}
+        >
+          {/* Task Status */}
+          {renderBreakdownCard('Task Status', '📊', (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'var(--dp-space-2)' }}>
+              {Object.entries(dayStats.tasksByStatus).map(([status, count]) => {
+                if (count === 0) return null;
+                return (
+                  <Box
+                    key={status}
+                    sx={{
                       display: 'flex',
                       justifyContent: 'space-between',
-                      marginBottom: '8px'
-                    }}>
-                      <span style={{ color: '#6b7280' }}>
-                        {getStatusLabel(Number(status) as TaskStatus)}
-                      </span>
-                      <span style={{ fontWeight: '600', color: '#1f2937' }}>{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-small)',
+                        color: 'var(--dp-neutral-700)',
+                      }}
+                    >
+                      {getStatusLabel(Number(status) as TaskStatus)}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-small)',
+                        fontWeight: 'var(--dp-font-weight-semibold)',
+                        color: 'var(--dp-neutral-900)',
+                      }}
+                    >
+                      {count}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          ))}
 
-            {/* Task Priority Breakdown */}
-            <div>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#1f2937' }}>
-                🎯 Task Priority
-              </h3>
-              <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '6px' }}>
-                {Object.entries(dayStats.tasksByPriority).map(([priority, count]) => {
-                  if (count === 0) return null;
-                  return (
-                    <div key={priority} style={{
+          {/* Task Priority */}
+          {renderBreakdownCard('Task Priority', '🎯', (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'var(--dp-space-2)' }}>
+              {Object.entries(dayStats.tasksByPriority).map(([priority, count]) => {
+                if (count === 0) return null;
+                return (
+                  <Box
+                    key={priority}
+                    sx={{
                       display: 'flex',
                       justifyContent: 'space-between',
-                      marginBottom: '8px'
-                    }}>
-                      <span style={{ color: '#6b7280' }}>
-                        {getPriorityLabel(Number(priority) as TaskPriority)}
-                      </span>
-                      <span style={{ fontWeight: '600', color: '#1f2937' }}>{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-small)',
+                        color: 'var(--dp-neutral-700)',
+                      }}
+                    >
+                      {getPriorityLabel(Number(priority) as TaskPriority)}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-small)',
+                        fontWeight: 'var(--dp-font-weight-semibold)',
+                        color: 'var(--dp-neutral-900)',
+                      }}
+                    >
+                      {count}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          ))}
 
-
-            {/* Client Breakdown */}
-            <div>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#1f2937' }}>
-                🏢 Client Breakdown
-              </h3>
-              <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '6px' }}>
-                {Object.entries(dayStats.tasksByClient).map(([client, data]) => (
-                  <div key={client} style={{
+          {/* Client Breakdown */}
+          {renderBreakdownCard('Client Breakdown', '🏢', (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'var(--dp-space-2)' }}>
+              {Object.entries(dayStats.tasksByClient).map(([client, data]) => (
+                <Box
+                  key={client}
+                  sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '8px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div style={{
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 'var(--dp-space-2)', flex: 1 }}>
+                    <Box
+                      sx={{
                         width: '12px',
                         height: '12px',
                         backgroundColor: data.color,
-                        borderRadius: '2px',
-                        marginRight: '8px'
-                      }} />
-                      <span style={{ color: '#6b7280', fontSize: '14px' }}>{client}</span>
-                    </div>
-                    <span style={{ fontWeight: '600', color: '#1f2937' }}>{data.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                        borderRadius: 'var(--dp-radius-xs)',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Typography
+                      sx={{
+                        fontFamily: 'var(--dp-font-family-primary)',
+                        fontSize: 'var(--dp-text-body-small)',
+                        color: 'var(--dp-neutral-700)',
+                      }}
+                    >
+                      {client}
+                    </Typography>
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
+                    {data.count}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          ))}
 
-            {/* Task Types */}
-            <div>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#1f2937' }}>
-                🔧 Task Types
-              </h3>
-              <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '6px' }}>
-                {Object.entries(dayStats.tasksByType).map(([type, count]) => (
-                  <div key={type} style={{
+          {/* Task Types */}
+          {renderBreakdownCard('Task Types', '🔧', (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'var(--dp-space-2)' }}>
+              {Object.entries(dayStats.tasksByType).map(([type, count]) => (
+                <Box
+                  key={type}
+                  sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    marginBottom: '8px'
-                  }}>
-                    <span style={{ color: '#6b7280' }}>{type}</span>
-                    <span style={{ fontWeight: '600', color: '#1f2937' }}>{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-700)',
+                    }}
+                  >
+                    {type}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                      color: 'var(--dp-neutral-900)',
+                    }}
+                  >
+                    {count}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          ))}
 
-            {/* Leave Details */}
-            {dayStats.leaveDetails.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#1f2937' }}>
-                  🏖️ Leave Details
-                </h3>
-                <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '6px' }}>
-                  {dayStats.leaveDetails.map((leave, index) => (
-                    <div key={index} style={{
-                      marginBottom: '8px',
-                      padding: '8px',
-                      backgroundColor: '#ffffff',
-                      borderRadius: '4px'
-                    }}>
-                      <div style={{ fontWeight: '600', color: '#1f2937' }}>
-                        {leave.employeeName}
-                      </div>
-                      <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                        {getLeaveTypeLabel(leave.leaveType)}
-                        {leave.slot && ` (${leave.slot === Slot.Morning ? 'Morning' : 'Afternoon'} only)`}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Leave Details */}
+          {dayStats.leaveDetails.length > 0 && renderBreakdownCard('Leave Details', '🏖️', (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'var(--dp-space-2)' }}>
+              {dayStats.leaveDetails.map((leave, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    padding: 'var(--dp-space-3)',
+                    backgroundColor: 'var(--dp-neutral-0)',
+                    borderRadius: 'var(--dp-radius-md)',
+                    border: '1px solid var(--dp-neutral-200)',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      fontWeight: 'var(--dp-font-weight-semibold)',
+                      color: 'var(--dp-neutral-900)',
+                      marginBottom: 'var(--dp-space-1)',
+                    }}
+                  >
+                    {leave.employeeName}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--dp-font-family-primary)',
+                      fontSize: 'var(--dp-text-body-small)',
+                      color: 'var(--dp-neutral-600)',
+                    }}
+                  >
+                    {getLeaveTypeLabel(leave.leaveType)}
+                    {leave.slot && ` (${leave.slot === Slot.Morning ? 'Morning' : 'Afternoon'} only)`}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          ))}
+        </Box>
+      </DialogContent>
 
-          {/* Footer */}
-          <div style={{
-            marginTop: '24px',
-            paddingTop: '16px',
-            borderTop: '1px solid #e5e7eb',
-            textAlign: 'right'
-          }}>
-            <button
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#374151',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Close
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+      <ModalFooter
+        primaryAction={
+          <StandardButton
+            variant="contained"
+            colorScheme="neutral"
+            leftIcon={<CloseIcon />}
+            onClick={onClose}
+          >
+            Close
+          </StandardButton>
+        }
+      />
+    </Dialog>
   );
 };
 
