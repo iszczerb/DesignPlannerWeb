@@ -126,6 +126,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
   const [teamFilterOpen, setTeamFilterOpen] = useState(false);
   const [teamFilterAnchorEl, setTeamFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [allOriginalEmployeeAnalytics, setAllOriginalEmployeeAnalytics] = useState<EmployeeAnalyticsDto[]>([]); // Cache original data for available teams
+  const [chartDisplayMode, setChartDisplayMode] = useState<'percentage' | 'hours'>('percentage'); // Toggle between % and hours
 
 
   // Data state
@@ -430,6 +431,14 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         ? prev.filter(c => c !== categoryId)
         : [...prev, categoryId]
     );
+  };
+
+  const clearAllFilters = () => {
+    setSelectedProjects([]);
+    setSelectedTeamMembers([]);
+    setSelectedClients([]);
+    setSelectedCategories([]);
+    setTeamFilters([]);
   };
 
   const toggleTeamFilter = (teamId: number) => {
@@ -759,38 +768,63 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
   const getFilteredTeamMembersForSidebar = () => {
     // When category filtering is active, the backend already returns correct data
     // NO NEED for proportional calculations - backend handles it!
-    return employeeAnalytics.map(employee => {
-      let filteredHours = employee.totalHours;
-      let filteredTaskCount = employee.taskCount;
 
-      // Only apply project and client filters on frontend (not categories)
-      if (selectedProjects.length > 0 || selectedClients.length > 0) {
+    // If project or client filters are active, calculate ACCURATE hours from assignments
+    if ((selectedProjects.length > 0 || selectedClients.length > 0) && assignments.length > 0) {
+      // Filter assignments by project/client/category
+      let filteredAssignments = assignments;
 
-        // Apply project filter
-        if (selectedProjects.length > 0) {
-          const projectProportion = selectedProjects.length / Math.max(projectHours.length, 1);
-          filteredHours = Math.round(filteredHours * projectProportion);
-          filteredTaskCount = Math.round(filteredTaskCount * projectProportion);
-        }
-
-        // Apply client filter
-        if (selectedClients.length > 0) {
-          const clientProportion = selectedClients.length / Math.max(clientDistribution.length, 1);
-          filteredHours = Math.round(filteredHours * clientProportion);
-          filteredTaskCount = Math.round(filteredTaskCount * clientProportion);
-        }
-
-        // CATEGORY FILTERING IS HANDLED BY BACKEND!
-        // When selectedCategories is set, the backend filters assignments by project category
-        // and returns correct employee hours. No frontend calculation needed!
+      // Filter by projects
+      if (selectedProjects.length > 0) {
+        filteredAssignments = filteredAssignments.filter(a =>
+          selectedProjects.some(projectCode => a.projectName.includes(projectCode))
+        );
       }
 
-      return {
-        ...employee,
-        totalHours: filteredHours,
-        taskCount: filteredTaskCount
-      };
-    }).sort((a, b) => b.totalHours - a.totalHours); // Sort by hours descending
+      // Filter by clients
+      if (selectedClients.length > 0) {
+        filteredAssignments = filteredAssignments.filter(a =>
+          selectedClients.includes(a.clientCode)
+        );
+      }
+
+      // Filter by categories (match with project categories)
+      if (selectedCategories.length > 0) {
+        const projectCodesInCategories = projectHours
+          .filter(p => selectedCategories.includes(p.categoryId))
+          .map(p => p.projectCode);
+
+        filteredAssignments = filteredAssignments.filter(a =>
+          projectCodesInCategories.some(code => a.projectName.includes(code))
+        );
+      }
+
+      // Group by employee and calculate ACCURATE hours
+      const employeeMap = new Map<number, { hours: number; count: number }>();
+
+      filteredAssignments.forEach(assignment => {
+        const existing = employeeMap.get(assignment.employeeId) || { hours: 0, count: 0 };
+        employeeMap.set(assignment.employeeId, {
+          hours: existing.hours + (assignment.hours || 4), // Default 4 hours if not set
+          count: existing.count + 1
+        });
+      });
+
+      // Map to employee analytics format with accurate hours
+      return employeeAnalytics.map(employee => {
+        const filtered = employeeMap.get(employee.employeeId);
+        return {
+          ...employee,
+          totalHours: filtered ? filtered.hours : 0,
+          taskCount: filtered ? filtered.count : 0
+        };
+      }).sort((a, b) => b.totalHours - a.totalHours);
+    }
+
+    // No project/client filters - use backend data (already accurate for category filtering)
+    return employeeAnalytics
+      .map(employee => ({ ...employee }))
+      .sort((a, b) => b.totalHours - a.totalHours);
   };
 
   const getFilteredClientsForSidebar = () => {
@@ -1879,7 +1913,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                                   fontFamily="var(--dp-font-family-primary)"
                                   style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
                                 >
-                                  {`${Math.round(percent * 100)}%`}
+                                  {chartDisplayMode === 'hours' ? `${value}h` : `${Math.round(percent * 100)}%`}
                                 </text>
                               </g>
                             );
@@ -1901,7 +1935,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                                 fontFamily="var(--dp-font-family-primary)"
                                 style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
                               >
-                                {`${Math.round(percent * 100)}%`}
+                                {chartDisplayMode === 'hours' ? `${value}h` : `${Math.round(percent * 100)}%`}
                               </text>
                             );
                           }
@@ -2258,7 +2292,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                                   fontFamily="var(--dp-font-family-primary)"
                                   style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
                                 >
-                                  {`${Math.round(percent * 100)}%`}
+                                  {chartDisplayMode === 'hours' ? `${value}h` : `${Math.round(percent * 100)}%`}
                                 </text>
                               </g>
                             );
@@ -2280,7 +2314,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
                                 fontFamily="var(--dp-font-family-primary)"
                                 style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))' }}
                               >
-                                {`${Math.round(percent * 100)}%`}
+                                {chartDisplayMode === 'hours' ? `${value}h` : `${Math.round(percent * 100)}%`}
                               </text>
                             );
                           }
@@ -2871,7 +2905,7 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         px: 3,
         py: 2,
         backgroundColor: 'var(--dp-neutral-0)',
@@ -2879,7 +2913,41 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
         boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)',
         position: 'relative'
       }}>
-        {/* Category Filters */}
+        {/* Clear All Filters Button - Far Left */}
+        <Button
+          onClick={clearAllFilters}
+          disabled={selectedProjects.length === 0 && selectedTeamMembers.length === 0 &&
+                   selectedClients.length === 0 && selectedCategories.length === 0 &&
+                   teamFilters.length === 0}
+          sx={{
+            backgroundColor: 'var(--dp-error-50)',
+            color: 'var(--dp-error-700)',
+            border: '1px solid var(--dp-error-200)',
+            borderRadius: '16px',
+            fontWeight: 600,
+            fontFamily: 'var(--dp-font-family-primary)',
+            fontSize: '14px',
+            px: 2.5,
+            py: 0.75,
+            textTransform: 'none',
+            transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+            boxShadow: 'none',
+            '&:hover': {
+              backgroundColor: 'var(--dp-error-100)',
+              borderColor: 'var(--dp-error-300)',
+              boxShadow: 'none'
+            },
+            '&:disabled': {
+              backgroundColor: 'var(--dp-neutral-100)',
+              color: 'var(--dp-neutral-400)',
+              borderColor: 'var(--dp-neutral-200)'
+            }
+          }}
+        >
+          Clear All Filters
+        </Button>
+
+        {/* Category Filters - Center */}
         <Box sx={{ display: 'flex', gap: 1, position: 'relative', zIndex: 1 }}>
           {categories.map(category => (
             <Chip
@@ -2919,6 +2987,47 @@ const AnalyticsDashboardModal: React.FC<AnalyticsDashboardModalProps> = ({
             />
           ))}
         </Box>
+
+        {/* %/HR Toggle - Far Right */}
+        <ToggleButtonGroup
+          value={chartDisplayMode}
+          exclusive
+          onChange={(e, newMode) => {
+            if (newMode !== null) {
+              setChartDisplayMode(newMode);
+            }
+          }}
+          sx={{
+            backgroundColor: 'var(--dp-neutral-100)',
+            borderRadius: '16px',
+            border: '1px solid var(--dp-neutral-200)',
+            '& .MuiToggleButtonGroup-grouped': {
+              border: 'none',
+              borderRadius: '14px !important',
+              margin: '2px',
+              px: 2,
+              py: 0.5,
+              fontFamily: 'var(--dp-font-family-primary)',
+              fontSize: '14px',
+              fontWeight: 600,
+              textTransform: 'none',
+              color: 'var(--dp-neutral-700)',
+              '&.Mui-selected': {
+                backgroundColor: 'var(--dp-primary-600)',
+                color: 'var(--dp-neutral-0)',
+                '&:hover': {
+                  backgroundColor: 'var(--dp-primary-700)'
+                }
+              },
+              '&:hover': {
+                backgroundColor: 'var(--dp-neutral-200)'
+              }
+            }
+          }}
+        >
+          <ToggleButton value="percentage">%</ToggleButton>
+          <ToggleButton value="hours">HR</ToggleButton>
+        </ToggleButtonGroup>
 
       </Box>
     </Dialog>
