@@ -21,6 +21,7 @@ import TaskCreationModal from '../components/calendar/TaskCreationModal';
 import TaskDetailsModal from '../components/calendar/TaskDetailsModal';
 import DayDetailsModal from '../components/calendar/DayDetailsModal';
 import SetLeaveModal from '../components/calendar/SetLeaveModal';
+import ClearBlockingModal from '../components/calendar/ClearBlockingModal';
 import BulkEditModal, { BulkEditData } from '../components/calendar/BulkEditModal';
 import QuickEditTaskType from '../components/calendar/QuickEditTaskType';
 import QuickEditStatus from '../components/calendar/QuickEditStatus';
@@ -918,6 +919,10 @@ const TeamScheduleContent: React.FC<{
   // Set Leave modal state
   const [setLeaveModalOpen, setSetLeaveModalOpen] = useState(false);
   const [selectedLeaveDate, setSelectedLeaveDate] = useState<Date | null>(null);
+
+  // Clear Blocking modal state
+  const [clearBlockingModalOpen, setClearBlockingModalOpen] = useState(false);
+  const [selectedClearBlockingDate, setSelectedClearBlockingDate] = useState<Date | null>(null);
 
   // Bulk Edit modal state
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
@@ -3195,25 +3200,45 @@ const TeamScheduleContent: React.FC<{
   /**
    * Handle clearing leave/holiday from a date
    */
-  const handleClearBlocking = useCallback(async (clickedDate: Date) => {
-    // CAPTURE multi-day selection immediately (like handleTaskPasteMultiple pattern)
-    let daysToProcess: Date[] = [];
+  /**
+   * Handle Clear Blocking - Opens modal for selective leave removal
+   */
+  const handleClearBlocking = useCallback((clickedDate: Date) => {
+    // CAPTURE multi-day selection immediately
     if (selectedDays.length > 0) {
-      // Check if clicked day is in the selection
       const isCurrentInSelection = selectedDays.some(d => d.toDateString() === clickedDate.toDateString());
       if (isCurrentInSelection) {
-        // Clicked day is part of selection - process all selected days
+        // Use first selected day as the date for the modal
+        setCapturedMultiDays([...selectedDays]);
+        setSelectedClearBlockingDate(selectedDays[0]);
+      } else {
+        setCapturedMultiDays([]);
+        setSelectedClearBlockingDate(clickedDate);
+      }
+    } else {
+      setCapturedMultiDays([]);
+      setSelectedClearBlockingDate(clickedDate);
+    }
+
+    setClearBlockingModalOpen(true);
+  }, [selectedDays]);
+
+  /**
+   * Handle Clear Bank Holiday - Clears only bank holidays
+   */
+  const handleClearBankHoliday = useCallback(async (clickedDate: Date) => {
+    // CAPTURE multi-day selection immediately
+    let daysToProcess: Date[] = [];
+    if (selectedDays.length > 0) {
+      const isCurrentInSelection = selectedDays.some(d => d.toDateString() === clickedDate.toDateString());
+      if (isCurrentInSelection) {
         daysToProcess = [...selectedDays];
       } else {
-        // Clicked day is NOT in selection - only process this day
         daysToProcess = [clickedDate];
       }
     } else {
-      // No selection - process only clicked day
       daysToProcess = [clickedDate];
     }
-
-    console.log('🎯 Clearing blocking for days:', daysToProcess.map(d => d.toLocaleDateString()));
 
     const dayName = daysToProcess.length === 1
       ? daysToProcess[0].toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -3221,68 +3246,120 @@ const TeamScheduleContent: React.FC<{
 
     setConfirmDialog({
       isOpen: true,
-      title: `Clear Blocking ${daysToProcess.length > 1 ? 'Days' : 'Day'}`,
-      message: `Are you sure you want to clear all leave and holidays from ${dayName}?\n\nThis will remove any blocking slots and make ${daysToProcess.length > 1 ? 'these days' : 'the day'} available for tasks again.`,
+      title: `Clear Bank Holiday${daysToProcess.length > 1 ? 's' : ''}`,
+      message: `Are you sure you want to clear bank holidays from ${dayName}?`,
       type: 'info',
       onConfirm: async () => {
         setConfirmDialog({ ...confirmDialog, isOpen: false });
 
         try {
-          console.log('🎯 Clearing blocking for captured days:', daysToProcess.map(d => d.toLocaleDateString()));
-
-          // Process all captured days (use daysToProcess from closure, not state!)
           for (const date of daysToProcess) {
-            // Clear from calendar data (immediate UI update)
+            // Clear bank holidays from calendar data
             clearBlockingFromCalendarData(date);
 
-            // Clear only leave-related data - DO NOT delete regular tasks
-            try {
-              console.log(`🗑️ Clearing leave data for ${date.toLocaleDateString()}`);
+            // Delete bank holiday absence records from backend
+            await absenceService.deleteAbsenceRecordsByDate(date);
 
-              // Delete absence records (annual leave, sick days, training, bank holidays)
-              const recordsResult = await absenceService.deleteAbsenceRecordsByDate(date);
-              console.log(`🗑️ Deleted ${recordsResult.deletedCount} absence records for ${date.toLocaleDateString()}`);
-
-              // Clear assignments that have AbsenceType set (leave-related assignments)
-              const assignmentsResult = await absenceService.clearAbsenceAssignmentsByDate(date);
-              console.log(`🗑️ Cleared ${assignmentsResult.clearedCount} absence assignments for ${date.toLocaleDateString()}`);
-
-              // Delete assignments with leave-related task types
-              const leaveTasksResult = await absenceService.deleteLeaveTasksByDate(date);
-              console.log(`🗑️ Deleted ${leaveTasksResult.deletedCount} leave task assignments for ${date.toLocaleDateString()}`);
-            } catch (error) {
-              console.warn(`Failed to delete absence data from backend for ${date.toLocaleDateString()}:`, error);
-              // Don't fail the whole operation if backend deletion fails
-            }
-
-            // Remove from persistent storage AFTER database deletion to prevent re-merging
+            // Remove from storage
             removeLeaveFromStorage(date);
           }
 
-          // Clear selections after successful operation
           setSelectedDays([]);
-
-          const successDayName = daysToProcess.length === 1
-            ? daysToProcess[0].toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-            : `${daysToProcess.length} days`;
 
           showNotification({
             type: 'success',
-            title: `Blocking Cleared${daysToProcess.length > 1 ? ` (${daysToProcess.length} days)` : ''}`,
-            message: `All leave and holidays have been cleared from ${successDayName}.`
+            title: `Bank Holiday Cleared${daysToProcess.length > 1 ? ` (${daysToProcess.length} days)` : ''}`,
+            message: `Bank holidays have been cleared from ${dayName}.`
           });
-
         } catch (error) {
-          console.error('Error clearing blocking:', error);
+          console.error('Error clearing bank holiday:', error);
           showNotification({
             type: 'error',
-            title: 'Error Clearing Blocking',
-            message: 'Failed to clear blocking. Please try again.'
+            title: 'Error Clearing Bank Holiday',
+            message: 'Failed to clear bank holiday. Please try again.'
           });
         }
       }
     });
   }, [selectedDays, confirmDialog, clearBlockingFromCalendarData, showNotification]);
+
+  /**
+   * Handle Clear Blocking modal submission - Deletes specific leave types for specific employees
+   */
+  const handleClearBlockingSubmit = useCallback(async (clearData: {
+    employeeIds: number[];
+    leaveTypes: number[];
+    date: Date;
+  }) => {
+    try {
+      // Determine which days to process (multi-day or single day)
+      const daysToProcess = capturedMultiDays.length > 0 ? capturedMultiDays : [clearData.date];
+
+      console.log('🗑️ Clearing blocking:', {
+        employeeIds: clearData.employeeIds,
+        leaveTypes: clearData.leaveTypes,
+        days: daysToProcess.map(d => d.toLocaleDateString())
+      });
+
+      // For each day, delete leaves for the selected employees
+      for (const date of daysToProcess) {
+        for (const employeeId of clearData.employeeIds) {
+          // Backend will delete all leaves for this employee on this date
+          try {
+            await absenceService.deleteAbsenceRecordsByDate(date, employeeId);
+            console.log(`✅ Deleted leaves for employee ${employeeId} on ${date.toLocaleDateString()}`);
+          } catch (error) {
+            console.error(`Failed to delete leave for employee ${employeeId}:`, error);
+          }
+
+          // Clear from calendar data
+          clearBlockingFromCalendarData(date);
+
+          // Remove from storage
+          removeLeaveFromStorage(date);
+        }
+      }
+
+      // Clear selections
+      setSelectedDays([]);
+      setCapturedMultiDays([]);
+
+      // Close modal
+      setClearBlockingModalOpen(false);
+      setSelectedClearBlockingDate(null);
+
+      // Refresh calendar
+      await loadCalendarData(
+        teamViewMode === TeamViewMode.MyTeam ? managedTeamId : undefined,
+        teamViewMode
+      );
+
+      const leaveTypeNames: Record<number, string> = {
+        1: 'Annual Leave',
+        2: 'Sick Day',
+        3: 'Other Leave'
+      };
+
+      const selectedLeaveNames = clearData.leaveTypes.map(type => leaveTypeNames[type]).join(', ');
+      const dayName = daysToProcess.length === 1
+        ? daysToProcess[0].toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : `${daysToProcess.length} days`;
+
+      showNotification({
+        type: 'success',
+        title: `Blocking Cleared${daysToProcess.length > 1 ? ` (${daysToProcess.length} days)` : ''}`,
+        message: `${selectedLeaveNames} cleared for ${clearData.employeeIds.length} employee(s) from ${dayName}.`
+      });
+
+    } catch (error) {
+      console.error('Error clearing blocking:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error Clearing Blocking',
+        message: 'Failed to clear blocking. Please try again.'
+      });
+    }
+  }, [capturedMultiDays, clearBlockingFromCalendarData, removeLeaveFromStorage, loadCalendarData, teamViewMode, managedTeamId, showNotification]);
 
   /**
    * Detect task conflicts for leave setting
@@ -4082,6 +4159,7 @@ ${dateInfo}`;
                   onSetBankHoliday={handleSetBankHoliday}
                   onSetLeave={handleSetLeave}
                   onClearBlocking={handleClearBlocking}
+                  onClearBankHoliday={handleClearBankHoliday}
                   onDayViewDetails={handleDayViewDetails}
                   selectedTaskIds={selectedTasks.map(task => task.assignmentId)}
                   selectedSlots={selectedSlots}
@@ -5889,6 +5967,7 @@ ${dateInfo}`;
               onSetBankHoliday={handleSetBankHoliday}
               onSetLeave={handleSetLeave}
               onClearBlocking={handleClearBlocking}
+              onClearBankHoliday={handleClearBankHoliday}
               onDayViewDetails={handleDayViewDetails}
               selectedTaskIds={selectedTasks.map(task => task.assignmentId)}
               selectedSlots={selectedSlots}
@@ -6216,6 +6295,19 @@ ${dateInfo}`;
           onSubmit={handleLeaveSubmit}
         />
       )}
+
+      {/* Clear Blocking Modal */}
+      <ClearBlockingModal
+        isOpen={clearBlockingModalOpen}
+        onClose={() => {
+          setClearBlockingModalOpen(false);
+          setSelectedClearBlockingDate(null);
+          setCapturedMultiDays([]);
+        }}
+        selectedDate={selectedClearBlockingDate || new Date()}
+        employees={calendarData?.employees || []}
+        onSubmit={handleClearBlockingSubmit}
+      />
 
 
 

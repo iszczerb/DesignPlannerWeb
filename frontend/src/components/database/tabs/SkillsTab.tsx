@@ -54,21 +54,13 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange, onTaskCounts
   }, [refreshTrigger]);
 
   const loadSkills = async () => {
-    console.log('🔄 SKILLS TAB - loadSkills called');
     try {
       setLoading(true);
       setError(null);
-      console.log('🚀 SKILLS TAB - calling databaseService.getSkills...');
       const data = await databaseService.getSkills();
-      console.log('🛠️ SKILLS TAB - getSkills returned:', data);
-      console.log('🛠️ SKILLS TAB - data is array:', Array.isArray(data));
-      console.log('🛠️ SKILLS TAB - data length:', data?.length);
       const skillsArray = Array.isArray(data) ? data : [];
-      console.log('🛠️ SKILLS TAB - setting skills to:', skillsArray);
       setSkills(skillsArray);
-      console.log('✅ SKILLS TAB - loadSkills completed successfully');
     } catch (err) {
-      console.log('❌ SKILLS TAB - error in loadSkills:', err);
       setError(err instanceof Error ? err.message : 'Failed to load skills');
     } finally {
       setLoading(false);
@@ -77,9 +69,7 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange, onTaskCounts
 
   const loadLiveTaskCounts = async () => {
     try {
-      console.log('🔄 SKILLS TAB - loadLiveTaskCounts called');
       const taskCounts = await skillTaskCountService.getSkillTaskCounts();
-      console.log('🛠️ SKILLS TAB - received live task counts:', taskCounts);
 
       // Convert to Map for efficient lookup
       const countsMap = new Map<number, { taskCount: number; projectCount: number; taskTypeCount: number }>();
@@ -97,8 +87,6 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange, onTaskCounts
       if (onTaskCountsChange) {
         onTaskCountsChange(taskCounts);
       }
-
-      console.log('✅ SKILLS TAB - loadLiveTaskCounts completed');
     } catch (err) {
       console.error('❌ SKILLS TAB - error in loadLiveTaskCounts:', err);
       // On error, clear the counts
@@ -122,26 +110,18 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange, onTaskCounts
   };
 
   const handleSave = async (data: CreateSkillDto | UpdateSkillDto) => {
-    console.log('🟢 SKILLS TAB - handleSave called with data:', data);
     try {
       setFormLoading(true);
       if (editingSkill) {
-        console.log('📝 SKILLS TAB - updating existing skill');
         await databaseService.updateSkill(data as UpdateSkillDto);
       } else {
-        console.log('➕ SKILLS TAB - creating new skill');
-        console.log('🚀 SKILLS TAB - calling databaseService.createSkill...');
-        const result = await databaseService.createSkill(data as CreateSkillDto);
-        console.log('✅ SKILLS TAB - createSkill returned:', result);
+        await databaseService.createSkill(data as CreateSkillDto);
       }
       setShowForm(false);
       setEditingSkill(undefined);
-      console.log('🔄 SKILLS TAB - reloading skills...');
       await loadSkills();
       await loadLiveTaskCounts(); // Refresh live counts after changes
-      console.log('✅ SKILLS TAB - handleSave completed successfully');
     } catch (err) {
-      console.log('❌ SKILLS TAB - error in handleSave:', err);
       throw err; // Let the form handle the error
     } finally {
       setFormLoading(false);
@@ -152,9 +132,7 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ onEntityCountChange, onTaskCounts
     if (!deletingSkill) return;
 
     try {
-      console.log('🗑️ SKILLS TAB - Attempting to delete skill:', deletingSkill);
       await databaseService.deleteSkill(deletingSkill.id!);
-      console.log('✅ SKILLS TAB - Skill deleted successfully');
       setShowDeleteConfirm(false);
       setDeletingSkill(undefined);
       setError(null); // Clear any previous errors

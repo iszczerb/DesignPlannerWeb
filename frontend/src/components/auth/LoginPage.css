@@ -1,0 +1,619 @@
+/* Tate Brand Colors */
+:root {
+  --tate-oxford-blue: #00265C;
+  --tate-capri-blue: #0099FF;
+  --tate-green: #00E463;
+  --tate-grey: #EDEDED;
+  --tate-dark-grey: #1D1D1B;
+  --tate-very-dark-blue: #001529;
+}
+
+/* Main Container */
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: #001529;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+}
+
+/* Datacenter Animated Background */
+.datacenter-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  background: #001529;
+  overflow: hidden;
+}
+
+/* Server Rack Lines */
+.server-rack {
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(0, 153, 255, 0.3) 20%,
+    rgba(0, 153, 255, 0.5) 50%,
+    rgba(0, 153, 255, 0.3) 80%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+.rack-1 { left: 10%; }
+.rack-2 { left: 25%; }
+.rack-3 { left: 50%; }
+.rack-4 { left: 75%; }
+.rack-5 { left: 90%; }
+
+/* Flashing Server Lights - Green (Square like servers) */
+.server-light {
+  position: absolute;
+  width: 16px;
+  height: 8px;
+  background: var(--tate-green);
+  border-radius: 2px;
+  box-shadow:
+    0 0 20px var(--tate-green),
+    0 0 40px var(--tate-green),
+    0 0 60px rgba(0, 228, 99, 0.5);
+}
+
+/* 35 lights with varied animation durations (longer intervals, less constant flashing) */
+.server-light:nth-child(6) { animation: flash1 6.2s infinite ease-in-out; }
+.server-light:nth-child(7) { animation: flash2 7.8s infinite ease-in-out; }
+.server-light:nth-child(8) { animation: flash3 5.5s infinite ease-in-out; }
+.server-light:nth-child(9) { animation: flash4 8.3s infinite ease-in-out; }
+.server-light:nth-child(10) { animation: flash5 6.9s infinite ease-in-out; }
+.server-light:nth-child(11) { animation: flash1 7.5s infinite ease-in-out; }
+.server-light:nth-child(12) { animation: flash2 5.8s infinite ease-in-out; }
+.server-light:nth-child(13) { animation: flash3 8.7s infinite ease-in-out; }
+.server-light:nth-child(14) { animation: flash4 6.4s infinite ease-in-out; }
+.server-light:nth-child(15) { animation: flash5 7.2s infinite ease-in-out; }
+.server-light:nth-child(16) { animation: flash1 5.9s infinite ease-in-out; }
+.server-light:nth-child(17) { animation: flash2 8.1s infinite ease-in-out; }
+.server-light:nth-child(18) { animation: flash3 6.7s infinite ease-in-out; }
+.server-light:nth-child(19) { animation: flash4 7.4s infinite ease-in-out; }
+.server-light:nth-child(20) { animation: flash5 5.6s infinite ease-in-out; }
+.server-light:nth-child(21) { animation: flash1 8.5s infinite ease-in-out; }
+.server-light:nth-child(22) { animation: flash2 6.3s infinite ease-in-out; }
+.server-light:nth-child(23) { animation: flash3 7.9s infinite ease-in-out; }
+.server-light:nth-child(24) { animation: flash4 5.7s infinite ease-in-out; }
+.server-light:nth-child(25) { animation: flash5 8.4s infinite ease-in-out; }
+.server-light:nth-child(26) { animation: flash1 6.6s infinite ease-in-out; }
+.server-light:nth-child(27) { animation: flash2 7.3s infinite ease-in-out; }
+.server-light:nth-child(28) { animation: flash3 5.4s infinite ease-in-out; }
+.server-light:nth-child(29) { animation: flash4 8.6s infinite ease-in-out; }
+.server-light:nth-child(30) { animation: flash5 6.8s infinite ease-in-out; }
+.server-light:nth-child(31) { animation: flash1 7.7s infinite ease-in-out; }
+.server-light:nth-child(32) { animation: flash2 5.3s infinite ease-in-out; }
+.server-light:nth-child(33) { animation: flash3 8.2s infinite ease-in-out; }
+.server-light:nth-child(34) { animation: flash4 6.5s infinite ease-in-out; }
+.server-light:nth-child(35) { animation: flash5 7.6s infinite ease-in-out; }
+.server-light:nth-child(36) { animation: flash1 5.5s infinite ease-in-out; }
+.server-light:nth-child(37) { animation: flash2 8.8s infinite ease-in-out; }
+.server-light:nth-child(38) { animation: flash3 6.1s infinite ease-in-out; }
+.server-light:nth-child(39) { animation: flash4 7.1s infinite ease-in-out; }
+.server-light:nth-child(40) { animation: flash5 8.0s infinite ease-in-out; }
+
+/* Flash patterns with LONG OFF periods - lights stay off for many seconds */
+@keyframes flash1 {
+  0% { opacity: 0; }
+  5% { opacity: 0; }
+  10% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 40px var(--tate-green), 0 0 80px var(--tate-green); }
+  15% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes flash2 {
+  0% { opacity: 0; }
+  20% { opacity: 0; }
+  22% { opacity: 1; transform: scale(1.25); box-shadow: 0 0 50px var(--tate-green), 0 0 90px var(--tate-green); }
+  24% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes flash3 {
+  0% { opacity: 0; }
+  40% { opacity: 0; }
+  45% { opacity: 0.9; transform: scale(1.15); box-shadow: 0 0 35px var(--tate-green); }
+  48% { opacity: 0; }
+  50% { opacity: 0.8; transform: scale(1.2); box-shadow: 0 0 45px var(--tate-green); }
+  53% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes flash4 {
+  0% { opacity: 0; }
+  60% { opacity: 0; }
+  65% { opacity: 1; transform: scale(1.3); box-shadow: 0 0 60px var(--tate-green), 0 0 100px var(--tate-green); }
+  70% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes flash5 {
+  0% { opacity: 0; }
+  75% { opacity: 0; }
+  80% { opacity: 1; transform: scale(1.25); box-shadow: 0 0 55px var(--tate-green), 0 0 95px var(--tate-green); }
+  85% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* Data Flow Lines */
+.data-line {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--tate-capri-blue),
+    transparent
+  );
+  animation: dataFlow 3s infinite linear;
+}
+
+.line-1 {
+  top: 30%;
+  left: 0;
+  width: 100%;
+  animation-delay: 0s;
+}
+
+.line-2 {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  animation-delay: 1s;
+}
+
+.line-3 {
+  top: 70%;
+  left: 0;
+  width: 100%;
+  animation-delay: 2s;
+}
+
+@keyframes dataFlow {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .server-light,
+  .data-line {
+    animation: none !important;
+  }
+}
+
+/* Top Header - Dark Premium Style */
+.login-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 110px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 38, 92, 0.95) 0%,
+    rgba(0, 38, 92, 0.85) 100%
+  );
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-bottom: 1px solid rgba(0, 153, 255, 0.3);
+  z-index: 100;
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 153, 255, 0.15) inset;
+}
+
+.login-header-content {
+  max-width: 1600px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 60px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  position: relative;
+}
+
+/* Header Logos - White logos with blue accents */
+.header-logo-left {
+  height: 80px;
+  justify-self: start;
+  filter:
+    brightness(0)
+    saturate(100%)
+    invert(100%)
+    sepia(0%)
+    saturate(0%)
+    hue-rotate(0deg)
+    brightness(100%)
+    contrast(100%)
+    drop-shadow(0 2px 10px rgba(255, 255, 255, 0.2));
+}
+
+.header-logo-right {
+  height: 70px;
+  justify-self: end;
+  filter:
+    brightness(0)
+    saturate(100%)
+    invert(100%)
+    sepia(0%)
+    saturate(0%)
+    hue-rotate(0deg)
+    brightness(100%)
+    contrast(100%)
+    drop-shadow(0 2px 10px rgba(255, 255, 255, 0.2));
+}
+
+/* Header Title - Poppins (White for Dark Header) */
+.header-title {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 48px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.02em;
+  text-align: center;
+  text-transform: capitalize;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 2px 20px rgba(0, 153, 255, 0.3);
+}
+
+/* Main Content Area */
+.login-content {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 160px 24px 40px;
+}
+
+/* Login Card - Enhanced Glassmorphism */
+.login-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  padding: 56px 48px;
+
+  /* More transparent glass to see background animations */
+  background: linear-gradient(
+    135deg,
+    rgba(0, 38, 92, 0.08) 0%,
+    rgba(0, 153, 255, 0.05) 100%
+  );
+
+  /* Stronger blur for enhanced glassmorphism */
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+
+  /* Glowing border with gradient */
+  border: 1.5px solid rgba(0, 153, 255, 0.4);
+  border-radius: 32px;
+
+  /* Enhanced shadow with glow */
+  box-shadow:
+    0 8px 32px 0 rgba(0, 38, 92, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+    0 0 60px rgba(0, 153, 255, 0.2),
+    0 0 100px rgba(0, 228, 99, 0.1);
+
+  animation: cardFadeIn 0.8s ease-out;
+  transition: all 0.3s ease;
+}
+
+/* Fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(24px)) {
+  .login-card {
+    background: linear-gradient(
+      135deg,
+      rgba(0, 38, 92, 0.85),
+      rgba(0, 153, 255, 0.75)
+    );
+  }
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Hover effect for card - Enhanced glow */
+.login-card:hover {
+  border-color: rgba(0, 153, 255, 0.6);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 38, 92, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+    0 0 80px rgba(0, 153, 255, 0.3),
+    0 0 120px rgba(0, 228, 99, 0.15);
+}
+
+/* Alert */
+.login-alert {
+  margin-bottom: 24px !important;
+  border-radius: 12px !important;
+}
+
+/* Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Input Fields - Glassmorphism Style */
+.login-input {
+  margin-bottom: 24px !important;
+}
+
+.login-input:last-of-type {
+  margin-bottom: 36px !important;
+}
+
+.login-input .MuiOutlinedInput-root {
+  border-radius: 16px !important;
+  font-size: 18px !important;
+
+  /* More transparent to see background better */
+  background: rgba(0, 38, 92, 0.25) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  transition: all 0.3s ease !important;
+}
+
+.login-input .MuiOutlinedInput-root fieldset {
+  border-color: rgba(0, 153, 255, 0.25) !important;
+  border-width: 1px !important;
+}
+
+.login-input .MuiOutlinedInput-root:hover fieldset {
+  border-color: rgba(0, 153, 255, 0.4) !important;
+}
+
+.login-input .MuiOutlinedInput-root.Mui-focused {
+  background: rgba(0, 38, 92, 0.35) !important;
+}
+
+.login-input .MuiOutlinedInput-root.Mui-focused fieldset {
+  border-color: rgba(0, 153, 255, 0.6) !important;
+  border-width: 1px !important;
+  box-shadow:
+    0 0 0 3px rgba(0, 153, 255, 0.15),
+    0 4px 12px rgba(0, 153, 255, 0.2) !important;
+}
+
+.login-input .MuiInputLabel-root {
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.login-input .MuiInputLabel-root.Mui-focused {
+  color: rgba(0, 153, 255, 1) !important;
+  font-weight: 600 !important;
+}
+
+.login-input .MuiOutlinedInput-input {
+  padding: 16px 18px !important;
+  color: #ffffff !important;
+}
+
+.login-input .MuiOutlinedInput-input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1 !important;
+}
+
+/* Fix autocomplete terrible white background */
+.login-input .MuiOutlinedInput-input:-webkit-autofill,
+.login-input .MuiOutlinedInput-input:-webkit-autofill:hover,
+.login-input .MuiOutlinedInput-input:-webkit-autofill:focus,
+.login-input .MuiOutlinedInput-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 100px rgba(0, 38, 92, 0.25) inset !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.95) !important;
+  caret-color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 16px !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* Password Eye Icon - White for dark background */
+.password-toggle-icon {
+  color: rgba(255, 255, 255, 0.7) !important;
+  transition: all 0.3s ease !important;
+}
+
+.password-toggle-icon:hover {
+  color: rgba(0, 153, 255, 1) !important;
+  transform: scale(1.1);
+}
+
+/* Checkbox - Glassmorphism Style */
+.remember-me {
+  margin: 8px 0 32px 0 !important;
+}
+
+.login-checkbox.MuiCheckbox-root {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.login-checkbox.MuiCheckbox-root.Mui-checked {
+  color: var(--tate-capri-blue) !important;
+}
+
+.checkbox-label {
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 16px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 500 !important;
+}
+
+/* Login Button - Light Blue to Green Animation */
+.login-button {
+  /* Light blue (Capri Blue) default */
+  background: var(--tate-capri-blue) !important;
+
+  border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+  border-radius: 14px !important;
+  padding: 18px 36px !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
+
+  /* Glass effect on button */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  /* Strong shadow for elevation */
+  box-shadow:
+    0 8px 24px rgba(0, 153, 255, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.15) inset !important;
+
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-button:hover:not(:disabled) {
+  /* Smooth transition to green */
+  background: var(--tate-green) !important;
+
+  transform: translateY(-3px) scale(1.02);
+
+  box-shadow:
+    0 12px 40px rgba(0, 228, 99, 0.5),
+    0 0 60px rgba(0, 228, 99, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset !important;
+}
+
+.login-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-button:disabled {
+  background: rgba(0, 38, 92, 0.4) !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  opacity: 0.6;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .header-title {
+    font-size: 36px;
+  }
+
+  .login-header-content {
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-header {
+    height: 90px;
+  }
+
+  .login-header-content {
+    padding: 0 20px;
+    gap: 20px;
+  }
+
+  .header-logo-left,
+  .header-logo-right {
+    height: 45px;
+  }
+
+  .header-title {
+    font-size: 28px;
+  }
+
+  .login-content {
+    padding: 120px 16px 24px;
+  }
+
+  .login-card {
+    padding: 40px 28px;
+  }
+
+  .server-light {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-header {
+    height: 80px;
+  }
+
+  .login-header-content {
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .header-logo-left,
+  .header-logo-right {
+    height: 38px;
+  }
+
+  .header-title {
+    font-size: 20px;
+  }
+
+  .login-card {
+    padding: 32px 24px;
+  }
+
+  .login-button {
+    font-size: 16px !important;
+    padding: 14px 28px !important;
+  }
+
+  .server-light {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-contrast: high) {
+  .login-card {
+    border-width: 4px;
+  }
+
+  .login-input .MuiOutlinedInput-root fieldset {
+    border-width: 3px !important;
+  }
+}

@@ -7,6 +7,9 @@ import {
   UpdateCategory,
   EntityFormProps
 } from '../../../types/database';
+import { ModalHeader } from '../../common/modal/ModalHeader';
+import { ModalFooter } from '../../common/modal/ModalFooter';
+import { StandardButton } from '../../common/modal/StandardButton';
 import './EntityForm.css';
 
 const CategoryForm: React.FC<EntityFormProps<Category, CreateCategory, UpdateCategory>> = ({
@@ -145,17 +148,11 @@ const CategoryForm: React.FC<EntityFormProps<Category, CreateCategory, UpdateCat
           transition={{ duration: 0.2 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="entity-form-header">
-            <h2>{isCreating ? 'Add New Category' : 'Edit Category'}</h2>
-            <button
-              className="entity-form-close"
-              onClick={handleClose}
-              disabled={loading}
-              aria-label="Close form"
-            >
-              ✕
-            </button>
-          </div>
+          <ModalHeader
+            title={isCreating ? 'Add New Category' : 'Edit Category'}
+            onClose={handleClose}
+            variant="primary"
+          />
 
           <form onSubmit={handleSubmit} className="entity-form-content">
             <div className="form-grid">
@@ -265,34 +262,22 @@ const CategoryForm: React.FC<EntityFormProps<Category, CreateCategory, UpdateCat
                 {errors.submit}
               </div>
             )}
-
-            <div className="entity-form-actions">
-              <button
-                type="button"
-                className="database-btn database-btn-secondary"
-                onClick={handleClose}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="database-btn database-btn-primary"
-                disabled={loading || !isDirty}
-              >
-                {loading ? (
-                  <>
-                    <span className="loading-spinner"></span>
-                    {isCreating ? 'Creating...' : 'Saving...'}
-                  </>
-                ) : (
-                  <>
-                    {isCreating ? '+ Create Category' : '💾 Save Changes'}
-                  </>
-                )}
-              </button>
-            </div>
           </form>
+
+          <ModalFooter
+            primaryAction={
+              <StandardButton
+                type="submit"
+                variant="contained"
+                colorScheme="primary"
+                loading={loading}
+                disabled={!isDirty}
+                onClick={handleSubmit}
+              >
+                {isCreating ? '+ Create Category' : '💾 Save Changes'}
+              </StandardButton>
+            }
+          />
         </motion.div>
       </div>
     </AnimatePresence>

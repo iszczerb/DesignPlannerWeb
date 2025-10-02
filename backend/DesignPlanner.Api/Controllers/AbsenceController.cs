@@ -206,7 +206,7 @@ namespace DesignPlanner.Api.Controllers
 
         // POST: api/absence/records
         [HttpPost("records")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize] // Allow all authenticated users - service layer will enforce team members can only create for themselves
         public async Task<ActionResult<AbsenceRecordDto>> CreateAbsenceRecord([FromBody] CreateAbsenceRecordDto dto)
         {
             try

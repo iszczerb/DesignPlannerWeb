@@ -14,6 +14,8 @@ import { EmployeeCalendarDto, CalendarDayDto } from '../../types/schedule';
 import { ModalHeader, ModalFooter, StandardButton } from '../common/modal';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { useAppSelector } from '../../store/hooks';
+import { UserRole } from '../../types/auth';
 
 export enum LeaveType {
   AnnualLeave = 1,
@@ -52,6 +54,9 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
   employees,
   onSubmit
 }) => {
+  const { user } = useAppSelector((state) => state.auth);
+  const isTeamMember = user?.role === UserRole.TeamMember;
+
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [leaveType, setLeaveType] = useState<LeaveType>(LeaveType.AnnualLeave);
   const [duration, setDuration] = useState<LeaveDuration>(LeaveDuration.FullDay);
@@ -60,14 +65,22 @@ const SetLeaveModal: React.FC<SetLeaveModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      // Reset form when modal opens
-      setSelectedEmployeeIds([]);
+      // For team members, auto-select their own employee
+      if (isTeamMember && user?.employee?.id) {
+        console.log('🔍 Auto-selecting employee for team member:', user.employee.id);
+        setSelectedEmployeeIds([user.employee.id]);
+      } else {
+        // For managers/admins, reset selection
+        console.log('🔍 Manager/Admin - no auto-selection');
+        setSelectedEmployeeIds([]);
+      }
+
       setLeaveType(LeaveType.AnnualLeave);
       setDuration(LeaveDuration.FullDay);
       setSlot(Slot.Morning);
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, isTeamMember, user?.employee?.id]);
 
   if (!isOpen) return null;
 

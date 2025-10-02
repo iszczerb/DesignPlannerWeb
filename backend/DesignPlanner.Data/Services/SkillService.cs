@@ -77,26 +77,47 @@ namespace DesignPlanner.Data.Services
         }
 
         /// <summary>
-        /// Soft deletes a skill by setting IsActive to false
+        /// Permanently deletes a skill from the database
         /// </summary>
         /// <param name="skillId">ID of the skill to delete</param>
         /// <param name="deletedByUserId">ID of the user deleting the skill</param>
         /// <returns>True if deletion was successful</returns>
         public async Task<bool> DeleteSkillAsync(int skillId, int deletedByUserId)
         {
+            Console.WriteLine($"🗑️ DELETE SKILL - Attempting to delete skill ID: {skillId}");
+
             var skill = await _context.Skills.FirstOrDefaultAsync(s => s.Id == skillId);
             if (skill == null)
+            {
+                Console.WriteLine($"❌ DELETE SKILL - Skill ID {skillId} not found");
                 return false;
+            }
 
-            // Check if skill is assigned to any employees (all employees in DB are active)
+            Console.WriteLine($"🗑️ DELETE SKILL - Found skill: {skill.Name} (ID: {skillId})");
+
+            // Check if skill is assigned to any employees
             var hasEmployeeSkills = await _context.EmployeeSkills
                 .AnyAsync(es => es.SkillId == skillId);
+
+            Console.WriteLine($"🗑️ DELETE SKILL - Has employee skills: {hasEmployeeSkills}");
 
             if (hasEmployeeSkills)
                 throw new InvalidOperationException("Cannot delete skill that is assigned to employees. Please remove skill assignments first.");
 
-            skill.IsActive = false;
+            // Check if skill is assigned to any task types
+            var hasTaskTypeSkills = await _context.TaskTypeSkills
+                .AnyAsync(tts => tts.SkillId == skillId);
+
+            Console.WriteLine($"🗑️ DELETE SKILL - Has task type skills: {hasTaskTypeSkills}");
+
+            if (hasTaskTypeSkills)
+                throw new InvalidOperationException("Cannot delete skill that is assigned to task types. Please remove skill from task types first.");
+
+            // Permanently delete the skill
+            Console.WriteLine($"🗑️ DELETE SKILL - Removing skill from database...");
+            _context.Skills.Remove(skill);
             await _context.SaveChangesAsync();
+            Console.WriteLine($"✅ DELETE SKILL - Skill deleted successfully!");
 
             return true;
         }
@@ -121,6 +142,7 @@ namespace DesignPlanner.Data.Services
         /// <returns>Paginated skill list response</returns>
         public async Task<SkillListResponseDto> GetSkillsAsync(SkillQueryDto query, int requestingUserId)
         {
+            // Get all skills (no IsActive filter since we do permanent deletes)
             var queryable = _context.Skills.AsQueryable();
 
             // Apply filters
@@ -138,9 +160,10 @@ namespace DesignPlanner.Data.Services
                 queryable = queryable.Where(s => s.Category != null && s.Category.ToLower() == query.Category.ToLower());
             }
 
-            if (query.IsActive.HasValue)
+            // Allow explicit override to include inactive skills if needed
+            if (query.IsActive.HasValue && !query.IsActive.Value)
             {
-                queryable = queryable.Where(s => s.IsActive == query.IsActive.Value);
+                queryable = _context.Skills.Where(s => !s.IsActive);
             }
 
             // Apply sorting
@@ -275,7 +298,7 @@ namespace DesignPlanner.Data.Services
         /// <returns>True if the name is already in use</returns>
         public async Task<bool> IsSkillNameExistsAsync(string name, int? excludeSkillId = null)
         {
-            var query = _context.Skills.Where(s => s.Name.ToLower() == name.ToLower());
+            var query = _context.Skills.Where(s => s.Name.ToLower() == name.ToLower() && s.IsActive);
 
             if (excludeSkillId.HasValue)
             {

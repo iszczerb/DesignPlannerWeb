@@ -36,6 +36,8 @@ import {
   removeColumnGuides
 } from '../../utils/columnDropHelpers';
 import { createCardColorScheme, lightenColor } from '../../utils/colorUtils';
+import { useAppSelector } from '../../store/hooks';
+import { UserRole } from '../../types/auth';
 
 interface DayBasedCalendarGridProps {
   employees: EmployeeCalendarDto[];
@@ -62,6 +64,7 @@ interface DayBasedCalendarGridProps {
   onSetBankHoliday?: (date: Date) => void;
   onSetLeave?: (date: Date) => void;
   onClearBlocking?: (date: Date) => void;
+  onClearBankHoliday?: (date: Date) => void;
   onDayViewDetails?: (date: Date, day: CalendarDayDto) => void;
   selectedTaskIds?: number[];
   selectedSlots?: Array<{ date: Date; slot: Slot; employeeId: number; }>;
@@ -105,6 +108,7 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   onSetBankHoliday,
   onSetLeave,
   onClearBlocking,
+  onClearBankHoliday,
   onDayViewDetails,
   selectedTaskIds = [],
   selectedSlots = [],
@@ -119,6 +123,10 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
   onEmployeeDelete,
   onRefresh
 }) => {
+  // Get user role for permission checks
+  const { user } = useAppSelector((state) => state.auth);
+  const isManager = user && (user.role === UserRole.Admin || user.role === UserRole.Manager);
+
   // State management for hover and context menus
   const [hoveredSlot, setHoveredSlot] = useState<{
     employeeId: number;
@@ -2779,15 +2787,46 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
 
               const dayDate = new Date(day.date);
 
-              // Check if there are any blocking items on this day
-              const hasBlocking = employees.some(emp => {
+              // Check if there are bank holidays on this day
+              const hasBankHoliday = employees.some(emp => {
                 const dayAssignment = emp.dayAssignments.find(assignment =>
                   new Date(assignment.date).toDateString() === dayDate.toDateString()
                 );
-                return dayAssignment?.isHoliday ||
-                       dayAssignment?.leave ||
-                       dayAssignment?.morningSlot?.leave ||
-                       dayAssignment?.afternoonSlot?.leave;
+                // Check if isHoliday flag is set OR if leave type is BankHoliday (4)
+                return dayAssignment?.isHoliday === true ||
+                       dayAssignment?.leave?.leaveType === 4;
+              });
+
+              // Check if there are leaves (not bank holidays) on this day
+              const hasLeave = employees.some(emp => {
+                const dayAssignment = emp.dayAssignments.find(assignment =>
+                  new Date(assignment.date).toDateString() === dayDate.toDateString()
+                );
+
+                // Skip if this day is a bank holiday
+                if (dayAssignment?.isHoliday) {
+                  return false;
+                }
+
+                // Check for non-bank-holiday leaves
+                const hasFullDayLeave = dayAssignment?.leave && dayAssignment.leave.leaveType !== 4; // 4 = BankHoliday
+                const hasMorningLeave = dayAssignment?.morningSlot?.leave && dayAssignment.morningSlot.leave.leaveType !== 4;
+                const hasAfternoonLeave = dayAssignment?.afternoonSlot?.leave && dayAssignment.afternoonSlot.leave.leaveType !== 4;
+
+                return hasFullDayLeave || hasMorningLeave || hasAfternoonLeave;
+              });
+
+              // Check if there are any tasks on this day
+              const hasTasks = employees.some(emp => {
+                const dayAssignment = emp.dayAssignments.find(assignment =>
+                  new Date(assignment.date).toDateString() === dayDate.toDateString()
+                );
+
+                // Check if there are tasks in morning or afternoon slots
+                const hasMorningTasks = dayAssignment?.morningSlot?.tasks && dayAssignment.morningSlot.tasks.length > 0;
+                const hasAfternoonTasks = dayAssignment?.afternoonSlot?.tasks && dayAssignment.afternoonSlot.tasks.length > 0;
+
+                return hasMorningTasks || hasAfternoonTasks;
               });
 
               // Check if this day is selected and determine count for context menu
@@ -2810,26 +2849,41 @@ const DayBasedCalendarGrid: React.FC<DayBasedCalendarGridProps> = ({
                   action: () => onDayViewDetails?.(dayDate, day),
                   description: 'View comprehensive statistics and breakdown for this day'
                 },
-                {
+                // Only show Set Bank Holiday when:
+                // - User is manager/admin
+                // - NO bank holiday exists
+                // - NO tasks exist
+                // - NO leaves exist
+                ...(isManager && !hasBankHoliday && !hasTasks && !hasLeave ? [{
                   label: `🏦 Set Bank Holiday${daysCount > 1 ? ` (${daysCount})` : ''}`,
                   action: () => onSetBankHoliday?.(dayDate),
                   description: daysCount > 1
                     ? `Block all slots for all team members on ${daysCount} selected days`
                     : 'Block all slots for all team members on this day'
-                },
-                {
+                }] : []),
+                // Only show Set Leave when NO bank holiday exists
+                ...(!hasBankHoliday ? [{
                   label: `✈️ Set Leave${daysCount > 1 ? ` (${daysCount})` : ''}`,
                   action: () => onSetLeave?.(dayDate),
                   description: daysCount > 1
                     ? `Set leave for specific team members on ${daysCount} selected days`
                     : 'Set leave for specific team members'
-                },
-                ...(hasBlocking ? [{
+                }] : []),
+                // Show Clear Bank Holiday only if there are bank holidays (managers/admins only)
+                ...(hasBankHoliday && isManager ? [{
+                  label: `🏦 Clear Bank Holiday${daysCount > 1 ? ` (${daysCount})` : ''}`,
+                  action: () => onClearBankHoliday?.(dayDate),
+                  description: daysCount > 1
+                    ? `Remove bank holidays from ${daysCount} selected days`
+                    : 'Remove bank holiday from this day'
+                }] : []),
+                // Show Clear Blocking only if there are leaves (not bank holidays) (managers/admins only)
+                ...(hasLeave && isManager ? [{
                   label: `🧹 Clear Blocking${daysCount > 1 ? ` (${daysCount})` : ''}`,
                   action: () => onClearBlocking?.(dayDate),
                   description: daysCount > 1
-                    ? `Remove all leave and holidays from ${daysCount} selected days`
-                    : 'Remove all leave and holidays from this day'
+                    ? `Remove selected leaves from ${daysCount} selected days`
+                    : 'Remove selected leaves from this day'
                 }] : [])
               ];
 

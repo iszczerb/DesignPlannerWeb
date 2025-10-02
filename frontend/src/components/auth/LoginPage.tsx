@@ -1,51 +1,95 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Box,
-  CardContent,
   TextField,
   Button,
-  Typography,
   Alert,
+  CircularProgress,
   InputAdornment,
   IconButton,
-  FormControlLabel,
-  Checkbox,
-  Container,
-  Paper,
-  CircularProgress,
 } from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff,
-  Person,
-  Lock,
-} from '@mui/icons-material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { login, clearError } from '../../store/slices/authSlice';
 import type { LoginRequest } from '../../types/auth';
+import './LoginPage.css';
+
+interface ServerLight {
+  id: number;
+  top: number;
+  left: number;
+  animationDelay: number;
+}
 
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const [formData, setFormData] = useState<LoginRequest>({
     username: '',
     password: '',
-    rememberMe: false,
+    rememberMe: false, // Not used, but kept for API compatibility
   });
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [serverLights, setServerLights] = useState<ServerLight[]>([]);
 
-  // Clear error when component mounts
+  // Generate FIXED random positions - Set once, never change, only CSS animation for blinking
+  const [lightsInitialized, setLightsInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!lightsInitialized) {
+      // 35 lights spread across the entire screen - FIXED positions, only blink
+      const fixedLights: ServerLight[] = [
+        { id: 0, top: 8, left: 5, animationDelay: 0 },
+        { id: 1, top: 15, left: 12, animationDelay: 1.3 },
+        { id: 2, top: 22, left: 19, animationDelay: 2.7 },
+        { id: 3, top: 28, left: 27, animationDelay: 4.1 },
+        { id: 4, top: 35, left: 34, animationDelay: 5.5 },
+        { id: 5, top: 42, left: 41, animationDelay: 0.9 },
+        { id: 6, top: 48, left: 48, animationDelay: 2.3 },
+        { id: 7, top: 55, left: 55, animationDelay: 3.7 },
+        { id: 8, top: 62, left: 62, animationDelay: 5.1 },
+        { id: 9, top: 68, left: 69, animationDelay: 1.5 },
+        { id: 10, top: 75, left: 76, animationDelay: 2.9 },
+        { id: 11, top: 82, left: 83, animationDelay: 4.3 },
+        { id: 12, top: 88, left: 90, animationDelay: 0.7 },
+        { id: 13, top: 12, left: 88, animationDelay: 2.1 },
+        { id: 14, top: 25, left: 72, animationDelay: 3.5 },
+        { id: 15, top: 38, left: 85, animationDelay: 4.9 },
+        { id: 16, top: 52, left: 8, animationDelay: 1.1 },
+        { id: 17, top: 65, left: 15, animationDelay: 2.5 },
+        { id: 18, top: 78, left: 22, animationDelay: 3.9 },
+        { id: 19, top: 85, left: 36, animationDelay: 5.3 },
+        { id: 20, top: 18, left: 58, animationDelay: 0.5 },
+        { id: 21, top: 32, left: 65, animationDelay: 1.9 },
+        { id: 22, top: 45, left: 78, animationDelay: 3.3 },
+        { id: 23, top: 58, left: 92, animationDelay: 4.7 },
+        { id: 24, top: 72, left: 44, animationDelay: 1.7 },
+        { id: 25, top: 10, left: 38, animationDelay: 3.1 },
+        { id: 26, top: 92, left: 52, animationDelay: 4.5 },
+        { id: 27, top: 5, left: 25, animationDelay: 0.3 },
+        { id: 28, top: 50, left: 30, animationDelay: 1.8 },
+        { id: 29, top: 40, left: 95, animationDelay: 3.2 },
+        { id: 30, top: 70, left: 50, animationDelay: 4.6 },
+        { id: 31, top: 30, left: 10, animationDelay: 2.0 },
+        { id: 32, top: 60, left: 88, animationDelay: 3.4 },
+        { id: 33, top: 20, left: 45, animationDelay: 4.8 },
+        { id: 34, top: 80, left: 65, animationDelay: 1.2 },
+      ];
+
+      setServerLights(fixedLights);
+      setLightsInitialized(true);
+    }
+  }, [lightsInitialized]);
+
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       const from = (location.state as any)?.from?.pathname || '/schedule';
@@ -72,16 +116,14 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     try {
       await dispatch(login(formData)).unwrap();
-      // Navigation will happen automatically due to the useEffect above
     } catch (error) {
-      // Error is handled by the Redux slice
       console.error('Login error:', error);
     }
   };
@@ -93,7 +135,6 @@ const LoginPage: React.FC = () => {
       [name]: type === 'checkbox' ? checked : value,
     }));
 
-    // Clear validation error when user starts typing
     if (validationErrors[name]) {
       setValidationErrors(prev => ({
         ...prev,
@@ -107,250 +148,121 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        py: 3,
-        px: 2,
-      }}
-    >
-      <Container component="main" maxWidth="sm">
-        <Paper
-          elevation={12}
-          sx={{
-            width: '100%',
-            maxWidth: { xs: '100%', sm: 480, md: 500 },
-            borderRadius: 4,
-            overflow: 'hidden',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), 0 15px 25px rgba(0, 0, 0, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            animation: 'fadeInUp 0.6s ease-out',
-            '@keyframes fadeInUp': {
-              '0%': {
-                opacity: 0,
-                transform: 'translateY(20px)',
-              },
-              '100%': {
-                opacity: 1,
-                transform: 'translateY(0)',
-              },
-            },
-          }}
-        >
-          {/* Header */}
-          <Box
-            sx={{
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%)',
-              color: 'white',
-              p: { xs: 3, sm: 4, md: 4 },
-              textAlign: 'center',
-              position: 'relative',
+    <div className="login-page">
+      {/* Datacenter Animated Background */}
+      <div className="datacenter-background">
+        {/* Server Rack Lines */}
+        <div className="server-rack rack-1"></div>
+        <div className="server-rack rack-2"></div>
+        <div className="server-rack rack-3"></div>
+        <div className="server-rack rack-4"></div>
+        <div className="server-rack rack-5"></div>
+
+        {/* Randomly Positioned Flashing Server Lights */}
+        {serverLights.map((light, index) => (
+          <div
+            key={`${light.id}-${index}`}
+            className="server-light"
+            style={{
+              top: `${light.top}%`,
+              left: `${light.left}%`,
+              animationDelay: `${light.animationDelay}s`,
             }}
-          >
-            {/* Tate Logo */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top: { xs: 20, sm: 24 },
-                right: { xs: 20, sm: 24 },
-                opacity: 0.9,
+          />
+        ))}
+
+        {/* Data Flow Lines */}
+        <div className="data-line line-1"></div>
+        <div className="data-line line-2"></div>
+        <div className="data-line line-3"></div>
+      </div>
+
+      {/* Top Header */}
+      <div className="login-header">
+        <div className="login-header-content">
+          <img
+            src="/assets/logos/design-planner-logo.png"
+            alt="Design Planner"
+            className="header-logo-left"
+          />
+          <h1 className="header-title">Design Planner</h1>
+          <img
+            src="/assets/logos/tate-logo.png"
+            alt="Tate"
+            className="header-logo-right"
+          />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="login-content">
+        <div className="login-card">
+          {/* Error Alert */}
+          {error && (
+            <Alert severity="error" className="login-alert">
+              {error}
+            </Alert>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="login-form">
+            <TextField
+              fullWidth
+              label="Username"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              error={!!validationErrors.username}
+              helperText={validationErrors.username}
+              className="login-input"
+              variant="outlined"
+            />
+
+            <TextField
+              fullWidth
+              label="Password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={handleInputChange}
+              error={!!validationErrors.password}
+              helperText={validationErrors.password}
+              className="login-input"
+              variant="outlined"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={togglePasswordVisibility}
+                      edge="end"
+                      className="password-toggle-icon"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
               }}
+            />
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={isLoading}
+              className="login-button"
             >
-              <img
-                src="/assets/logos/tate-logo.png"
-                alt="Tate Logo"
-                style={{
-                  height: '36px',
-                  filter: 'brightness(0) invert(1)',
-                }}
-              />
-            </Box>
-
-            {/* DesignPlanner Logo */}
-            <Box sx={{ mb: 3, mt: 2 }}>
-              <img
-                src="/assets/logos/design-planner-logo.png"
-                alt="DesignPlanner Logo"
-                style={{
-                  height: '100px',
-                  width: '100px',
-                  filter: 'brightness(0) invert(1)',
-                }}
-              />
-            </Box>
-
-            <Typography
-              variant="h3"
-              component="h1"
-              fontWeight="700"
-              gutterBottom
-              sx={{
-                fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-                letterSpacing: '-0.02em',
-                fontSize: { xs: '1.75rem', sm: '2.125rem', md: '3rem' },
-              }}
-            >
-              Design Planner
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                opacity: 0.9,
-                fontWeight: 400,
-              }}
-            >
-              Team Schedule Management Portal
-            </Typography>
-          </Box>
-
-          <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 } }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                label="Username"
-                name="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                error={!!validationErrors.username}
-                helperText={validationErrors.username}
-                margin="normal"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Person sx={{ color: '#1e40af' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  mb: 3,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    '&:hover fieldset': {
-                      borderColor: '#3b82f6',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#1e40af',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#1e40af',
-                  },
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="Password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={handleInputChange}
-                error={!!validationErrors.password}
-                helperText={validationErrors.password}
-                margin="normal"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock sx={{ color: '#1e40af' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={togglePasswordVisibility}
-                        edge="end"
-                        sx={{ color: '#6b7280' }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  mb: 3,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    '&:hover fieldset': {
-                      borderColor: '#3b82f6',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#1e40af',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#1e40af',
-                  },
-                }}
-              />
-
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    name="rememberMe"
-                    checked={formData.rememberMe}
-                    onChange={handleInputChange}
-                    sx={{
-                      color: '#6b7280',
-                      '&.Mui-checked': {
-                        color: '#1e40af',
-                      },
-                    }}
-                  />
-                }
-                label={
-                  <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500 }}>
-                    Keep me signed in
-                  </Typography>
-                }
-                sx={{ mb: 4 }}
-              />
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                size="large"
-                disabled={isLoading}
-                sx={{
-                  py: 1.5,
-                  background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)',
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 8px 25px rgba(30, 58, 138, 0.3)',
-                  },
-                  mb: 3,
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease-in-out',
-                }}
-              >
-                {isLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  'Sign In'
-                )}
-              </Button>
-
-            </form>
-          </CardContent>
-        </Paper>
-      </Container>
-
-    </Box>
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                'Log In'
+              )}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 };
 

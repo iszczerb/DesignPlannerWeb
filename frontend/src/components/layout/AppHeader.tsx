@@ -20,7 +20,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  Tooltip
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -36,7 +37,7 @@ import {
   ExitToApp as LogoutIcon,
   Person as PersonIcon,
   Menu as MenuIcon,
-  ViewWeek as ViewIcon,
+  Visibility as ViewIcon,
   KeyboardArrowDown as ArrowDownIcon,
   DateRange as DateRangeIcon
 } from '@mui/icons-material';
@@ -189,27 +190,27 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onLogoClick
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg')); // < 1200px: icon-only for Database, Skills, Absence
+  const isVeryCondensed = useMediaQuery(theme.breakpoints.down('md')); // < 900px: icon-only for Dashboard and View too
   
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
-  const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
   const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const userMenuOpen = Boolean(userMenuAnchor);
-  const mobileMenuOpen = Boolean(mobileMenuAnchor);
   const viewMenuOpen = Boolean(viewMenuAnchor);
   const navigationItems = [
-    { id: 'database', label: 'Database', icon: DatabaseIcon },
-    { id: 'skills', label: 'Skills', icon: SkillsIcon },
-    { id: 'absence', label: 'Absence', icon: AbsenceIcon },
+    { id: 'database', label: 'Database', icon: DatabaseIcon, roles: ['Manager', 'Admin'] },
+    { id: 'skills', label: 'Skills', icon: SkillsIcon, roles: ['Manager', 'Admin'] },
+    { id: 'absence', label: 'Absence', icon: AbsenceIcon, roles: ['Manager', 'Admin', 'TeamMember'] },
   ];
 
   const dashboardItem = { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon };
 
-  // Navigation items without dashboard (dashboard is positioned separately)
-  const mainNavigationItems = navigationItems;
-  const burgerMenuItems = [dashboardItem, ...navigationItems];
+  // Filter navigation items based on user role
+  const mainNavigationItems = navigationItems.filter(item =>
+    item.roles.includes(userRole)
+  );
 
   const viewTypes: ('Daily' | 'Weekly' | 'Biweekly' | 'Monthly')[] = ['Daily', 'Weekly', 'Biweekly', 'Monthly'];
 
@@ -229,14 +230,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const handleMenuItemClick = (action: () => void | undefined) => {
     handleUserMenuClose();
     action?.();
-  };
-
-  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMobileMenuAnchor(event.currentTarget);
-  };
-
-  const handleMobileMenuClose = () => {
-    setMobileMenuAnchor(null);
   };
 
   const handleViewMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -520,81 +513,105 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
         {/* Navigation Buttons - moved to right side */}
         <NavigationContainer>
-          {/* Burger menu icon on mobile - positioned before navigation items */}
-          {isMobile && (
-            <IconButton
-              onClick={handleMobileMenuOpen}
-              sx={{
-                color: 'var(--dp-neutral-800)',
-                marginRight: 1,
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
-
-          {/* Navigation items - show all on desktop, hide on mobile */}
-          {!isMobile && mainNavigationItems.map((item) => {
+          {/* Navigation items - show with text on desktop, icon-only on mobile with tooltips */}
+          {mainNavigationItems.map((item) => {
             const IconComponent = item.icon;
             const isActive = currentPage === item.id;
 
             return (
-              <NavButton
-                key={item.id}
-                startIcon={<IconComponent />}
-                className={isActive ? 'active' : ''}
-                onClick={() => handleNavigation(item.id)}
-              >
-                {item.label}
-              </NavButton>
+              <Tooltip key={item.id} title={item.label} arrow placement="bottom">
+                <NavButton
+                  startIcon={isMobile ? undefined : <IconComponent />}
+                  className={isActive ? 'active' : ''}
+                  onClick={() => handleNavigation(item.id)}
+                  sx={isMobile ? {
+                    minWidth: '44px',
+                    padding: 'var(--dp-space-2)',
+                    '& .MuiButton-startIcon': {
+                      margin: 0,
+                    }
+                  } : {}}
+                >
+                  {isMobile ? <IconComponent /> : item.label}
+                </NavButton>
+              </Tooltip>
             );
           })}
 
-          {/* Dashboard button - positioned just before View Selector */}
-          {!isMobile && (() => {
+          {/* Dashboard button - Text on desktop, icon-only on very condensed */}
+          {(() => {
             const IconComponent = dashboardItem.icon;
             const isActive = currentPage === dashboardItem.id;
 
             return (
-              <NavButton
-                key={dashboardItem.id}
-                startIcon={<IconComponent />}
-                className={isActive ? 'active' : ''}
-                onClick={() => handleNavigation(dashboardItem.id)}
-              >
-                {dashboardItem.label}
-              </NavButton>
+              <Tooltip title={isVeryCondensed ? dashboardItem.label : ''} arrow placement="bottom">
+                <NavButton
+                  key={dashboardItem.id}
+                  startIcon={isVeryCondensed ? undefined : <IconComponent />}
+                  className={isActive ? 'active' : ''}
+                  onClick={() => handleNavigation(dashboardItem.id)}
+                  sx={isVeryCondensed ? {
+                    minWidth: '44px',
+                    padding: 'var(--dp-space-2)',
+                    '& .MuiButton-startIcon': {
+                      margin: 0,
+                    }
+                  } : {}}
+                >
+                  {isVeryCondensed ? <IconComponent /> : dashboardItem.label}
+                </NavButton>
+              </Tooltip>
             );
           })()}
         </NavigationContainer>
 
 
-        {/* View Button - Always Visible */}
-        <Button
-          startIcon={<ViewIcon />}
-          endIcon={<ArrowDownIcon />}
-          onClick={handleViewMenuOpen}
-          sx={{
-            color: 'var(--dp-neutral-800)',
-            fontWeight: 'var(--dp-font-weight-medium)',
-            fontSize: 'var(--dp-text-body-medium)',
-            fontFamily: 'var(--dp-font-family-primary)',
-            textTransform: 'none',
-            borderRadius: 'var(--dp-radius-md)',
-            padding: 'var(--dp-space-2) var(--dp-space-4)',
-            marginRight: 2,
-            border: '1px solid var(--dp-neutral-200)',
-            backgroundColor: 'var(--dp-neutral-0)',
-            transition: 'var(--dp-transition-fast)',
-            '&:hover': {
-              backgroundColor: 'var(--dp-neutral-50)',
-              borderColor: 'var(--dp-neutral-300)',
-              color: 'var(--dp-neutral-900)',
-            },
-          }}
-        >
-          {currentViewType}
-        </Button>
+        {/* View Button - Text on desktop, icon-only on very condensed */}
+        <Tooltip title={isVeryCondensed ? `View: ${currentViewType}` : ''} arrow placement="bottom">
+          <Button
+            startIcon={isVeryCondensed ? undefined : <ViewIcon />}
+            endIcon={isVeryCondensed ? undefined : <ArrowDownIcon />}
+            onClick={handleViewMenuOpen}
+            sx={isVeryCondensed ? {
+              minWidth: '44px',
+              color: 'var(--dp-neutral-800)',
+              fontWeight: 'var(--dp-font-weight-medium)',
+              fontSize: 'var(--dp-text-body-medium)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              textTransform: 'none',
+              borderRadius: 'var(--dp-radius-md)',
+              padding: 'var(--dp-space-2)',
+              marginRight: 2,
+              border: '1px solid var(--dp-neutral-200)',
+              backgroundColor: 'var(--dp-neutral-0)',
+              transition: 'var(--dp-transition-fast)',
+              '&:hover': {
+                backgroundColor: 'var(--dp-neutral-50)',
+                borderColor: 'var(--dp-neutral-300)',
+                color: 'var(--dp-neutral-900)',
+              },
+            } : {
+              color: 'var(--dp-neutral-800)',
+              fontWeight: 'var(--dp-font-weight-medium)',
+              fontSize: 'var(--dp-text-body-medium)',
+              fontFamily: 'var(--dp-font-family-primary)',
+              textTransform: 'none',
+              borderRadius: 'var(--dp-radius-md)',
+              padding: 'var(--dp-space-2) var(--dp-space-4)',
+              marginRight: 2,
+              border: '1px solid var(--dp-neutral-200)',
+              backgroundColor: 'var(--dp-neutral-0)',
+              transition: 'var(--dp-transition-fast)',
+              '&:hover': {
+                backgroundColor: 'var(--dp-neutral-50)',
+                borderColor: 'var(--dp-neutral-300)',
+                color: 'var(--dp-neutral-900)',
+              },
+            }}
+          >
+            {isVeryCondensed ? <ViewIcon /> : currentViewType}
+          </Button>
+        </Tooltip>
 
         {/* User Section */}
         <UserSection>
@@ -731,64 +748,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             </ListItemIcon>
             Logout
           </MenuItem>
-        </Menu>
-
-        {/* Mobile Navigation Menu */}
-        <Menu
-          anchorEl={mobileMenuAnchor}
-          open={mobileMenuOpen}
-          onClose={handleMobileMenuClose}
-          PaperProps={{
-            elevation: 3,
-            sx: {
-              overflow: 'visible',
-              filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
-              mt: 1.5,
-              borderRadius: '8px',
-              minWidth: 180,
-              backgroundColor: 'var(--dp-neutral-0)',
-              border: '1px solid var(--dp-neutral-200)',
-              '& .MuiMenuItem-root': {
-                color: 'var(--dp-neutral-700)',
-                '&:hover': {
-                  backgroundColor: 'var(--dp-neutral-100)',
-                },
-              },
-            },
-          }}
-          transformOrigin={{ horizontal: 'left', vertical: 'top' }}
-          anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
-        >
-          {/* Only show non-Dashboard items in burger menu */}
-          {burgerMenuItems.map((item) => {
-            const IconComponent = item.icon;
-            const isActive = currentPage === item.id;
-            
-            return (
-              <MenuItem 
-                key={item.id}
-                onClick={() => {
-                  handleMobileMenuClose();
-                  handleNavigation(item.id);
-                }}
-                sx={{ 
-                  py: 1, 
-                  px: 2,
-                  backgroundColor: isActive ? alpha('#0ea5e9', 0.1) : 'transparent',
-                  color: isActive ? 'var(--dp-primary-500)' : '#374151',
-                  '&:hover': {
-                    backgroundColor: alpha('#0ea5e9', 0.1),
-                    color: 'var(--dp-primary-500)',
-                  },
-                }}
-              >
-                <ListItemIcon>
-                  <IconComponent fontSize="small" sx={{ color: isActive ? 'var(--dp-primary-500)' : 'var(--dp-neutral-500)' }} />
-                </ListItemIcon>
-                {item.label}
-              </MenuItem>
-            );
-          })}
         </Menu>
 
         {/* View Type Menu */}

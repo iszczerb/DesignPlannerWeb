@@ -12,6 +12,9 @@ import {
   Team
 } from '../../../types/database';
 import { databaseService } from '../../../services/databaseService';
+import { ModalHeader } from '../../common/modal/ModalHeader';
+import { ModalFooter } from '../../common/modal/ModalFooter';
+import { StandardButton } from '../../common/modal/StandardButton';
 import './EntityForm.css';
 
 const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = ({
@@ -255,10 +258,11 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="entity-form-header">
-            <h2>{isCreating ? 'Add New User' : 'Edit User'}</h2>
-            <button className="entity-form-close" onClick={handleClose} disabled={loading}>✕</button>
-          </div>
+          <ModalHeader
+            title={isCreating ? 'Add New User' : 'Edit User'}
+            onClose={handleClose}
+            variant="primary"
+          />
 
           <form onSubmit={handleSubmit} className="entity-form-content">
             <div className="form-grid">
@@ -396,23 +400,22 @@ const UserForm: React.FC<EntityFormProps<User, CreateUserDto, UpdateUserDto>> = 
             {errors.submit && (
               <div className="form-error form-error-submit">{errors.submit}</div>
             )}
-
-            <div className="entity-form-actions">
-              <button type="button" className="database-btn database-btn-secondary" onClick={handleClose} disabled={loading || loadingData}>
-                Cancel
-              </button>
-              <button type="submit" className="database-btn database-btn-primary" disabled={loading || loadingData || !isDirty}>
-                {loading ? (
-                  <>
-                    <span className="loading-spinner"></span>
-                    {isCreating ? 'Creating...' : 'Saving...'}
-                  </>
-                ) : (
-                  isCreating ? '+ Create User' : '💾 Save Changes'
-                )}
-              </button>
-            </div>
           </form>
+
+          <ModalFooter
+            primaryAction={
+              <StandardButton
+                type="submit"
+                variant="contained"
+                colorScheme="primary"
+                loading={loading}
+                disabled={!isDirty || loadingData}
+                onClick={handleSubmit}
+              >
+                {isCreating ? '+ Create User' : '💾 Save Changes'}
+              </StandardButton>
+            }
+          />
         </motion.div>
       </div>
     </AnimatePresence>

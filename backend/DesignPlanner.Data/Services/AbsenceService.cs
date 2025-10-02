@@ -86,8 +86,26 @@ namespace DesignPlanner.Data.Services
 
         public async Task<List<AbsenceAllocationDto>> GetTeamAllocationsAsync(int userId, int? teamId = null)
         {
-            var managedEmployees = await _authService.GetManagedEmployeesAsync(userId);
             var currentYear = DateTime.Now.Year;
+            var currentUser = await _context.Users.Include(u => u.Employee).FirstOrDefaultAsync(u => u.Id == userId);
+
+            Console.WriteLine($"🔍🔍 GetTeamAllocationsAsync - userId: {userId}");
+            Console.WriteLine($"🔍🔍 GetTeamAllocationsAsync - currentUser: {currentUser?.Username}");
+            Console.WriteLine($"🔍🔍 GetTeamAllocationsAsync - currentUser.Employee: {currentUser?.Employee?.Id}");
+
+            // Get managed employees (for managers/admins)
+            var managedEmployees = await _authService.GetManagedEmployeesAsync(userId);
+
+            Console.WriteLine($"🔍🔍 GetTeamAllocationsAsync - managedEmployees count BEFORE: {managedEmployees.Count}");
+
+            // If user is not a manager and has no managed employees, return only their own allocation
+            if (managedEmployees.Count == 0 && currentUser?.Employee != null)
+            {
+                Console.WriteLine($"🔍🔍 GetTeamAllocationsAsync - Adding current user's employee to list");
+                managedEmployees = new List<Employee> { currentUser.Employee };
+            }
+
+            Console.WriteLine($"🔍🔍 GetTeamAllocationsAsync - managedEmployees count AFTER: {managedEmployees.Count}");
 
             // Filter by team if specified
             if (teamId.HasValue)
@@ -97,7 +115,7 @@ namespace DesignPlanner.Data.Services
 
             var result = new List<AbsenceAllocationDto>();
 
-            // For each managed employee, get or create their allocation
+            // For each managed employee (or own employee), get or create their allocation
             foreach (var employee in managedEmployees)
             {
                 var allocation = await _context.AbsenceAllocations
@@ -232,7 +250,11 @@ namespace DesignPlanner.Data.Services
 
         public async Task<AbsenceRecordDto> CreateAbsenceRecordAsync(int userId, CreateAbsenceRecordDto dto)
         {
-            if (!await _authService.CanManageEmployeeAsync(userId, dto.EmployeeId))
+            // Allow managers/admins to create for anyone they manage, OR allow users to create for themselves
+            var currentUserEmployee = await _context.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
+            var isCreatingForSelf = currentUserEmployee != null && currentUserEmployee.Id == dto.EmployeeId;
+
+            if (!isCreatingForSelf && !await _authService.CanManageEmployeeAsync(userId, dto.EmployeeId))
                 throw new UnauthorizedAccessException("Cannot manage this employee's absences");
 
             // Validate allocation if annual leave

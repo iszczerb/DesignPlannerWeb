@@ -8,6 +8,9 @@ import {
   SkillCategory,
   SKILL_CATEGORY_LABELS
 } from '../../../types/database';
+import { ModalHeader } from '../../common/modal/ModalHeader';
+import { ModalFooter } from '../../common/modal/ModalFooter';
+import { StandardButton } from '../../common/modal/StandardButton';
 import './EntityForm.css';
 
 const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>> = ({
@@ -90,13 +93,7 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
   };
 
   const handleClose = () => {
-    if (isDirty && !loading) {
-      if (window.confirm('You have unsaved changes. Are you sure you want to close?')) {
-        onClose();
-      }
-    } else {
-      onClose();
-    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -111,10 +108,11 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="entity-form-header">
-            <h2>{isCreating ? 'Add New Skill' : 'Edit Skill'}</h2>
-            <button className="entity-form-close" onClick={handleClose} disabled={loading}>✕</button>
-          </div>
+          <ModalHeader
+            title={isCreating ? 'Add New Skill' : 'Edit Skill'}
+            onClose={handleClose}
+            variant="primary"
+          />
 
           <form onSubmit={handleSubmit} className="entity-form-content">
             <div className="form-grid">
@@ -169,23 +167,22 @@ const SkillForm: React.FC<EntityFormProps<Skill, CreateSkillDto, UpdateSkillDto>
             {errors.submit && (
               <div className="form-error form-error-submit">{errors.submit}</div>
             )}
-
-            <div className="entity-form-actions">
-              <button type="button" className="database-btn database-btn-secondary" onClick={handleClose} disabled={loading}>
-                Cancel
-              </button>
-              <button type="submit" className="database-btn database-btn-primary" disabled={loading || !isDirty}>
-                {loading ? (
-                  <>
-                    <span className="loading-spinner"></span>
-                    {isCreating ? 'Creating...' : 'Saving...'}
-                  </>
-                ) : (
-                  isCreating ? '+ Create Skill' : '💾 Save Changes'
-                )}
-              </button>
-            </div>
           </form>
+
+          <ModalFooter
+            primaryAction={
+              <StandardButton
+                type="submit"
+                variant="contained"
+                colorScheme="primary"
+                loading={loading}
+                disabled={!isDirty}
+                onClick={handleSubmit}
+              >
+                {isCreating ? '+ Create Skill' : '💾 Save Changes'}
+              </StandardButton>
+            }
+          />
         </motion.div>
       </div>
     </AnimatePresence>

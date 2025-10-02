@@ -121,12 +121,19 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
   useEffect(() => {
     if (open) {
       loadTeamAllocations(); // Load team allocations for all tabs
+    } else {
+      // Close edit mode when modal closes
+      setEditingAllocation(null);
+      setEditValues(null);
     }
   }, [open]);
 
   // Refresh data when tab changes to ensure fresh data
   useEffect(() => {
     if (open) {
+      // Close edit mode when switching tabs
+      setEditingAllocation(null);
+      setEditValues(null);
       refreshAllData();
     }
   }, [activeTab, open]);
@@ -149,10 +156,20 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
     setLoadingAllocations(true);
     setError(null);
     try {
+      console.log('🔍 Loading team allocations...');
+      console.log('👤 Current user:', user);
+      console.log('🎭 Is Manager:', isManager);
+
       const allocations = await absenceService.getTeamAllocations();
+
+      console.log('📦 Received allocations:', allocations);
+      console.log('📊 Allocations count:', allocations?.length || 0);
+
+      // Backend now handles filtering: managers see their team, team members see their own
       setTeamAllocations(allocations || []);
     } catch (error: any) {
-      console.error('Error loading team allocations:', error);
+      console.error('❌ Error loading team allocations:', error);
+      console.error('❌ Error details:', error.response?.data);
       setError('Failed to load team allocations');
     } finally {
       setLoadingAllocations(false);
@@ -592,7 +609,11 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
 
     return (
       <Card key={`${allocation.id}-${absenceType}`} sx={{
-        height: '100%',
+        width: '100%',
+        height: absenceType === 'annual' ? '180px' : '140px',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
         border: '1px solid var(--dp-neutral-200)',
         borderRadius: 'var(--dp-radius-lg)',
         boxShadow: 'var(--dp-shadow-sm)',
@@ -603,53 +624,66 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
           transform: 'translateY(-2px)',
         }
       }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, gap: 2 }}>
-            <Box>
-              <Typography variant="h6" gutterBottom sx={{
+        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, justifyContent: 'space-between' }}>
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5, gap: 2 }}>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="h6" sx={{
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  fontWeight: 'var(--dp-font-weight-bold)',
+                  color: 'var(--dp-neutral-800)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  mb: 0.5,
+                  fontSize: '1rem'
+                }}>
+                  {allocation.employeeName}
+                </Typography>
+                <Typography variant="body2" sx={{
+                  color: 'var(--dp-neutral-600)',
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: '0.8rem'
+                }}>
+                  {allocation.employeePosition}
+                </Typography>
+              </Box>
+              <Typography variant="h4" sx={{
+                color: typeData.color === 'primary' ? 'var(--dp-primary-600)' :
+                       typeData.color === 'warning' ? 'var(--dp-warning-600)' :
+                       'var(--dp-info-600)',
                 fontFamily: 'var(--dp-font-family-primary)',
                 fontWeight: 'var(--dp-font-weight-bold)',
-                color: 'var(--dp-neutral-800)'
+                fontSize: '1.75rem'
               }}>
-                {allocation.employeeName}
-              </Typography>
-              <Typography variant="body2" sx={{
-                color: 'var(--dp-neutral-600)',
-                fontFamily: 'var(--dp-font-family-primary)'
-              }}>
-                {allocation.employeePosition}
+                {absenceType === 'annual' ? formatDaysDisplay(typeData.remaining) : formatDaysDisplay(typeData.used)}
               </Typography>
             </Box>
-            <Typography variant="h4" sx={{
-              color: typeData.color === 'primary' ? 'var(--dp-primary-600)' :
-                     typeData.color === 'warning' ? 'var(--dp-warning-600)' :
-                     'var(--dp-info-600)',
-              fontFamily: 'var(--dp-font-family-primary)',
-              fontWeight: 'var(--dp-font-weight-bold)'
-            }}>
-              {absenceType === 'annual' ? formatDaysDisplay(typeData.remaining) : formatDaysDisplay(typeData.used)}
-            </Typography>
+
+            {absenceType === 'annual' && (
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="body2" gutterBottom sx={{
+                  color: 'var(--dp-neutral-600)',
+                  fontFamily: 'var(--dp-font-family-primary)',
+                  fontSize: '0.75rem'
+                }}>
+                  Used: {formatDaysDisplay(typeData.used)} Remaining: {formatDaysDisplay(typeData.remaining)} ({Math.round(percentage)}%)
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={percentage}
+                  color={getProgressColor(typeData.used, typeData.total)}
+                  sx={{ height: 6, borderRadius: 3 }}
+                />
+              </Box>
+            )}
           </Box>
 
-          {absenceType === 'annual' && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" gutterBottom sx={{
-                color: 'var(--dp-neutral-600)',
-                fontFamily: 'var(--dp-font-family-primary)'
-              }}>
-                Used: {formatDaysDisplay(typeData.used)} Remaining: {formatDaysDisplay(typeData.remaining)} ({Math.round(percentage)}%)
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={percentage}
-                color={getProgressColor(typeData.used, typeData.total)}
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-            </Box>
-          )}
-
           {absenceType === 'annual' && isManager && (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Box sx={{ position: 'absolute', bottom: 8, right: 8 }}>
               {editingAllocation === allocation.id ? (
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <TextField
@@ -660,12 +694,51 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
                       ...prev,
                       annualLeaveDays: parseInt(e.target.value)
                     } : null)}
-                    sx={{ width: 80 }}
+                    sx={{
+                      width: 80,
+                      '& .MuiInputBase-input': {
+                        color: 'var(--dp-neutral-800)',
+                        '[data-theme="dark"] &': {
+                          color: 'var(--dp-neutral-100)',
+                        }
+                      },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--dp-neutral-300)',
+                        '[data-theme="dark"] &': {
+                          borderColor: 'var(--dp-neutral-600)',
+                        }
+                      },
+                      '& .MuiInputBase-root': {
+                        backgroundColor: 'var(--dp-neutral-0)',
+                        '[data-theme="dark"] &': {
+                          backgroundColor: 'var(--dp-neutral-800)',
+                        }
+                      }
+                    }}
                   />
-                  <IconButton size="small" onClick={handleSaveAllocation} color="primary">
+                  <IconButton
+                    size="small"
+                    onClick={handleSaveAllocation}
+                    color="primary"
+                    sx={{
+                      color: 'var(--dp-primary-600)',
+                      '[data-theme="dark"] &': {
+                        color: 'var(--dp-primary-400)',
+                      }
+                    }}
+                  >
                     <SaveIcon />
                   </IconButton>
-                  <IconButton size="small" onClick={handleCancelEdit}>
+                  <IconButton
+                    size="small"
+                    onClick={handleCancelEdit}
+                    sx={{
+                      color: 'var(--dp-neutral-600)',
+                      '[data-theme="dark"] &': {
+                        color: 'var(--dp-neutral-300)',
+                      }
+                    }}
+                  >
                     <CancelIcon />
                   </IconButton>
                 </Box>
@@ -679,8 +752,14 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
                     fontFamily: 'var(--dp-font-family-primary)',
                     fontWeight: 'var(--dp-font-weight-medium)',
                     transition: 'var(--dp-transition-fast)',
+                    '[data-theme="dark"] &': {
+                      color: 'var(--dp-primary-400)',
+                    },
                     '&:hover': {
                       backgroundColor: 'var(--dp-primary-50)',
+                      '[data-theme="dark"] &': {
+                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                      }
                     }
                   }}
                 >
@@ -694,212 +773,233 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
     );
   };
 
-  const renderAnnualLeaveTab = () => (
-    <TabPanel value={activeTab} index={0}>
-      <Box sx={{
-        '[data-theme="dark"] &': {
-          backgroundColor: 'transparent !important',
-        }
-      }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6">
-            Team Leave Allocations
-          </Typography>
-          {isManager && (
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              sx={{ backgroundColor: '#1976d2' }}
+  const renderAnnualLeaveTab = () => {
+    // Calculate optimal columns: always try to balance rows
+    const cardCount = teamAllocations.length;
+    const getOptimalColumns = () => {
+      if (cardCount <= 1) return 1;
+      if (cardCount <= 2) return 2;
+      // For 3+ cards, always use 3 columns to get balanced rows
+      return 3;
+    };
+    const columns = getOptimalColumns();
+
+    return (
+      <TabPanel value={activeTab} index={0}>
+        <Box sx={{
+          '[data-theme="dark"] &': {
+            backgroundColor: 'transparent !important',
+          }
+        }}>
+          {loadingAllocations ? (
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 4,
+              gap: 'var(--dp-space-4)'
+            }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  border: '3px solid var(--dp-neutral-200)',
+                  borderTop: '3px solid var(--dp-primary-500)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+              <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading annual leave data...</Typography>
+            </Box>
+          ) : !teamAllocations || teamAllocations.length === 0 ? (
+            <Alert
+              severity="info"
+              sx={{
+                fontFamily: 'var(--dp-font-family-primary)',
+                borderRadius: 'var(--dp-radius-md)',
+                boxShadow: 'var(--dp-shadow-sm)',
+              }}
             >
-              Edit Allocations
-            </Button>
+              No team allocations found. Allocations will be created automatically when employees are assigned leave.
+            </Alert>
+          ) : (
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${columns}, 1fr)`,
+              gap: 2,
+              '@media (max-width: 900px)': {
+                gridTemplateColumns: 'repeat(2, 1fr)',
+              },
+              '@media (max-width: 600px)': {
+                gridTemplateColumns: '1fr',
+              }
+            }}>
+              {teamAllocations.map((allocation) => (
+                <Box key={allocation.id}>
+                  {renderTeamMemberCard(allocation, 'annual')}
+                </Box>
+              ))}
+            </Box>
           )}
         </Box>
+      </TabPanel>
+    );
+  };
 
-        {loadingAllocations ? (
-          <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            py: 4,
-            gap: 'var(--dp-space-4)'
-          }}>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                border: '3px solid var(--dp-neutral-200)',
-                borderTop: '3px solid var(--dp-primary-500)',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-              }}
-            />
-            <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading annual leave data...</Typography>
-          </Box>
-        ) : !teamAllocations || teamAllocations.length === 0 ? (
-          <Alert
-            severity="info"
-            sx={{
-              fontFamily: 'var(--dp-font-family-primary)',
-              borderRadius: 'var(--dp-radius-md)',
-              boxShadow: 'var(--dp-shadow-sm)',
-            }}
-          >
-            No team allocations found. Allocations will be created automatically when employees are assigned leave.
-          </Alert>
-        ) : (
-          <Grid container spacing={2} sx={{
-            '[data-theme="dark"] &': {
-              backgroundColor: 'transparent',
-            }
-          }}>
-            {teamAllocations.map((allocation) => (
-              <Grid item xs={12} sm={6} md={4} key={allocation.id}>
-                {renderTeamMemberCard(allocation, 'annual')}
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Box>
-    </TabPanel>
-  );
+  const renderSickDaysTab = () => {
+    // Calculate optimal columns: always try to balance rows
+    const cardCount = teamAllocations.length;
+    const getOptimalColumns = () => {
+      if (cardCount <= 1) return 1;
+      if (cardCount <= 2) return 2;
+      // For 3+ cards, always use 3 columns to get balanced rows
+      return 3;
+    };
+    const columns = getOptimalColumns();
 
-  const renderSickDaysTab = () => (
-    <TabPanel value={activeTab} index={1}>
-      <Box sx={{
-        '[data-theme="dark"] &': {
-          backgroundColor: 'transparent !important',
-        }
-      }}>
-        <Typography variant="h6" sx={{
-          mb: 3,
+    return (
+      <TabPanel value={activeTab} index={1}>
+        <Box sx={{
           '[data-theme="dark"] &': {
-            color: 'var(--dp-neutral-100)',
+            backgroundColor: 'transparent !important',
           }
         }}>
-          Sick Days
-        </Typography>
-
-        {loadingAllocations ? (
-          <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            py: 4,
-            gap: 'var(--dp-space-4)'
-          }}>
-            <Box
+          {loadingAllocations ? (
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 4,
+              gap: 'var(--dp-space-4)'
+            }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  border: '3px solid var(--dp-neutral-200)',
+                  borderTop: '3px solid var(--dp-primary-500)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+              <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading sick days data...</Typography>
+            </Box>
+          ) : !teamAllocations || teamAllocations.length === 0 ? (
+            <Alert
+              severity="info"
               sx={{
-                width: 32,
-                height: 32,
-                border: '3px solid var(--dp-neutral-200)',
-                borderTop: '3px solid var(--dp-primary-500)',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
+                fontFamily: 'var(--dp-font-family-primary)',
+                borderRadius: 'var(--dp-radius-md)',
+                boxShadow: 'var(--dp-shadow-sm)',
               }}
-            />
-            <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading sick days data...</Typography>
-          </Box>
-        ) : !teamAllocations || teamAllocations.length === 0 ? (
-          <Alert
-            severity="info"
-            sx={{
-              fontFamily: 'var(--dp-font-family-primary)',
-              borderRadius: 'var(--dp-radius-md)',
-              boxShadow: 'var(--dp-shadow-sm)',
-            }}
-          >
-            No team allocations found. Allocations will be created automatically when employees are assigned leave.
-          </Alert>
-        ) : (
-          <Grid container spacing={2} sx={{
-            '[data-theme="dark"] &': {
-              backgroundColor: 'transparent',
-            }
-          }}>
-            {teamAllocations.map((allocation) => (
-              <Grid item xs={12} sm={6} md={4} key={allocation.id}>
-                {renderTeamMemberCard(allocation, 'sick')}
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Box>
-    </TabPanel>
-  );
+            >
+              No team allocations found. Allocations will be created automatically when employees are assigned leave.
+            </Alert>
+          ) : (
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${columns}, 1fr)`,
+              gap: 2,
+              '@media (max-width: 900px)': {
+                gridTemplateColumns: 'repeat(2, 1fr)',
+              },
+              '@media (max-width: 600px)': {
+                gridTemplateColumns: '1fr',
+              }
+            }}>
+              {teamAllocations.map((allocation) => (
+                <Box key={allocation.id}>
+                  {renderTeamMemberCard(allocation, 'sick')}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </TabPanel>
+    );
+  };
 
-  const renderOtherLeaveTab = () => (
-    <TabPanel value={activeTab} index={2}>
-      <Box sx={{
-        '[data-theme="dark"] &': {
-          backgroundColor: 'transparent !important',
-        }
-      }}>
-        <Typography variant="h6" sx={{
-          mb: 3,
+  const renderOtherLeaveTab = () => {
+    // Calculate optimal columns: always try to balance rows
+    const cardCount = teamAllocations.length;
+    const getOptimalColumns = () => {
+      if (cardCount <= 1) return 1;
+      if (cardCount <= 2) return 2;
+      // For 3+ cards, always use 3 columns to get balanced rows
+      return 3;
+    };
+    const columns = getOptimalColumns();
+
+    return (
+      <TabPanel value={activeTab} index={2}>
+        <Box sx={{
           '[data-theme="dark"] &': {
-            color: 'var(--dp-neutral-100)',
+            backgroundColor: 'transparent !important',
           }
         }}>
-          Other Leave
-        </Typography>
-
-        {loadingAllocations ? (
-          <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            py: 4,
-            gap: 'var(--dp-space-4)'
-          }}>
-            <Box
+          {loadingAllocations ? (
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 4,
+              gap: 'var(--dp-space-4)'
+            }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  border: '3px solid var(--dp-neutral-200)',
+                  borderTop: '3px solid var(--dp-primary-500)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+              <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading other leave data...</Typography>
+            </Box>
+          ) : !teamAllocations || teamAllocations.length === 0 ? (
+            <Alert
+              severity="info"
               sx={{
-                width: 32,
-                height: 32,
-                border: '3px solid var(--dp-neutral-200)',
-                borderTop: '3px solid var(--dp-primary-500)',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
+                fontFamily: 'var(--dp-font-family-primary)',
+                borderRadius: 'var(--dp-radius-md)',
+                boxShadow: 'var(--dp-shadow-sm)',
               }}
-            />
-            <Typography sx={{ color: 'var(--dp-neutral-600)', fontFamily: 'var(--dp-font-family-primary)' }}>Loading other leave data...</Typography>
-          </Box>
-        ) : !teamAllocations || teamAllocations.length === 0 ? (
-          <Alert
-            severity="info"
-            sx={{
-              fontFamily: 'var(--dp-font-family-primary)',
-              borderRadius: 'var(--dp-radius-md)',
-              boxShadow: 'var(--dp-shadow-sm)',
-            }}
-          >
-            No team allocations found. Allocations will be created automatically when employees are assigned leave.
-          </Alert>
-        ) : (
-          <Grid container spacing={2} sx={{
-            '[data-theme="dark"] &': {
-              backgroundColor: 'transparent',
-            }
-          }}>
-            {teamAllocations.map((allocation) => (
-              <Grid item xs={12} sm={6} md={4} key={allocation.id}>
-                {renderTeamMemberCard(allocation, 'otherLeave')}
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Box>
-    </TabPanel>
-  );
+            >
+              No team allocations found. Allocations will be created automatically when employees are assigned leave.
+            </Alert>
+          ) : (
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${columns}, 1fr)`,
+              gap: 2,
+              '@media (max-width: 900px)': {
+                gridTemplateColumns: 'repeat(2, 1fr)',
+              },
+              '@media (max-width: 600px)': {
+                gridTemplateColumns: '1fr',
+              }
+            }}>
+              {teamAllocations.map((allocation) => (
+                <Box key={allocation.id}>
+                  {renderTeamMemberCard(allocation, 'otherLeave')}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </TabPanel>
+    );
+  };
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="lg"
+      maxWidth={teamAllocations.length <= 1 ? 'sm' : teamAllocations.length <= 3 ? 'md' : 'lg'}
       fullWidth
       disablePortal
       PaperProps={{
@@ -918,9 +1018,9 @@ const AbsenceManagementModal: React.FC<AbsenceManagementModalProps> = ({
 
       <ModalTabs
         tabs={[
-          { key: 0, label: 'Annual Leave', icon: <AbsenceIcon /> },
-          { key: 1, label: 'Sick Days', icon: <PeopleIcon /> },
-          { key: 2, label: 'Other Leave', icon: <CalendarIcon /> }
+          { key: '0', label: 'Annual Leave', icon: <span>✈️</span> },
+          { key: '1', label: 'Sick Days', icon: <span>🤒</span> },
+          { key: '2', label: 'Other Leave', icon: <span>📋</span> }
         ]}
         activeTab={activeTab.toString()}
         onChange={(key) => setActiveTab(Number(key))}

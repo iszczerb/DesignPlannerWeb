@@ -26,11 +26,6 @@ class SkillTaskCountService {
       const startDate = this.formatDate(this.getDateMinusDays(today, 30)); // 30 days ago
       const endDate = this.formatDate(this.getDatePlusDays(today, 90)); // 90 days ahead
 
-      console.log('🛠️ SKILL TASK COUNT - Date range being used:');
-      console.log(`   📅 Start: ${startDate} (30 days ago)`);
-      console.log(`   📅 End: ${endDate} (90 days ahead)`);
-      console.log(`   📅 Today: ${this.formatDate(today)}`);
-
       const dateRange: DateRangeDto = {
         startDate,
         endDate
@@ -88,38 +83,6 @@ class SkillTaskCountService {
         }
       });
 
-      // Detailed logging for debugging
-      console.log('🔍 SKILL TASK COUNT DEBUG:');
-      console.log('📊 Total assignments found:', assignments.length);
-      console.log('🛠️ Skills found:', skills.length);
-      console.log('📝 Task types found:', taskTypes.length);
-      console.log('🗂️ Skill assignments breakdown:');
-
-      skillAssignments.forEach((assignments, skillName) => {
-        const skill = skillMap.get(skillName);
-        console.log(`  ${skillName}: ${assignments.length} tasks`, skill ? `(ID: ${skill.id})` : '(NOT FOUND)');
-
-        // Show DETAILED assignments for frequently used skills
-        if (assignments.length > 2) {
-          console.log(`    🔍 DETAILED ASSIGNMENTS for ${skillName.toUpperCase()}:`);
-          assignments.slice(0, 5).forEach((a, index) => {
-            console.log(`      ${index + 1}. Assignment ID: ${a.assignmentId}`);
-            console.log(`         📋 Task: "${a.taskTitle}"`);
-            console.log(`         📅 Date: ${a.assignedDate}`);
-            console.log(`         👤 Employee: ${a.employeeName}`);
-            console.log(`         🏢 Project: ${a.projectName}`);
-            console.log(`         📝 Task Type: ${a.taskTypeName || 'N/A'}`);
-            console.log(`         ⏰ Hours: ${a.hours || 'N/A'}`);
-            console.log(`         ---`);
-          });
-          if (assignments.length > 5) {
-            console.log(`      ... and ${assignments.length - 5} more`);
-          }
-          console.log(`    💯 TOTAL COUNT for ${skillName.toUpperCase()}: ${assignments.length}`);
-          console.log('');
-        }
-      });
-
       // Update cache
       const cacheMap = new Map<number, { taskCount: number; projectCount: number; taskTypeCount: number }>();
       skillCounts.forEach((counts, skillId) => {
@@ -156,13 +119,6 @@ class SkillTaskCountService {
           projectCount: counts.projectSet.size,
           taskTypeCount: skill.taskTypesCount || 0
         };
-      });
-
-      console.log('🔢 FINAL SKILL COUNTS:');
-      result.forEach(r => {
-        if (r.taskCount > 0 || r.projectCount > 0 || r.taskTypeCount > 0) {
-          console.log(`  ${r.skillName}: ${r.taskCount} tasks, ${r.projectCount} projects, ${r.taskTypeCount} task types`);
-        }
       });
 
       return result;
