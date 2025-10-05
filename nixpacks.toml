@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["dotnet-sdk"]
+nixPkgs = ["dotnet-sdk_9"]
 
 [phases.install]
 cmds = ["cd backend/DesignPlanner.Api && dotnet restore"]
