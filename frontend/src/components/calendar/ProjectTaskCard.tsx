@@ -187,7 +187,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
       onContextMenu={handleContextMenu}
       onMouseEnter={() => !isDragging && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      title={showTooltip ? `${task.projectName} - ${task.taskTitle}\nClient: ${task.clientName}\nType: ${task.taskTypeName}\nStatus: ${STATUS_LABELS[task.taskStatus]}\nPriority: ${PRIORITY_LABELS[task.priority]}${task.dueDate ? `\nDue: ${new Date(task.dueDate).toLocaleDateString()}` : ''}${task.notes ? `\nNotes: ${task.notes}` : ''}${isDraggable ? '\n\n(Drag to move to another slot)\n(Right-click for menu)' : '\n\n(Right-click for menu)'}` : undefined}
+      title={showTooltip ? `${task.projectName} - ${task.taskTitle}\nClient: ${task.clientName}\nType: ${task.taskTypeName}\nHours: ${calculatedHours !== undefined ? formatHours(calculatedHours) : (task.hours ? formatHours(task.hours) : 'N/A')}\nStatus: ${STATUS_LABELS[task.taskStatus]}\nPriority: ${PRIORITY_LABELS[task.priority]}${task.dueDate ? `\nDue: ${new Date(task.dueDate).toLocaleDateString()}` : ''}${task.notes ? `\nNotes: ${task.notes}` : ''}${isDraggable ? '\n\n(Drag to move to another slot)\n(Right-click for menu)' : '\n\n(Right-click for menu)'}` : undefined}
       whileHover={!isDragging && isDraggable ? { scale: 1.02 } : {}}
       whileTap={isDraggable ? { scale: 0.98 } : {}}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
@@ -247,23 +247,6 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Client name */}
-      <div style={{
-        fontWeight: '600',
-        color: colorScheme.text === '#ffffff' ? 'rgba(255,255,255,0.92)' : 'rgba(33,37,41,0.85)',
-        fontSize: size === 'small' ? '0.6875rem' : (size === 'large' ? '0.8125rem' : '0.75rem'),
-        lineHeight: '1.3',
-        letterSpacing: '-0.005em',
-        marginBottom: size === 'small' ? '1px' : (size === 'large' ? '4px' : '2px'),
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
-        textOverflow: 'ellipsis',
-        textShadow: colorScheme.text === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-        fontFamily: 'var(--dp-font-family-primary)',
-      }}>
-        {task.clientName}
       </div>
 
       {/* Task Type and Hours */}

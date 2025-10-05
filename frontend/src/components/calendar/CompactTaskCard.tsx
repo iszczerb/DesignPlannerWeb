@@ -150,19 +150,6 @@ const CompactTaskCard: React.FC<CompactTaskCardProps> = ({
           {task.projectName}
         </span>
 
-        {/* Client name */}
-        <span
-          ref={clientNameRef}
-          style={{
-            fontSize: clientFontSize,
-            opacity: 0.8,
-            marginRight: '6px',
-            flexShrink: 0,
-          }}
-        >
-          {task.clientName}
-        </span>
-
         {/* Task type */}
         {task.taskTypeName && (
           <span
