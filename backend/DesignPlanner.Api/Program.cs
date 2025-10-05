@@ -85,14 +85,21 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", builder =>
     {
-        builder.WithOrigins(
-                "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178", "http://localhost:5179", "http://localhost:5180", "http://localhost:5181", "http://localhost:5182", "http://localhost:5183", "http://localhost:5184", "http://localhost:5185", "http://localhost:3000", // Localhost variants
-                "http://192.168.200.83:5173", "http://192.168.200.83:5174", "http://192.168.200.83:5175", "http://192.168.200.83:5176", "http://192.168.200.83:5177", "http://192.168.200.83:5178", "http://192.168.200.83:5179", "http://192.168.200.83:5180", "http://192.168.200.83:5181", "http://192.168.200.83:5182", "http://192.168.200.83:5183", "http://192.168.200.83:5184", "http://192.168.200.83:5185", "http://192.168.200.83:3000", // Current network IP variants
-                "http://192.168.0.125:5173", "http://192.168.0.125:5174", "http://192.168.0.125:5175", "http://192.168.0.125:5176", "http://192.168.0.125:5177", "http://192.168.0.125:5178", "http://192.168.0.125:5179", "http://192.168.0.125:5180", "http://192.168.0.125:5181", "http://192.168.0.125:5182", "http://192.168.0.125:5183", "http://192.168.0.125:5184", "http://192.168.0.125:5185", "http://192.168.0.125:3000" // Old network IP variants for compatibility
-               )
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials();
+        builder.SetIsOriginAllowed(origin =>
+        {
+            // Allow localhost for development
+            if (origin.StartsWith("http://localhost") || origin.StartsWith("http://192.168"))
+                return true;
+
+            // Allow Railway and Render deployments
+            if (origin.EndsWith(".railway.app") || origin.EndsWith(".onrender.com"))
+                return true;
+
+            return false;
+        })
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
     });
 });
 
