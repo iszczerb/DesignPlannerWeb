@@ -8,5 +8,11 @@ export default defineConfig({
     host: '0.0.0.0', // Allow access from network
     port: 5173,
     strictPort: true, // Use exact port
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 8080,
+    strictPort: false,
+    allowedHosts: ['all'] // Allow all hosts for Railway deployment
   }
 })
