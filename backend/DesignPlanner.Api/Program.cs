@@ -123,8 +123,8 @@ builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<ITeamAuthorizationService, TeamAuthorizationService>();
 builder.Services.AddScoped<IAbsenceService, AbsenceService>();
 
-// SEEDING COMPLETELY DISABLED - DO NOT REGISTER SEEDING SERVICES
-// builder.Services.AddScoped<IMinimalInitializer, MinimalInitializer>();
+// Production initialization - creates admin user only if database is empty
+builder.Services.AddScoped<IProductionInitializer, ProductionInitializer>();
 
 var app = builder.Build();
 
@@ -140,9 +140,9 @@ using (var scope = app.Services.CreateScope())
         await context.Database.MigrateAsync();
         logger.LogInformation("Database ready.");
 
-        // SEEDING DISABLED - DO NOT CREATE ANY DATA
-        // var initializer = scope.ServiceProvider.GetRequiredService<IMinimalInitializer>();
-        // await initializer.InitializeAsync();
+        // Initialize admin user if database is empty
+        var initializer = scope.ServiceProvider.GetRequiredService<IProductionInitializer>();
+        await initializer.InitializeAsync();
     }
     catch (Exception ex)
     {
