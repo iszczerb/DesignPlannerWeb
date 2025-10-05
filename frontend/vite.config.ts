@@ -5,14 +5,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0', // Allow access from network
+    host: true, // Allow access from network
     port: 5173,
     strictPort: true, // Use exact port
   },
   preview: {
-    host: '0.0.0.0',
+    host: true, // Allow all hosts
     port: 8080,
-    strictPort: false,
-    allowedHosts: ['all'] // Allow all hosts for Railway deployment
+    strictPort: false
   }
 })
